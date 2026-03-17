@@ -1,3 +1,4 @@
+from app.db.models.accounting import Account, AccountBalance, AccountPeriodBalance, FinancialPeriod, JournalEntry, JournalLine
 from app.db.models.audit import AuditLog
 from app.db.models.invitation import Invitation
 from app.db.models.membership import OrganizationUser
@@ -18,4 +19,10 @@ __all__ = [
     "Invitation",
     "Session",
     "AuditLog",
+    "Account",
+    "FinancialPeriod",
+    "JournalEntry",
+    "JournalLine",
+    "AccountBalance",
+    "AccountPeriodBalance",
 ]

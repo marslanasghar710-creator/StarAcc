@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.routers import auth, organizations, invitations, roles, audit
+from app.api.routers import auth, organizations, invitations, roles, audit, accounting
 
 app = FastAPI(title="StarAcc Foundation API")
 
@@ -14,3 +14,5 @@ app.include_router(audit.router, prefix="/organizations", tags=["audit"])
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+app.include_router(accounting.router)

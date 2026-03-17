@@ -24,3 +24,29 @@ class InvitationStatus(StrEnum):
     ACCEPTED = "accepted"
     DECLINED = "declined"
     EXPIRED = "expired"
+
+
+class AccountType(StrEnum):
+    ASSET = "asset"
+    LIABILITY = "liability"
+    EQUITY = "equity"
+    REVENUE = "revenue"
+    EXPENSE = "expense"
+
+
+class NormalBalance(StrEnum):
+    DEBIT = "debit"
+    CREDIT = "credit"
+
+
+class JournalStatus(StrEnum):
+    DRAFT = "draft"
+    POSTED = "posted"
+    REVERSED = "reversed"
+    VOIDED = "voided"
+
+
+class PeriodStatus(StrEnum):
+    OPEN = "open"
+    CLOSED = "closed"
+    LOCKED = "locked"

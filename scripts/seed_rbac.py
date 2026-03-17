@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.models import Permission, Role, RolePermission
 
-PERMISSIONS = [
+BASE_PERMISSIONS = [
     "org.read",
     "org.update",
     "org.delete",
@@ -16,12 +16,48 @@ PERMISSIONS = [
     "settings.update",
 ]
 
+ACCOUNTING_PERMISSIONS = [
+    "accounts.create",
+    "accounts.read",
+    "accounts.update",
+    "accounts.archive",
+    "journals.create",
+    "journals.read",
+    "journals.update",
+    "journals.post",
+    "journals.reverse",
+    "journals.void",
+    "periods.create",
+    "periods.read",
+    "periods.update",
+    "periods.close",
+    "periods.lock",
+    "periods.reopen",
+    "ledger.read",
+    "trial_balance.read",
+]
+
+PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS
+
 ROLE_DEFAULTS = {
     "owner": PERMISSIONS,
-    "admin": ["org.read", "org.update", "users.invite", "users.remove", "users.read", "roles.read", "settings.read", "settings.update"],
-    "accountant": ["org.read", "users.read", "settings.read"],
-    "staff": ["org.read"],
-    "viewer": ["org.read"],
+    "admin": [p for p in PERMISSIONS if p != "periods.reopen"],
+    "accountant": [
+        "org.read",
+        "accounts.read",
+        "accounts.create",
+        "accounts.update",
+        "journals.create",
+        "journals.read",
+        "journals.update",
+        "journals.post",
+        "journals.reverse",
+        "periods.read",
+        "ledger.read",
+        "trial_balance.read",
+    ],
+    "staff": ["org.read", "accounts.read", "journals.read", "ledger.read"],
+    "viewer": ["org.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read"],
 }
 
 
