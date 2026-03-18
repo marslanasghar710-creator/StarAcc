@@ -37,27 +37,41 @@ ACCOUNTING_PERMISSIONS = [
     "trial_balance.read",
 ]
 
-PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS
+
+AR_PERMISSIONS = [
+    "customers.create",
+    "customers.read",
+    "customers.update",
+    "customers.archive",
+    "invoices.create",
+    "invoices.read",
+    "invoices.update",
+    "invoices.approve",
+    "invoices.send",
+    "invoices.post",
+    "invoices.void",
+    "credit_notes.create",
+    "credit_notes.read",
+    "credit_notes.update",
+    "credit_notes.post",
+    "credit_notes.apply",
+    "customer_payments.create",
+    "customer_payments.read",
+    "customer_payments.post",
+    "customer_payments.allocate",
+    "ar.read",
+    "ar_aging.read",
+]
+PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS + AR_PERMISSIONS
 
 ROLE_DEFAULTS = {
     "owner": PERMISSIONS,
     "admin": [p for p in PERMISSIONS if p != "periods.reopen"],
     "accountant": [
-        "org.read",
-        "accounts.read",
-        "accounts.create",
-        "accounts.update",
-        "journals.create",
-        "journals.read",
-        "journals.update",
-        "journals.post",
-        "journals.reverse",
-        "periods.read",
-        "ledger.read",
-        "trial_balance.read",
+        p for p in PERMISSIONS if p not in {"org.delete", "periods.reopen"}
     ],
-    "staff": ["org.read", "accounts.read", "journals.read", "ledger.read"],
-    "viewer": ["org.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read"],
+    "staff": ["org.read", "customers.read", "invoices.create", "invoices.read", "invoices.update", "invoices.send", "accounts.read", "journals.read", "ledger.read"],
+    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "ar.read", "ar_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read"],
 }
 
 

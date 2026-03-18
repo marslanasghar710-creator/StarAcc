@@ -50,3 +50,33 @@ class PeriodStatus(StrEnum):
     OPEN = "open"
     CLOSED = "closed"
     LOCKED = "locked"
+
+
+class InvoiceStatus(StrEnum):
+    DRAFT = "draft"
+    APPROVED = "approved"
+    SENT = "sent"
+    PARTIALLY_PAID = "partially_paid"
+    PAID = "paid"
+    OVERDUE = "overdue"
+    VOIDED = "voided"
+    CANCELLED = "cancelled"
+
+
+class InvoiceType(StrEnum):
+    STANDARD = "standard"
+    RECURRING_TEMPLATE = "recurring_template"
+
+
+class CreditNoteStatus(StrEnum):
+    DRAFT = "draft"
+    APPROVED = "approved"
+    POSTED = "posted"
+    APPLIED = "applied"
+    VOIDED = "voided"
+
+
+class PaymentStatus(StrEnum):
+    DRAFT = "draft"
+    POSTED = "posted"
+    VOIDED = "voided"

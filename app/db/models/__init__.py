@@ -1,3 +1,4 @@
+from app.db.models.ar import AccountingSettings, CreditNote, CreditNoteItem, Customer, CustomerPayment, CustomerPaymentAllocation, Invoice, InvoiceItem
 from app.db.models.accounting import Account, AccountBalance, AccountPeriodBalance, FinancialPeriod, JournalEntry, JournalLine
 from app.db.models.audit import AuditLog
 from app.db.models.invitation import Invitation
@@ -8,6 +9,14 @@ from app.db.models.session import Session
 from app.db.models.user import User, UserProfile
 
 __all__ = [
+    "AccountingSettings",
+    "Customer",
+    "Invoice",
+    "InvoiceItem",
+    "CreditNote",
+    "CreditNoteItem",
+    "CustomerPayment",
+    "CustomerPaymentAllocation",
     "User",
     "UserProfile",
     "Organization",
