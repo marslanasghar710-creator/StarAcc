@@ -80,3 +80,27 @@ class PaymentStatus(StrEnum):
     DRAFT = "draft"
     POSTED = "posted"
     VOIDED = "voided"
+
+
+class BillStatus(StrEnum):
+    DRAFT = "draft"
+    APPROVED = "approved"
+    POSTED = "posted"
+    PARTIALLY_PAID = "partially_paid"
+    PAID = "paid"
+    OVERDUE = "overdue"
+    VOIDED = "voided"
+    CANCELLED = "cancelled"
+
+
+class BillType(StrEnum):
+    STANDARD = "standard"
+    RECURRING_TEMPLATE = "recurring_template"
+
+
+class SupplierCreditStatus(StrEnum):
+    DRAFT = "draft"
+    APPROVED = "approved"
+    POSTED = "posted"
+    APPLIED = "applied"
+    VOIDED = "voided"

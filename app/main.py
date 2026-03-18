@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.routers import auth, organizations, invitations, roles, audit, accounting, ar
+from app.api.routers import auth, organizations, invitations, roles, audit, accounting, ar, ap
 
 app = FastAPI(title="StarAcc Foundation API")
 
@@ -18,3 +18,5 @@ def health() -> dict[str, str]:
 app.include_router(accounting.router)
 
 app.include_router(ar.router)
+
+app.include_router(ap.router)

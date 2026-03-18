@@ -62,16 +62,39 @@ AR_PERMISSIONS = [
     "ar.read",
     "ar_aging.read",
 ]
-PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS + AR_PERMISSIONS
+
+
+AP_PERMISSIONS = [
+    "suppliers.create",
+    "suppliers.read",
+    "suppliers.update",
+    "suppliers.archive",
+    "bills.create",
+    "bills.read",
+    "bills.update",
+    "bills.approve",
+    "bills.post",
+    "bills.void",
+    "supplier_credits.create",
+    "supplier_credits.read",
+    "supplier_credits.update",
+    "supplier_credits.post",
+    "supplier_credits.apply",
+    "supplier_payments.create",
+    "supplier_payments.read",
+    "supplier_payments.post",
+    "supplier_payments.allocate",
+    "ap.read",
+    "ap_aging.read",
+]
+PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS + AR_PERMISSIONS + AP_PERMISSIONS
 
 ROLE_DEFAULTS = {
     "owner": PERMISSIONS,
     "admin": [p for p in PERMISSIONS if p != "periods.reopen"],
-    "accountant": [
-        p for p in PERMISSIONS if p not in {"org.delete", "periods.reopen"}
-    ],
-    "staff": ["org.read", "customers.read", "invoices.create", "invoices.read", "invoices.update", "invoices.send", "accounts.read", "journals.read", "ledger.read"],
-    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "ar.read", "ar_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read"],
+    "accountant": [p for p in PERMISSIONS if p not in {"org.delete", "periods.reopen"}],
+    "staff": ["org.read", "customers.read", "invoices.create", "invoices.read", "invoices.update", "invoices.send", "suppliers.read", "bills.create", "bills.read", "bills.update", "accounts.read", "journals.read", "ledger.read"],
+    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "suppliers.read", "bills.read", "supplier_credits.read", "supplier_payments.read", "ar.read", "ar_aging.read", "ap.read", "ap_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read"],
 }
 
 

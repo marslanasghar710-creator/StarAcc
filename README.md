@@ -1,26 +1,11 @@
-# StarAcc Backend Foundation + Accounting Core + Accounts Receivable
+# StarAcc Backend Foundation + Accounting Core + AR + AP
 
 FastAPI + SQLAlchemy multi-tenant backend with:
 - Auth/session foundation
 - Organization + RBAC
 - Accounting core (chart of accounts, periods, journals, posting, balances, ledger/trial-balance)
 - Accounts receivable foundation (customers, invoices, credit notes, customer payments, allocations, AR aging)
-
-## Project tree
-
-```text
-app/
-  api/deps
-  api/routers
-  core
-  db/models
-  repositories
-  schemas
-  services
-  tests
-alembic/
-scripts/
-```
+- Accounts payable foundation (suppliers, bills, supplier credits, supplier payments, allocations, AP aging)
 
 ## Setup
 
@@ -33,51 +18,46 @@ python scripts/seed_rbac.py
 uvicorn app.main:app --reload
 ```
 
-## AR endpoints
+## AP endpoints
 
-- `POST /organizations/{organization_id}/customers`
-- `GET /organizations/{organization_id}/customers`
-- `GET /organizations/{organization_id}/customers/search`
-- `GET /organizations/{organization_id}/customers/{customer_id}`
-- `PATCH /organizations/{organization_id}/customers/{customer_id}`
-- `DELETE /organizations/{organization_id}/customers/{customer_id}`
-- `GET /organizations/{organization_id}/customers/{customer_id}/activity`
-- `GET /organizations/{organization_id}/customers/{customer_id}/balance`
-- `POST /organizations/{organization_id}/invoices`
-- `GET /organizations/{organization_id}/invoices`
-- `GET /organizations/{organization_id}/invoices/search`
-- `GET /organizations/{organization_id}/invoices/open`
-- `GET /organizations/{organization_id}/invoices/overdue`
-- `POST /organizations/{organization_id}/invoices/{invoice_id}/approve`
-- `POST /organizations/{organization_id}/invoices/{invoice_id}/send`
-- `POST /organizations/{organization_id}/invoices/{invoice_id}/post`
-- `POST /organizations/{organization_id}/invoices/{invoice_id}/void`
-- `POST /organizations/{organization_id}/credit-notes`
-- `POST /organizations/{organization_id}/credit-notes/{credit_note_id}/approve`
-- `POST /organizations/{organization_id}/credit-notes/{credit_note_id}/post`
-- `POST /organizations/{organization_id}/credit-notes/{credit_note_id}/apply`
-- `POST /organizations/{organization_id}/customer-payments`
-- `POST /organizations/{organization_id}/customer-payments/{payment_id}/post`
-- `POST /organizations/{organization_id}/customer-payments/{payment_id}/allocate`
-- `GET /organizations/{organization_id}/accounts-receivable/open-items`
-- `GET /organizations/{organization_id}/accounts-receivable/aging`
-- `GET /organizations/{organization_id}/accounts-receivable/customer-summary`
+- `POST /organizations/{organization_id}/suppliers`
+- `GET /organizations/{organization_id}/suppliers`
+- `GET /organizations/{organization_id}/suppliers/search`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}`
+- `PATCH /organizations/{organization_id}/suppliers/{supplier_id}`
+- `DELETE /organizations/{organization_id}/suppliers/{supplier_id}`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}/activity`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}/balance`
+- `POST /organizations/{organization_id}/bills`
+- `GET /organizations/{organization_id}/bills`
+- `GET /organizations/{organization_id}/bills/search`
+- `GET /organizations/{organization_id}/bills/open`
+- `GET /organizations/{organization_id}/bills/overdue`
+- `POST /organizations/{organization_id}/bills/{bill_id}/approve`
+- `POST /organizations/{organization_id}/bills/{bill_id}/post`
+- `POST /organizations/{organization_id}/bills/{bill_id}/void`
+- `POST /organizations/{organization_id}/supplier-credits`
+- `POST /organizations/{organization_id}/supplier-credits/{supplier_credit_id}/approve`
+- `POST /organizations/{organization_id}/supplier-credits/{supplier_credit_id}/post`
+- `POST /organizations/{organization_id}/supplier-credits/{supplier_credit_id}/apply`
+- `POST /organizations/{organization_id}/supplier-payments`
+- `POST /organizations/{organization_id}/supplier-payments/{payment_id}/post`
+- `POST /organizations/{organization_id}/supplier-payments/{payment_id}/allocate`
+- `GET /organizations/{organization_id}/accounts-payable/open-items`
+- `GET /organizations/{organization_id}/accounts-payable/aging`
+- `GET /organizations/{organization_id}/accounts-payable/supplier-summary`
 
 ## Example curl
 
 ```bash
-curl -X POST http://localhost:8000/auth/register -H 'content-type: application/json' -d '{"email":"alice@example.com","password":"StrongPass123"}'
-
-curl -X POST http://localhost:8000/auth/login -H 'content-type: application/json' -d '{"email":"alice@example.com","password":"StrongPass123"}'
-
-curl -X POST http://localhost:8000/organizations/$ORG_ID/customers \
+curl -X POST http://localhost:8000/organizations/$ORG_ID/suppliers \
   -H "Authorization: Bearer $ACCESS" -H 'content-type: application/json' \
-  -d '{"display_name":"Acme Ltd","email":"billing@acme.com"}'
+  -d '{"display_name":"Vendor Ltd","email":"payables@vendor.com"}'
 
-curl -X POST http://localhost:8000/organizations/$ORG_ID/invoices \
+curl -X POST http://localhost:8000/organizations/$ORG_ID/bills \
   -H "Authorization: Bearer $ACCESS" -H 'content-type: application/json' \
-  -d '{"customer_id":"'$CUSTOMER_ID'","issue_date":"2026-01-10","due_date":"2026-01-20","currency_code":"USD","items":[{"description":"Consulting","quantity":"1","unit_price":"1000","account_id":"'$REV_ACCOUNT_ID'"}]}'
+  -d '{"supplier_id":"'$SUPPLIER_ID'","issue_date":"2026-01-10","due_date":"2026-01-20","currency_code":"USD","items":[{"description":"Office supplies","quantity":"1","unit_price":"300","account_id":"'$EXPENSE_ACCOUNT_ID'"}]}'
 
-curl -X POST http://localhost:8000/organizations/$ORG_ID/invoices/$INVOICE_ID/post \
+curl -X POST http://localhost:8000/organizations/$ORG_ID/bills/$BILL_ID/post \
   -H "Authorization: Bearer $ACCESS"
 ```

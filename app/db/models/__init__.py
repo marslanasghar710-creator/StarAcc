@@ -1,3 +1,4 @@
+from app.db.models.ap import Bill, BillItem, Supplier, SupplierCredit, SupplierCreditItem, SupplierPayment, SupplierPaymentAllocation
 from app.db.models.ar import AccountingSettings, CreditNote, CreditNoteItem, Customer, CustomerPayment, CustomerPaymentAllocation, Invoice, InvoiceItem
 from app.db.models.accounting import Account, AccountBalance, AccountPeriodBalance, FinancialPeriod, JournalEntry, JournalLine
 from app.db.models.audit import AuditLog
@@ -9,6 +10,13 @@ from app.db.models.session import Session
 from app.db.models.user import User, UserProfile
 
 __all__ = [
+    "Supplier",
+    "Bill",
+    "BillItem",
+    "SupplierCredit",
+    "SupplierCreditItem",
+    "SupplierPayment",
+    "SupplierPaymentAllocation",
     "AccountingSettings",
     "Customer",
     "Invoice",
