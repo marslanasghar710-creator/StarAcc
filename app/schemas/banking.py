@@ -52,6 +52,8 @@ class BankTransactionCreateRequest(BaseModel):
     description: str
     reference: str | None = None
     memo: str | None = None
+    target_account_id: UUID | None = None
+    tax_code_id: UUID | None = None
     source_module: str | None = None
     source_type: str | None = None
     source_id: str | None = None
@@ -62,6 +64,8 @@ class BankTransactionUpdateRequest(BaseModel):
     description: str | None = None
     reference: str | None = None
     memo: str | None = None
+    target_account_id: UUID | None = None
+    tax_code_id: UUID | None = None
 
 
 class BankTransactionResponse(ORMModel):
@@ -80,6 +84,11 @@ class BankTransactionResponse(ORMModel):
     source_module: str | None
     source_type: str | None
     source_id: str | None
+    target_account_id: UUID | None
+    tax_code_id: UUID | None
+    taxable_amount: Decimal | None
+    tax_amount: Decimal | None
+    gross_amount: Decimal | None
     reconciled_at: datetime | None
 
 

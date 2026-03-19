@@ -11,6 +11,8 @@ from app.db.models import AccountingSettings
 from app.repositories.audit import AuditRepository
 from app.repositories.credit_note_repository import CreditNoteRepository
 from app.services.journal_service import JournalService
+from app.services.tax_posting_integration_service import TaxPostingIntegrationService
+from app.core.enums import TaxTransactionDirection
 
 
 class CreditNotePostingService:
@@ -18,6 +20,7 @@ class CreditNotePostingService:
         self.db = db
         self.credit_notes = CreditNoteRepository(db)
         self.audit = AuditRepository(db)
+        self.tax = TaxPostingIntegrationService(db)
 
     def post(self, organization_id, credit_note_id, actor_user_id):
         note = self.credit_notes.get(organization_id, credit_note_id)
@@ -34,9 +37,13 @@ class CreditNotePostingService:
         if not lines:
             raise forbidden("Credit note requires at least one line")
 
+        tax_total = sum((Decimal(line.line_tax_amount or 0) for line in lines), Decimal("0"))
+        tax_account_id = self.tax.control_account_id(organization_id, TaxTransactionDirection.OUTPUT, tax_total)
         journal_lines = []
         for line in lines:
-            journal_lines.append({"account_id": line.account_id, "description": line.description, "debit_amount": Decimal(line.line_total), "credit_amount": Decimal("0"), "currency_code": note.currency_code, "exchange_rate": note.exchange_rate})
+            journal_lines.append({"account_id": line.account_id, "description": line.description, "debit_amount": Decimal(line.line_taxable_amount or line.line_subtotal), "credit_amount": Decimal("0"), "currency_code": note.currency_code, "exchange_rate": note.exchange_rate})
+        if tax_total > 0:
+            journal_lines.append({"account_id": tax_account_id, "description": f"Output tax reversal {note.credit_note_number}", "debit_amount": tax_total, "credit_amount": Decimal("0"), "currency_code": note.currency_code, "exchange_rate": note.exchange_rate})
         journal_lines.append({"account_id": settings.accounts_receivable_control_account_id, "description": f"Credit note {note.credit_note_number}", "debit_amount": Decimal("0"), "credit_amount": Decimal(note.total_amount), "currency_code": note.currency_code, "exchange_rate": note.exchange_rate})
 
         payload = {
@@ -54,6 +61,19 @@ class CreditNotePostingService:
         note.posted_at = datetime.now(UTC)
         note.status = CreditNoteStatus.POSTED
         note.unapplied_amount = Decimal(note.total_amount)
+        self.tax.create_transactions(
+            organization_id=organization_id,
+            source_module="accounts_receivable",
+            source_type="credit_note",
+            source_id=note.id,
+            journal_entry_id=journal.id,
+            transaction_date=note.issue_date,
+            currency_code=note.currency_code,
+            direction=TaxTransactionDirection.OUTPUT,
+            tax_account_id=tax_account_id,
+            lines=lines,
+            sign=Decimal("-1"),
+        )
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="credit_note.posted", entity_type="credit_note", entity_id=str(note.id))
         self.db.commit()
         return note

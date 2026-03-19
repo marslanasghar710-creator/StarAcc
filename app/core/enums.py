@@ -145,3 +145,66 @@ class ReportRunStatus(StrEnum):
     PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class TaxBasis(StrEnum):
+    ACCRUAL = "accrual"
+    CASH_SCAFFOLD = "cash_scaffold"
+
+
+class PricesEnteredAre(StrEnum):
+    EXCLUSIVE = "exclusive"
+    INCLUSIVE = "inclusive"
+    EITHER = "either"
+
+
+class TaxRoundingMethod(StrEnum):
+    LINE = "line"
+    DOCUMENT = "document"
+
+
+class TaxPeriodicity(StrEnum):
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    ANNUALLY = "annually"
+    NONE = "none"
+
+
+class TaxType(StrEnum):
+    STANDARD = "standard"
+    REDUCED = "reduced"
+    ZERO = "zero"
+    EXEMPT = "exempt"
+    OUT_OF_SCOPE = "out_of_scope"
+    REVERSE_CHARGE_SCAFFOLD = "reverse_charge_scaffold"
+
+
+class TaxScope(StrEnum):
+    SALES = "sales"
+    PURCHASES = "purchases"
+    BOTH = "both"
+
+
+class TaxCodeAppliesTo(StrEnum):
+    SALES = "sales"
+    PURCHASES = "purchases"
+    BOTH = "both"
+
+
+class TaxCalculationMethod(StrEnum):
+    PERCENTAGE = "percentage"
+    EXEMPT = "exempt"
+    OUT_OF_SCOPE = "out_of_scope"
+    REVERSE_CHARGE_SCAFFOLD = "reverse_charge_scaffold"
+
+
+class TaxPriceInclusiveBehavior(StrEnum):
+    EXCLUSIVE = "exclusive"
+    INCLUSIVE = "inclusive"
+    INHERIT_ORGANIZATION_DEFAULT = "inherit_organization_default"
+
+
+class TaxTransactionDirection(StrEnum):
+    OUTPUT = "output"
+    INPUT = "input"
+    NEUTRAL = "neutral"

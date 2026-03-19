@@ -11,6 +11,9 @@ from app.repositories.audit import AuditRepository
 from app.repositories.supplier_credit_repository import SupplierCreditRepository
 from app.services.supplier_credit_calculation_service import SupplierCreditCalculationService
 from app.services.supplier_credit_posting_service import SupplierCreditPostingService
+from app.services.tax_calculation_service import TaxCalculationService
+from app.services.tax_settings_service import TaxSettingsService
+from app.core.enums import TaxCodeAppliesTo
 
 
 class SupplierCreditService:
@@ -18,6 +21,8 @@ class SupplierCreditService:
         self.db = db
         self.supplier_credits = SupplierCreditRepository(db)
         self.audit = AuditRepository(db)
+        self.tax = TaxCalculationService(db)
+        self.tax_settings = TaxSettingsService(db)
 
     def create(self, organization_id, actor_user_id, payload):
         number = self.supplier_credits.next_number(organization_id)
@@ -29,10 +34,17 @@ class SupplierCreditService:
             currency_code=payload["currency_code"],
             related_bill_id=payload.get("related_bill_id"),
             reason=payload.get("reason"),
+            prices_entered_are=payload.get("prices_entered_are") or self.tax_settings.get_or_create(organization_id).prices_entered_are.value,
             created_by_user_id=actor_user_id,
         )
         for i, item in enumerate(payload.get("items", []), start=1):
-            subtotal, tax, total = SupplierCreditCalculationService.calculate_line(item["quantity"], item["unit_price"], item.get("line_tax_amount", 0))
+            calc = self.tax.calculate_line(
+                organization_id,
+                quantity=item["quantity"],
+                unit_price=item["unit_price"],
+                tax_code_id=item.get("tax_code_id"),
+                usage=TaxCodeAppliesTo.PURCHASES,
+            )
             self.supplier_credits.create_item(
                 supplier_credit_id=credit.id,
                 organization_id=organization_id,
@@ -41,10 +53,14 @@ class SupplierCreditService:
                 quantity=item["quantity"],
                 unit_price=item["unit_price"],
                 account_id=item["account_id"],
-                tax_code_id=None,
-                line_subtotal=subtotal,
-                line_tax_amount=tax,
-                line_total=total,
+                tax_code_id=item.get("tax_code_id"),
+                tax_breakdown_json=calc.tax_breakdown,
+                line_taxable_amount=calc.taxable_amount,
+                line_subtotal=calc.taxable_amount,
+                line_tax_amount=calc.tax_amount,
+                line_total=calc.gross_amount,
+                effective_tax_rate=calc.effective_tax_rate,
+                tax_inclusive_flag=calc.tax_inclusive,
             )
         self._recalc(credit)
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="supplier_credit.created", entity_type="supplier_credit", entity_id=str(credit.id))
