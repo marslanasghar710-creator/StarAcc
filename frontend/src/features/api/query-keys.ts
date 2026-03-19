@@ -15,4 +15,36 @@ export const queryKeys = {
     list: (organizationId: string) => ["notifications", organizationId, "list"] as const,
     unreadCount: (organizationId: string) => ["notifications", organizationId, "unread-count"] as const,
   },
+  accounts: {
+    root: (organizationId: string) => ["accounts", organizationId] as const,
+    list: (organizationId: string, search = "") => ["accounts", organizationId, "list", search] as const,
+    detail: (organizationId: string, accountId: string) => ["accounts", organizationId, "detail", accountId] as const,
+    balance: (organizationId: string, accountId: string) => ["accounts", organizationId, "balance", accountId] as const,
+    ledger: (organizationId: string, accountId: string) => ["accounts", organizationId, "ledger", accountId] as const,
+  },
+  customers: {
+    root: (organizationId: string) => ["customers", organizationId] as const,
+    list: (organizationId: string, search = "") => ["customers", organizationId, "list", search] as const,
+    detail: (organizationId: string, customerId: string) => ["customers", organizationId, "detail", customerId] as const,
+    balance: (organizationId: string, customerId: string) => ["customers", organizationId, "balance", customerId] as const,
+    activity: (organizationId: string, customerId: string) => ["customers", organizationId, "activity", customerId] as const,
+  },
+  invoices: {
+    root: (organizationId: string) => ["invoices", organizationId] as const,
+    list: (organizationId: string, search = "") => ["invoices", organizationId, "list", search] as const,
+    open: (organizationId: string) => ["invoices", organizationId, "open"] as const,
+    overdue: (organizationId: string) => ["invoices", organizationId, "overdue"] as const,
+    detail: (organizationId: string, invoiceId: string) => ["invoices", organizationId, "detail", invoiceId] as const,
+    attachments: (organizationId: string, invoiceId: string) => ["invoices", organizationId, "attachments", invoiceId] as const,
+  },
+  journals: {
+    root: (organizationId: string) => ["journals", organizationId] as const,
+    list: (organizationId: string, search = "") => ["journals", organizationId, "list", search] as const,
+    detail: (organizationId: string, journalId: string) => ["journals", organizationId, "detail", journalId] as const,
+  },
+  periods: {
+    root: (organizationId: string) => ["periods", organizationId] as const,
+    list: (organizationId: string) => ["periods", organizationId, "list"] as const,
+    detail: (organizationId: string, periodId: string) => ["periods", organizationId, "detail", periodId] as const,
+  },
 };
