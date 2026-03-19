@@ -60,6 +60,7 @@ class InvoiceItemCreateRequest(BaseModel):
     item_code: str | None = None
     discount_percent: Decimal | None = None
     discount_amount: Decimal | None = None
+    tax_code_id: UUID | None = None
     line_tax_amount: Decimal = Decimal("0")
 
 
@@ -80,7 +81,9 @@ class InvoiceItemResponse(ORMModel):
     quantity: Decimal
     unit_price: Decimal
     account_id: UUID
+    tax_code_id: UUID | None = None
     line_subtotal: Decimal
+    line_taxable_amount: Decimal | None = None
     line_tax_amount: Decimal
     line_total: Decimal
 
@@ -93,6 +96,7 @@ class InvoiceCreateRequest(BaseModel):
     reference: str | None = None
     notes: str | None = None
     terms: str | None = None
+    prices_entered_are: str | None = None
     items: list[InvoiceItemCreateRequest] = Field(default_factory=list)
 
 
@@ -120,6 +124,7 @@ class InvoiceResponse(ORMModel):
     total_amount: Decimal
     amount_paid: Decimal
     amount_due: Decimal
+    prices_entered_are: str | None
     posted_journal_id: UUID | None
 
 
@@ -132,6 +137,7 @@ class CreditNoteItemCreateRequest(BaseModel):
     quantity: Decimal = Field(gt=0)
     unit_price: Decimal = Field(ge=0)
     account_id: UUID
+    tax_code_id: UUID | None = None
     line_tax_amount: Decimal = Decimal("0")
 
 
@@ -149,6 +155,7 @@ class CreditNoteItemResponse(ORMModel):
     description: str
     quantity: Decimal
     unit_price: Decimal
+    tax_code_id: UUID | None = None
     line_total: Decimal
 
 
@@ -158,6 +165,7 @@ class CreditNoteCreateRequest(BaseModel):
     currency_code: str
     related_invoice_id: UUID | None = None
     reason: str | None = None
+    prices_entered_are: str | None = None
     items: list[CreditNoteItemCreateRequest] = Field(default_factory=list)
 
 
@@ -179,6 +187,7 @@ class CreditNoteResponse(ORMModel):
     total_amount: Decimal
     unapplied_amount: Decimal
     posted_journal_id: UUID | None
+    prices_entered_are: str | None
 
 
 class CreditNoteListResponse(BaseModel):

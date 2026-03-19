@@ -1,7 +1,15 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import Organization, OrganizationSettings, OrganizationUser
+from app.db.models import (
+    BrandingSettings,
+    NumberingSettings,
+    Organization,
+    OrganizationNotificationSettings,
+    OrganizationPreferences,
+    OrganizationSettings,
+    OrganizationUser,
+)
 
 
 class OrganizationRepository:
@@ -12,8 +20,11 @@ class OrganizationRepository:
         org = Organization(**payload)
         self.db.add(org)
         self.db.flush()
-        settings = OrganizationSettings(organization_id=org.id)
-        self.db.add(settings)
+        self.db.add(OrganizationSettings(organization_id=org.id))
+        self.db.add(OrganizationPreferences(organization_id=org.id, default_locale="en_US", timezone=org.timezone, date_format="YYYY-MM-DD", number_format="1,234.56"))
+        self.db.add(BrandingSettings(organization_id=org.id))
+        self.db.add(NumberingSettings(organization_id=org.id))
+        self.db.add(OrganizationNotificationSettings(organization_id=org.id))
         self.db.flush()
         return org
 

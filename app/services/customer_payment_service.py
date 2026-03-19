@@ -5,6 +5,7 @@ from app.repositories.audit import AuditRepository
 from app.repositories.customer_payment_repository import CustomerPaymentRepository
 from app.services.customer_payment_posting_service import CustomerPaymentPostingService
 from app.services.payment_allocation_service import PaymentAllocationService
+from app.services.numbering_service import NumberingService
 
 
 class CustomerPaymentService:
@@ -12,9 +13,10 @@ class CustomerPaymentService:
         self.db = db
         self.payments = CustomerPaymentRepository(db)
         self.audit = AuditRepository(db)
+        self.numbering = NumberingService(db)
 
     def create(self, organization_id, actor_user_id, payload):
-        number = self.payments.next_number(organization_id)
+        number = self.numbering.next_number(organization_id, "payment")
         payment = self.payments.create(
             organization_id=organization_id,
             customer_id=payload["customer_id"],

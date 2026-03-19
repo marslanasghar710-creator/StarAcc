@@ -77,3 +77,176 @@ curl -X POST http://localhost:8000/organizations/$ORG_ID/bills/$BILL_ID/post \
 - `PATCH /organizations/{organization_id}/bank-transactions/{transaction_id}`
 - `POST /organizations/{organization_id}/bank-transactions/{transaction_id}/reconcile-journal`
 - `GET /organizations/{organization_id}/banking/cash-position`
+
+
+## Reporting core
+
+Reporting is ledger-first and organization-scoped:
+- Financial statements (Profit & Loss, Balance Sheet, Trial Balance, General Ledger, Account Statement) read only posted journal effects from the GL.
+- AR/AP aging reports read posted open-item state from the receivables/payables subledgers.
+- Every report run/export writes audit metadata (`report.generated`, `report.exported`) and persists lightweight `report_runs` / `report_exports` history rows.
+- Current-year earnings are presented as a computed Balance Sheet equity line until formal closing journals are introduced.
+- Export support is implemented for CSV and JSON. PDF is intentionally scaffolded and returns a not-yet-implemented error.
+
+### Reporting endpoints
+
+- `GET /organizations/{organization_id}/reports/profit-loss`
+- `GET /organizations/{organization_id}/reports/profit-loss/export`
+- `GET /organizations/{organization_id}/reports/balance-sheet`
+- `GET /organizations/{organization_id}/reports/balance-sheet/export`
+- `GET /organizations/{organization_id}/reports/trial-balance`
+- `GET /organizations/{organization_id}/reports/trial-balance/export`
+- `GET /organizations/{organization_id}/reports/general-ledger`
+- `GET /organizations/{organization_id}/reports/general-ledger/export`
+- `GET /organizations/{organization_id}/reports/accounts/{account_id}/statement`
+- `GET /organizations/{organization_id}/reports/accounts/{account_id}/statement/export`
+- `GET /organizations/{organization_id}/reports/aged-receivables`
+- `GET /organizations/{organization_id}/reports/aged-receivables/export`
+- `GET /organizations/{organization_id}/reports/aged-payables`
+- `GET /organizations/{organization_id}/reports/aged-payables/export`
+- `GET /organizations/{organization_id}/report-runs`
+- `GET /organizations/{organization_id}/report-runs/{report_run_id}`
+- `GET /organizations/{organization_id}/report-exports`
+- `GET /organizations/{organization_id}/report-exports/{export_id}`
+
+### Reporting curl examples
+
+```bash
+curl -G http://localhost:8000/organizations/$ORG_ID/reports/profit-loss   -H "Authorization: Bearer $ACCESS"   --data-urlencode from_date=2026-01-01   --data-urlencode to_date=2026-01-31   --data-urlencode compare_from_date=2025-01-01   --data-urlencode compare_to_date=2025-01-31
+
+curl -G http://localhost:8000/organizations/$ORG_ID/reports/balance-sheet/export   -H "Authorization: Bearer $ACCESS"   --data-urlencode as_of_date=2026-01-31   --data-urlencode export_format=csv   -o balance-sheet.csv
+
+curl -G http://localhost:8000/organizations/$ORG_ID/reports/general-ledger   -H "Authorization: Bearer $ACCESS"   --data-urlencode from_date=2026-01-01   --data-urlencode to_date=2026-01-31   --data-urlencode account_id=$ACCOUNT_ID
+
+curl -G http://localhost:8000/organizations/$ORG_ID/reports/accounts/$ACCOUNT_ID/statement/export   -H "Authorization: Bearer $ACCESS"   --data-urlencode from_date=2026-01-01   --data-urlencode to_date=2026-01-31   --data-urlencode export_format=json   -o account-statement.json
+
+curl -G http://localhost:8000/organizations/$ORG_ID/reports/aged-receivables   -H "Authorization: Bearer $ACCESS"   --data-urlencode as_of_date=2026-03-31   --data-urlencode detailed=true
+
+curl -G http://localhost:8000/organizations/$ORG_ID/reports/aged-payables/export   -H "Authorization: Bearer $ACCESS"   --data-urlencode as_of_date=2026-03-31   --data-urlencode detailed=true   --data-urlencode export_format=csv   -o aged-payables.csv
+```
+
+
+## Tax engine foundation
+
+The tax module adds reusable VAT/GST-style master data, calculation, posting, and reporting groundwork:
+- Organization-scoped `tax_settings`, `tax_rates`, `tax_codes`, `tax_code_components`, and `tax_transactions`.
+- Server-side tax calculation previews using deterministic Decimal math.
+- AR/AP posting integrations that preserve tax snapshots on document lines and post tax control lines into the general ledger.
+- Tax summary reporting from persisted `tax_transactions` with JSON/CSV export and PDF scaffold behavior.
+- Banking cash-coding groundwork is limited to tax capture/snapshot fields on bank transactions; full cash-coding journal generation remains future work.
+
+### Tax endpoints
+
+- `GET /organizations/{organization_id}/tax/settings`
+- `PATCH /organizations/{organization_id}/tax/settings`
+- `POST /organizations/{organization_id}/tax/rates`
+- `GET /organizations/{organization_id}/tax/rates`
+- `GET /organizations/{organization_id}/tax/rates/{tax_rate_id}`
+- `PATCH /organizations/{organization_id}/tax/rates/{tax_rate_id}`
+- `DELETE /organizations/{organization_id}/tax/rates/{tax_rate_id}`
+- `POST /organizations/{organization_id}/tax/codes`
+- `GET /organizations/{organization_id}/tax/codes`
+- `GET /organizations/{organization_id}/tax/codes/{tax_code_id}`
+- `PATCH /organizations/{organization_id}/tax/codes/{tax_code_id}`
+- `DELETE /organizations/{organization_id}/tax/codes/{tax_code_id}`
+- `POST /organizations/{organization_id}/tax/calculate-preview`
+- `GET /organizations/{organization_id}/tax/reports/summary`
+- `GET /organizations/{organization_id}/tax/reports/summary/export`
+- `GET /organizations/{organization_id}/tax/transactions`
+
+### Tax curl examples
+
+```bash
+curl -X PATCH http://localhost:8000/organizations/$ORG_ID/tax/settings   -H "Authorization: Bearer $ACCESS" -H 'content-type: application/json'   -d '{"tax_enabled":true,"prices_entered_are":"exclusive","default_output_tax_account_id":"'$OUTPUT_TAX_ACCOUNT_ID'","default_input_tax_account_id":"'$INPUT_TAX_ACCOUNT_ID'"}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/tax/rates   -H "Authorization: Bearer $ACCESS" -H 'content-type: application/json'   -d '{"name":"Standard VAT","code":"VAT20","percentage":"20.00","tax_type":"standard","scope":"both","report_group":"vat_standard"}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/tax/codes   -H "Authorization: Bearer $ACCESS" -H 'content-type: application/json'   -d '{"name":"VAT 20%","code":"VAT20","calculation_method":"percentage","applies_to":"both","components":[{"tax_rate_id":"'$TAX_RATE_ID'","sequence_number":1,"compound_on_previous":false}]}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/tax/calculate-preview   -H "Authorization: Bearer $ACCESS" -H 'content-type: application/json'   -d '{"lines":[{"description":"Subscription","quantity":"1","unit_price":"120.00","tax_code_id":"'$TAX_CODE_ID'","price_mode":"inclusive","usage":"sales"}]}'
+
+curl -G http://localhost:8000/organizations/$ORG_ID/tax/reports/summary   -H "Authorization: Bearer $ACCESS"   --data-urlencode from_date=2026-01-01   --data-urlencode to_date=2026-03-31
+```
+
+## Settings, documents, and notifications foundation
+
+This module adds the operational layer needed before frontend work begins:
+- Organization-scoped preferences, branding, numbering, and notification settings.
+- Stored file metadata plus local filesystem-backed binary storage abstraction.
+- Generic document links so one file can be attached to multiple business entities without changing accounting meaning.
+- Email templates, deterministic rendering, outbound email logs, and invoice send-email foundation.
+- In-app notifications with unread tracking and read acknowledgements.
+
+### Settings / document / notification endpoints
+
+- `GET /organizations/{organization_id}/settings/preferences`
+- `PATCH /organizations/{organization_id}/settings/preferences`
+- `GET /organizations/{organization_id}/settings/branding`
+- `PATCH /organizations/{organization_id}/settings/branding`
+- `GET /organizations/{organization_id}/settings/numbering`
+- `PATCH /organizations/{organization_id}/settings/numbering`
+- `GET /organizations/{organization_id}/settings/notifications`
+- `PATCH /organizations/{organization_id}/settings/notifications`
+- `GET /organizations/{organization_id}/users/me/notification-preferences`
+- `PATCH /organizations/{organization_id}/users/me/notification-preferences`
+- `POST /organizations/{organization_id}/files/upload`
+- `GET /organizations/{organization_id}/files`
+- `GET /organizations/{organization_id}/files/{file_id}`
+- `GET /organizations/{organization_id}/files/{file_id}/download`
+- `DELETE /organizations/{organization_id}/files/{file_id}`
+- `POST /organizations/{organization_id}/documents/links`
+- `GET /organizations/{organization_id}/documents/links`
+- `DELETE /organizations/{organization_id}/documents/links/{link_id}`
+- `GET /organizations/{organization_id}/documents/entity/{entity_type}/{entity_id}`
+- `POST /organizations/{organization_id}/email-templates`
+- `GET /organizations/{organization_id}/email-templates`
+- `GET /organizations/{organization_id}/email-templates/{template_id}`
+- `PATCH /organizations/{organization_id}/email-templates/{template_id}`
+- `DELETE /organizations/{organization_id}/email-templates/{template_id}`
+- `POST /organizations/{organization_id}/emails/send`
+- `GET /organizations/{organization_id}/emails`
+- `GET /organizations/{organization_id}/emails/{email_log_id}`
+- `POST /organizations/{organization_id}/invoices/{invoice_id}/send-email`
+- `GET /organizations/{organization_id}/notifications`
+- `GET /organizations/{organization_id}/notifications/unread-count`
+- `POST /organizations/{organization_id}/notifications/{notification_id}/read`
+- `POST /organizations/{organization_id}/notifications/read-all`
+
+### Settings / document / notification curl examples
+
+```bash
+curl -X PATCH http://localhost:8000/organizations/$ORG_ID/settings/preferences \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"default_locale":"en_GB","timezone":"America/New_York","date_format":"YYYY-MM-DD","number_format":"1,234.56","week_start_day":1}'
+
+curl -X PATCH http://localhost:8000/organizations/$ORG_ID/settings/numbering \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"invoice_prefix":"INV","next_invoice_number":1001,"bill_prefix":"BIL","next_bill_number":501}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/files/upload \
+  -H "Authorization: Bearer $ACCESS" \
+  -F upload=@./sample-invoice.pdf
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/documents/links \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"file_id":"'$FILE_ID'","entity_type":"invoice","entity_id":"'$INVOICE_ID'","label":"Vendor source document"}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/email-templates \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"template_type":"invoice_send","subject_template":"Invoice {{ invoice_number }}","body_template":"Hello {{ customer_name }}, amount due {{ amount_due }}","is_active":true}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/emails/send \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"to_email":"ops@example.com","subject":"Ops alert","body":"The nightly export completed successfully."}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/invoices/$INVOICE_ID/send-email \
+  -H "Authorization: Bearer $ACCESS"
+
+curl -G http://localhost:8000/organizations/$ORG_ID/notifications \
+  -H "Authorization: Bearer $ACCESS"
+```
