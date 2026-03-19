@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import CreditNoteStatus, InvoiceStatus, InvoiceType, PaymentStatus
@@ -76,6 +76,7 @@ class Invoice(Base, UUIDPKMixin, TimestampMixin):
     total_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     amount_paid: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     amount_due: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
+    prices_entered_are: Mapped[str | None] = mapped_column(String(20), nullable=True)
     reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     customer_po_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -111,9 +112,13 @@ class InvoiceItem(Base, UUIDPKMixin, TimestampMixin):
     tax_code_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     account_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
     tracking_category_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    tax_breakdown_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    line_taxable_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     line_subtotal: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
     line_tax_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     line_total: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
+    effective_tax_rate: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
+    tax_inclusive_flag: Mapped[bool] = mapped_column(nullable=False, default=False)
 
 
 class CreditNote(Base, UUIDPKMixin, TimestampMixin):
@@ -131,6 +136,7 @@ class CreditNote(Base, UUIDPKMixin, TimestampMixin):
     tax_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     total_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     unapplied_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
+    prices_entered_are: Mapped[str | None] = mapped_column(String(20), nullable=True)
     reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     related_invoice_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
@@ -153,9 +159,13 @@ class CreditNoteItem(Base, UUIDPKMixin, TimestampMixin):
     unit_price: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
     account_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
     tax_code_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    tax_breakdown_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    line_taxable_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     line_subtotal: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
     line_tax_amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     line_total: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
+    effective_tax_rate: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
+    tax_inclusive_flag: Mapped[bool] = mapped_column(nullable=False, default=False)
 
 
 class CustomerPayment(Base, UUIDPKMixin, TimestampMixin):

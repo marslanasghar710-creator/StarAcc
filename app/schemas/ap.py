@@ -60,6 +60,7 @@ class BillItemCreateRequest(BaseModel):
     item_code: str | None = None
     discount_percent: Decimal | None = None
     discount_amount: Decimal | None = None
+    tax_code_id: UUID | None = None
     line_tax_amount: Decimal = Decimal("0")
 
 
@@ -80,7 +81,9 @@ class BillItemResponse(ORMModel):
     quantity: Decimal
     unit_price: Decimal
     account_id: UUID
+    tax_code_id: UUID | None = None
     line_subtotal: Decimal
+    line_taxable_amount: Decimal | None = None
     line_tax_amount: Decimal
     line_total: Decimal
 
@@ -93,6 +96,7 @@ class BillCreateRequest(BaseModel):
     reference: str | None = None
     notes: str | None = None
     terms: str | None = None
+    prices_entered_are: str | None = None
     items: list[BillItemCreateRequest] = Field(default_factory=list)
 
 
@@ -120,6 +124,7 @@ class BillResponse(ORMModel):
     total_amount: Decimal
     amount_paid: Decimal
     amount_due: Decimal
+    prices_entered_are: str | None
     posted_journal_id: UUID | None
 
 
@@ -132,6 +137,7 @@ class SupplierCreditItemCreateRequest(BaseModel):
     quantity: Decimal = Field(gt=0)
     unit_price: Decimal = Field(ge=0)
     account_id: UUID
+    tax_code_id: UUID | None = None
     line_tax_amount: Decimal = Decimal("0")
 
 
@@ -149,6 +155,7 @@ class SupplierCreditItemResponse(ORMModel):
     description: str
     quantity: Decimal
     unit_price: Decimal
+    tax_code_id: UUID | None = None
     line_total: Decimal
 
 
@@ -158,6 +165,7 @@ class SupplierCreditCreateRequest(BaseModel):
     currency_code: str
     related_bill_id: UUID | None = None
     reason: str | None = None
+    prices_entered_are: str | None = None
     items: list[SupplierCreditItemCreateRequest] = Field(default_factory=list)
 
 
@@ -179,6 +187,7 @@ class SupplierCreditResponse(ORMModel):
     total_amount: Decimal
     unapplied_amount: Decimal
     posted_journal_id: UUID | None
+    prices_entered_are: str | None
 
 
 class SupplierCreditListResponse(BaseModel):
