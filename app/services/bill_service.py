@@ -13,6 +13,11 @@ from app.repositories.bill_repository import BillRepository
 from app.repositories.supplier_repository import SupplierRepository
 from app.services.bill_calculation_service import BillCalculationService
 from app.services.bill_posting_service import BillPostingService
+from app.services.tax_calculation_service import TaxCalculationService
+from app.services.branding_service import BrandingService
+from app.services.numbering_service import NumberingService
+from app.services.tax_settings_service import TaxSettingsService
+from app.core.enums import TaxCodeAppliesTo
 
 
 class BillService:
@@ -22,6 +27,10 @@ class BillService:
         self.suppliers = SupplierRepository(db)
         self.accounts = AccountRepository(db)
         self.audit = AuditRepository(db)
+        self.tax = TaxCalculationService(db)
+        self.tax_settings = TaxSettingsService(db)
+        self.branding = BrandingService(db)
+        self.numbering = NumberingService(db)
 
     def create(self, organization_id, actor_user_id, payload):
         if payload["due_date"] < payload["issue_date"]:
@@ -29,7 +38,7 @@ class BillService:
         supplier = self.suppliers.get(organization_id, payload["supplier_id"])
         if not supplier:
             raise not_found("Supplier not found")
-        number = self.bills.next_number(organization_id)
+        number = self.numbering.next_number(organization_id, "bill")
         bill = self.bills.create(
             organization_id=organization_id,
             supplier_id=payload["supplier_id"],
@@ -39,7 +48,8 @@ class BillService:
             currency_code=payload["currency_code"],
             reference=payload.get("reference"),
             notes=payload.get("notes"),
-            terms=payload.get("terms"),
+            terms=payload.get("terms") or self.branding.get_or_create(organization_id).bill_terms_default,
+            prices_entered_are=payload.get("prices_entered_are") or self.tax_settings.get_or_create(organization_id).prices_entered_are.value,
             created_by_user_id=actor_user_id,
             amount_paid=Decimal("0"),
             amount_due=Decimal("0"),
@@ -61,7 +71,15 @@ class BillService:
         if not account or not account.is_postable or not account.is_active:
             raise forbidden("Invalid account for bill item")
         src = item if isinstance(item, dict) else item.__dict__
-        subtotal, tax, total = BillCalculationService.calculate_line(src["quantity"], src["unit_price"], src.get("discount_percent"), src.get("discount_amount"), src.get("line_tax_amount", 0))
+        calc = self.tax.calculate_line(
+            organization_id,
+            quantity=src["quantity"],
+            unit_price=src["unit_price"],
+            discount_percent=src.get("discount_percent"),
+            discount_amount=src.get("discount_amount"),
+            tax_code_id=src.get("tax_code_id"),
+            usage=TaxCodeAppliesTo.PURCHASES,
+        )
         line_number = line_number or (len(self.bills.list_items(bill_id)) + 1)
         self.bills.create_item(
             bill_id=bill_id,
@@ -73,11 +91,15 @@ class BillService:
             unit_price=src["unit_price"],
             discount_percent=src.get("discount_percent"),
             discount_amount=src.get("discount_amount"),
-            tax_code_id=None,
+            tax_code_id=src.get("tax_code_id"),
             account_id=src["account_id"],
-            line_subtotal=subtotal,
-            line_tax_amount=tax,
-            line_total=total,
+            tax_breakdown_json=calc.tax_breakdown,
+            line_taxable_amount=calc.taxable_amount,
+            line_subtotal=calc.taxable_amount,
+            line_tax_amount=calc.tax_amount,
+            line_total=calc.gross_amount,
+            effective_tax_rate=calc.effective_tax_rate,
+            tax_inclusive_flag=calc.tax_inclusive,
         )
 
     def _recalc(self, bill):

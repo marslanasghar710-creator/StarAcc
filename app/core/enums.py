@@ -123,3 +123,124 @@ class BankTransactionType(StrEnum):
 class BankTransactionStatus(StrEnum):
     UNRECONCILED = "unreconciled"
     RECONCILED = "reconciled"
+
+
+class ReportType(StrEnum):
+    PROFIT_LOSS = "profit_loss"
+    BALANCE_SHEET = "balance_sheet"
+    TRIAL_BALANCE = "trial_balance"
+    GENERAL_LEDGER = "general_ledger"
+    ACCOUNT_STATEMENT = "account_statement"
+    AGED_RECEIVABLES = "aged_receivables"
+    AGED_PAYABLES = "aged_payables"
+
+
+class ReportExportFormat(StrEnum):
+    JSON = "json"
+    CSV = "csv"
+    PDF = "pdf"
+
+
+class ReportRunStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class TaxBasis(StrEnum):
+    ACCRUAL = "accrual"
+    CASH_SCAFFOLD = "cash_scaffold"
+
+
+class PricesEnteredAre(StrEnum):
+    EXCLUSIVE = "exclusive"
+    INCLUSIVE = "inclusive"
+    EITHER = "either"
+
+
+class TaxRoundingMethod(StrEnum):
+    LINE = "line"
+    DOCUMENT = "document"
+
+
+class TaxPeriodicity(StrEnum):
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    ANNUALLY = "annually"
+    NONE = "none"
+
+
+class TaxType(StrEnum):
+    STANDARD = "standard"
+    REDUCED = "reduced"
+    ZERO = "zero"
+    EXEMPT = "exempt"
+    OUT_OF_SCOPE = "out_of_scope"
+    REVERSE_CHARGE_SCAFFOLD = "reverse_charge_scaffold"
+
+
+class TaxScope(StrEnum):
+    SALES = "sales"
+    PURCHASES = "purchases"
+    BOTH = "both"
+
+
+class TaxCodeAppliesTo(StrEnum):
+    SALES = "sales"
+    PURCHASES = "purchases"
+    BOTH = "both"
+
+
+class TaxCalculationMethod(StrEnum):
+    PERCENTAGE = "percentage"
+    EXEMPT = "exempt"
+    OUT_OF_SCOPE = "out_of_scope"
+    REVERSE_CHARGE_SCAFFOLD = "reverse_charge_scaffold"
+
+
+class TaxPriceInclusiveBehavior(StrEnum):
+    EXCLUSIVE = "exclusive"
+    INCLUSIVE = "inclusive"
+    INHERIT_ORGANIZATION_DEFAULT = "inherit_organization_default"
+
+
+class TaxTransactionDirection(StrEnum):
+    OUTPUT = "output"
+    INPUT = "input"
+    NEUTRAL = "neutral"
+
+
+class FileStorageProvider(StrEnum):
+    LOCAL = "local"
+    S3_SCAFFOLD = "s3_scaffold"
+    GCS_SCAFFOLD = "gcs_scaffold"
+
+
+class FileStatus(StrEnum):
+    ACTIVE = "active"
+    DELETED = "deleted"
+    QUARANTINED_SCAFFOLD = "quarantined_scaffold"
+
+
+class EmailTemplateType(StrEnum):
+    INVOICE_SEND = "invoice_send"
+    INVOICE_REMINDER = "invoice_reminder"
+    PAYMENT_RECEIPT = "payment_receipt"
+    REPORT_EXPORT = "report_export"
+    GENERIC_NOTIFICATION = "generic_notification"
+
+
+class EmailStatus(StrEnum):
+    QUEUED = "queued"
+    SENT = "sent"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class NotificationType(StrEnum):
+    INVOICE_SENT = "invoice_sent"
+    PAYMENT_RECEIVED = "payment_received"
+    BANK_IMPORT_COMPLETED = "bank_import_completed"
+    RECONCILIATION_NEEDED = "reconciliation_needed"
+    REPORT_EXPORT_READY = "report_export_ready"
+    GENERIC = "generic"

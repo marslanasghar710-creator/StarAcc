@@ -11,6 +11,8 @@ from app.db.models import AccountingSettings
 from app.repositories.audit import AuditRepository
 from app.repositories.supplier_credit_repository import SupplierCreditRepository
 from app.services.journal_service import JournalService
+from app.services.tax_posting_integration_service import TaxPostingIntegrationService
+from app.core.enums import TaxTransactionDirection
 
 
 class SupplierCreditPostingService:
@@ -18,6 +20,7 @@ class SupplierCreditPostingService:
         self.db = db
         self.supplier_credits = SupplierCreditRepository(db)
         self.audit = AuditRepository(db)
+        self.tax = TaxPostingIntegrationService(db)
 
     def post(self, organization_id, supplier_credit_id, actor_user_id):
         credit = self.supplier_credits.get(organization_id, supplier_credit_id)
@@ -35,9 +38,13 @@ class SupplierCreditPostingService:
         if not lines:
             raise forbidden("Supplier credit requires at least one line")
 
+        tax_total = sum((Decimal(line.line_tax_amount or 0) for line in lines), Decimal("0"))
+        tax_account_id = self.tax.control_account_id(organization_id, TaxTransactionDirection.INPUT, tax_total)
         journal_lines = [{"account_id": settings.accounts_payable_control_account_id, "description": f"Supplier credit {credit.supplier_credit_number}", "debit_amount": Decimal(credit.total_amount), "credit_amount": Decimal("0"), "currency_code": credit.currency_code, "exchange_rate": credit.exchange_rate}]
         for line in lines:
-            journal_lines.append({"account_id": line.account_id, "description": line.description, "debit_amount": Decimal("0"), "credit_amount": Decimal(line.line_total), "currency_code": credit.currency_code, "exchange_rate": credit.exchange_rate})
+            journal_lines.append({"account_id": line.account_id, "description": line.description, "debit_amount": Decimal("0"), "credit_amount": Decimal(line.line_taxable_amount or line.line_subtotal), "currency_code": credit.currency_code, "exchange_rate": credit.exchange_rate})
+        if tax_total > 0:
+            journal_lines.append({"account_id": tax_account_id, "description": f"Input tax reversal {credit.supplier_credit_number}", "debit_amount": Decimal("0"), "credit_amount": tax_total, "currency_code": credit.currency_code, "exchange_rate": credit.exchange_rate})
 
         payload = {
             "entry_date": credit.issue_date,
@@ -55,6 +62,19 @@ class SupplierCreditPostingService:
         credit.posted_at = datetime.now(UTC)
         credit.status = SupplierCreditStatus.POSTED
         credit.unapplied_amount = Decimal(credit.total_amount)
+        self.tax.create_transactions(
+            organization_id=organization_id,
+            source_module="accounts_payable",
+            source_type="supplier_credit",
+            source_id=credit.id,
+            journal_entry_id=journal.id,
+            transaction_date=credit.issue_date,
+            currency_code=credit.currency_code,
+            direction=TaxTransactionDirection.INPUT,
+            tax_account_id=tax_account_id,
+            lines=lines,
+            sign=Decimal("-1"),
+        )
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="supplier_credit.posted", entity_type="supplier_credit", entity_id=str(credit.id))
         self.db.commit()
         return credit
