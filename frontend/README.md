@@ -4,7 +4,7 @@ Production-grade frontend foundation for the StarAcc accounting platform.
 
 ## Scope in this milestone
 
-This frontend layer intentionally focuses on platform foundations only:
+This frontend layer now includes the first real accounting workflows for:
 
 - authenticated app shell
 - login/register UI
@@ -12,10 +12,12 @@ This frontend layer intentionally focuses on platform foundations only:
 - active organization switching
 - permission-aware navigation and rendering
 - notifications inbox and unread count wiring
-- dashboard shell with real backend integration where practical
-- placeholder protected routes for later accounting modules
+- chart of accounts list/detail/create/edit/archive flows
+- manual journal list/detail/create/edit workflows
+- journal posting and reversal actions
+- financial period visibility in journal workflows
 
-Detailed accounting workflows are **not** implemented here yet.
+Detailed invoice, bill, banking, reporting, and tax workflows remain out of scope for this milestone.
 
 ## Stack
 
@@ -29,6 +31,7 @@ Detailed accounting workflows are **not** implemented here yet.
 - lucide-react
 - next-themes
 - sonner
+- Vitest + Testing Library for focused UI/unit tests
 
 ## Getting started
 
@@ -57,11 +60,20 @@ pnpm build
 pnpm start
 pnpm lint
 pnpm typecheck
+pnpm test
 ```
+
+## Accounting routes added
+
+- `/accounts`
+- `/accounts/[accountId]`
+- `/journals`
+- `/journals/new`
+- `/journals/[journalId]`
 
 ## Backend assumptions and adapters
 
-This frontend uses the backend contracts already present in the repository and adds a small adapter layer where payloads are more primitive than the UI needs.
+This frontend uses the backend contracts already present in the repository and adds adapter logic where payloads are narrower or use snake_case naming.
 
 ### Auth
 
@@ -93,37 +105,61 @@ Used endpoints:
 - `POST /organizations/{organization_id}/notifications/{notification_id}/read`
 - `POST /organizations/{organization_id}/notifications/read-all`
 
-### Permissions adapter
+### Accounts
 
-`GET /auth/me` currently returns organization memberships with `role` as a role UUID, not a flattened permission list.
+Used endpoints:
 
-To keep the UI permission-aware without hardcoding permissions inside pages:
+- `GET /organizations/{organization_id}/accounts`
+- `GET /organizations/{organization_id}/accounts/search`
+- `GET /organizations/{organization_id}/accounts/{account_id}`
+- `POST /organizations/{organization_id}/accounts`
+- `PATCH /organizations/{organization_id}/accounts/{account_id}`
+- `DELETE /organizations/{organization_id}/accounts/{account_id}`
+- `GET /organizations/{organization_id}/accounts/{account_id}/balance`
+- `GET /organizations/{organization_id}/accounts/{account_id}/ledger`
 
-1. the frontend also calls `GET /roles`
-2. it maps role IDs to role names
-3. it normalizes permissions from the seeded role defaults in `scripts/seed_rbac.py`
+### Journals
 
-This is a deliberate adapter layer until the backend exposes effective permissions directly.
+Used endpoints:
 
-## Session storage strategy
+- `GET /organizations/{organization_id}/journals`
+- `GET /organizations/{organization_id}/journals/search`
+- `GET /organizations/{organization_id}/journals/{journal_id}`
+- `POST /organizations/{organization_id}/journals`
+- `PATCH /organizations/{organization_id}/journals/{journal_id}`
+- `POST /organizations/{organization_id}/journals/{journal_id}/post`
+- `POST /organizations/{organization_id}/journals/{journal_id}/reverse`
+- `POST /organizations/{organization_id}/journals/{journal_id}/void`
 
-This implementation uses a thin client-side session abstraction:
+### Periods
 
-- access token stored in local storage or session storage based on "remember me"
-- refresh token stored alongside it using the same persistence choice
-- API client attaches bearer tokens centrally
-- on `401`, the client attempts a single refresh and retries the request
+Used endpoints:
 
-This keeps token handling out of page components and is designed to be replaceable later if the backend moves fully to secure cookie-based refresh sessions.
+- `GET /organizations/{organization_id}/periods`
+- `GET /organizations/{organization_id}/periods/{period_id}`
+
+### Journal detail adapter note
+
+The backend router/schema in this repository currently documents `JournalResponse` as a summary object and does not formally include `lines`, `reference`, or some audit metadata fields even though the underlying model contains them.
+
+The frontend therefore:
+
+1. accepts richer detail responses if they are present
+2. renders journal lines automatically when `lines` are returned
+3. shows a clear “line detail unavailable” state when the current backend response is summary-only
+4. avoids unsafe draft editing when line data is unavailable
+
+This keeps the backend as source of truth while remaining compatible with evolving API detail shapes.
 
 ## Permission UX approach
 
-Navigation is **hidden** when the current role lacks the required permission for a module.
+Navigation is hidden when the current role lacks the required permission for a module.
 
 Route/page access still fails safely:
 
 - protected routes require authentication
 - page-level components render access-denied UI when the user lacks the required permission
+- action buttons only appear when the current role allows the action
 - backend authorization remains the source of truth
 
 ## Project structure
@@ -134,6 +170,8 @@ frontend/
     app/
       (auth)/
       (app)/
+        accounts/
+        journals/
     components/
       auth/
       feedback/
@@ -145,23 +183,28 @@ frontend/
       shared/
       ui/
     features/
+      accounts/
       auth/
+      journals/
       notifications/
       organizations/
+      periods/
       permissions/
     lib/
+      accounting/
       api/
       auth/
       permissions/
       env/
       formatters/
     providers/
-    hooks/
+    test/
     types/
 ```
 
 ## Notes
 
-- The dashboard intentionally avoids fake accounting metrics and instead surfaces backend-driven organization and notification context.
-- The placeholder module pages exist so later prompts can replace content incrementally without rebuilding shell, auth, or permission infrastructure.
-- The UI is organization-aware first: switching organizations invalidates scoped queries so later feature modules can layer on that behavior consistently.
+- Draft totals and balance indicators are advisory only; backend validation remains authoritative.
+- Period state is visible throughout journal workflows, but period mutation UI is intentionally out of scope.
+- Archive, post, reverse, and void actions all refetch backend state after successful mutations.
+- This implementation favors dense, audit-friendly tables and metadata layouts over marketing-style presentation.

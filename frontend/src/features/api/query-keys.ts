@@ -15,4 +15,21 @@ export const queryKeys = {
     list: (organizationId: string) => ["notifications", organizationId, "list"] as const,
     unreadCount: (organizationId: string) => ["notifications", organizationId, "unread-count"] as const,
   },
+  accounts: {
+    root: (organizationId: string) => ["accounts", organizationId] as const,
+    list: (organizationId: string, search = "") => ["accounts", organizationId, "list", search] as const,
+    detail: (organizationId: string, accountId: string) => ["accounts", organizationId, "detail", accountId] as const,
+    balance: (organizationId: string, accountId: string) => ["accounts", organizationId, "balance", accountId] as const,
+    ledger: (organizationId: string, accountId: string) => ["accounts", organizationId, "ledger", accountId] as const,
+  },
+  journals: {
+    root: (organizationId: string) => ["journals", organizationId] as const,
+    list: (organizationId: string, search = "") => ["journals", organizationId, "list", search] as const,
+    detail: (organizationId: string, journalId: string) => ["journals", organizationId, "detail", journalId] as const,
+  },
+  periods: {
+    root: (organizationId: string) => ["periods", organizationId] as const,
+    list: (organizationId: string) => ["periods", organizationId, "list"] as const,
+    detail: (organizationId: string, periodId: string) => ["periods", organizationId, "detail", periodId] as const,
+  },
 };

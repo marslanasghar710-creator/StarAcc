@@ -69,6 +69,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       }
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
       void queryClient.invalidateQueries({ queryKey: ["organizations", organizationId] });
+      void queryClient.invalidateQueries({ queryKey: ["accounts", organizationId] });
+      void queryClient.invalidateQueries({ queryKey: ["journals", organizationId] });
+      void queryClient.invalidateQueries({ queryKey: ["periods", organizationId] });
     },
     [queryClient],
   );
