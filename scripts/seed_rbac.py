@@ -89,6 +89,19 @@ AP_PERMISSIONS = [
 ]
 
 
+
+
+REPORTING_PERMISSIONS = [
+    "reports.profit_loss.read",
+    "reports.balance_sheet.read",
+    "reports.trial_balance.read",
+    "reports.general_ledger.read",
+    "reports.account_statement.read",
+    "reports.aged_receivables.read",
+    "reports.aged_payables.read",
+    "reports.export",
+]
+
 BANKING_PERMISSIONS = [
     "bank_accounts.create",
     "bank_accounts.read",
@@ -99,14 +112,14 @@ BANKING_PERMISSIONS = [
     "bank_reconciliation.read",
     "bank_reconciliation.reconcile",
 ]
-PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS + AR_PERMISSIONS + AP_PERMISSIONS + BANKING_PERMISSIONS
+PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS + AR_PERMISSIONS + AP_PERMISSIONS + REPORTING_PERMISSIONS + BANKING_PERMISSIONS
 
 ROLE_DEFAULTS = {
     "owner": PERMISSIONS,
     "admin": [p for p in PERMISSIONS if p != "periods.reopen"],
     "accountant": [p for p in PERMISSIONS if p not in {"org.delete", "periods.reopen"}],
     "staff": ["org.read", "customers.read", "invoices.create", "invoices.read", "invoices.update", "invoices.send", "suppliers.read", "bills.create", "bills.read", "bills.update", "accounts.read", "journals.read", "ledger.read", "bank_accounts.read", "bank_transactions.create", "bank_transactions.read", "bank_reconciliation.read"],
-    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "suppliers.read", "bills.read", "supplier_credits.read", "supplier_payments.read", "ar.read", "ar_aging.read", "ap.read", "ap_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read", "bank_accounts.read", "bank_transactions.read", "bank_reconciliation.read"],
+    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "suppliers.read", "bills.read", "supplier_credits.read", "supplier_payments.read", "ar.read", "ar_aging.read", "ap.read", "ap_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read", "reports.profit_loss.read", "reports.balance_sheet.read", "reports.trial_balance.read", "reports.general_ledger.read", "reports.account_statement.read", "reports.aged_receivables.read", "reports.aged_payables.read", "bank_accounts.read", "bank_transactions.read", "bank_reconciliation.read"],
 }
 
 
