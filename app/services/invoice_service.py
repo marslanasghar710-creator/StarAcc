@@ -14,6 +14,8 @@ from app.repositories.invoice_repository import InvoiceRepository
 from app.services.invoice_calculation_service import InvoiceCalculationService
 from app.services.invoice_posting_service import InvoicePostingService
 from app.services.tax_calculation_service import TaxCalculationService
+from app.services.branding_service import BrandingService
+from app.services.numbering_service import NumberingService
 from app.services.tax_settings_service import TaxSettingsService
 from app.core.enums import TaxCodeAppliesTo
 
@@ -27,6 +29,8 @@ class InvoiceService:
         self.audit = AuditRepository(db)
         self.tax = TaxCalculationService(db)
         self.tax_settings = TaxSettingsService(db)
+        self.branding = BrandingService(db)
+        self.numbering = NumberingService(db)
 
     def create(self, organization_id, actor_user_id, payload):
         if payload["due_date"] < payload["issue_date"]:
@@ -34,7 +38,7 @@ class InvoiceService:
         customer = self.customers.get(organization_id, payload["customer_id"])
         if not customer:
             raise not_found("Customer not found")
-        number = self.invoices.next_number(organization_id)
+        number = self.numbering.next_number(organization_id, "invoice")
         invoice = self.invoices.create(
             organization_id=organization_id,
             customer_id=payload["customer_id"],
@@ -44,7 +48,7 @@ class InvoiceService:
             currency_code=payload["currency_code"],
             reference=payload.get("reference"),
             notes=payload.get("notes"),
-            terms=payload.get("terms"),
+            terms=payload.get("terms") or self.branding.get_or_create(organization_id).invoice_terms_default,
             prices_entered_are=payload.get("prices_entered_are") or self.tax_settings.get_or_create(organization_id).prices_entered_are.value,
             created_by_user_id=actor_user_id,
             amount_paid=Decimal("0"),

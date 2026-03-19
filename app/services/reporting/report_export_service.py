@@ -10,7 +10,9 @@ from fastapi import HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.core.enums import ReportExportFormat
+from app.core.enums import NotificationType, ReportExportFormat
+from app.services.notification_preference_service import NotificationPreferenceService
+from app.services.notification_service import NotificationService
 from app.services.reporting.report_context_service import ReportContextService
 
 
@@ -18,6 +20,8 @@ class ReportExportService:
     def __init__(self, db: Session):
         self.db = db
         self.contexts = ReportContextService(db)
+        self.notification_preferences = NotificationPreferenceService(db)
+        self.notifications = NotificationService(db)
 
     def _normalize_value(self, value: Any) -> str:
         if isinstance(value, dict):
@@ -86,6 +90,18 @@ class ReportExportService:
         else:
             raise HTTPException(status_code=501, detail="PDF export scaffold is not implemented yet")
         self.contexts.persist_export(context=context, report_run_id=run.id, export_format=export_format, file_name=file_name)
+        if generated_by_user_id and self.notification_preferences.get_or_create_org(organization_id).report_export_notifications_enabled:
+            self.notifications.maybe_create_event(
+                organization_id,
+                generated_by_user_id,
+                user_id=generated_by_user_id,
+                event_category="report",
+                notification_type=NotificationType.REPORT_EXPORT_READY,
+                title="Report export ready",
+                message=f"{report_type.value} export {file_name} is ready.",
+                entity_type="report_export",
+                entity_id=str(run.id),
+            )
         self.db.commit()
         return Response(
             content=content,

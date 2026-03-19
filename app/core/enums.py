@@ -208,3 +208,39 @@ class TaxTransactionDirection(StrEnum):
     OUTPUT = "output"
     INPUT = "input"
     NEUTRAL = "neutral"
+
+
+class FileStorageProvider(StrEnum):
+    LOCAL = "local"
+    S3_SCAFFOLD = "s3_scaffold"
+    GCS_SCAFFOLD = "gcs_scaffold"
+
+
+class FileStatus(StrEnum):
+    ACTIVE = "active"
+    DELETED = "deleted"
+    QUARANTINED_SCAFFOLD = "quarantined_scaffold"
+
+
+class EmailTemplateType(StrEnum):
+    INVOICE_SEND = "invoice_send"
+    INVOICE_REMINDER = "invoice_reminder"
+    PAYMENT_RECEIPT = "payment_receipt"
+    REPORT_EXPORT = "report_export"
+    GENERIC_NOTIFICATION = "generic_notification"
+
+
+class EmailStatus(StrEnum):
+    QUEUED = "queued"
+    SENT = "sent"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class NotificationType(StrEnum):
+    INVOICE_SENT = "invoice_sent"
+    PAYMENT_RECEIVED = "payment_received"
+    BANK_IMPORT_COMPLETED = "bank_import_completed"
+    RECONCILIATION_NEEDED = "reconciliation_needed"
+    REPORT_EXPORT_READY = "report_export_ready"
+    GENERIC = "generic"

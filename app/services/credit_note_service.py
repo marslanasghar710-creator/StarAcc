@@ -11,6 +11,7 @@ from app.repositories.audit import AuditRepository
 from app.repositories.credit_note_repository import CreditNoteRepository
 from app.services.credit_note_calculation_service import CreditNoteCalculationService
 from app.services.credit_note_posting_service import CreditNotePostingService
+from app.services.numbering_service import NumberingService
 from app.services.tax_calculation_service import TaxCalculationService
 from app.services.tax_settings_service import TaxSettingsService
 from app.core.enums import TaxCodeAppliesTo
@@ -23,9 +24,10 @@ class CreditNoteService:
         self.audit = AuditRepository(db)
         self.tax = TaxCalculationService(db)
         self.tax_settings = TaxSettingsService(db)
+        self.numbering = NumberingService(db)
 
     def create(self, organization_id, actor_user_id, payload):
-        number = self.credit_notes.next_number(organization_id)
+        number = self.numbering.next_number(organization_id, "credit_note")
         note = self.credit_notes.create(
             organization_id=organization_id,
             customer_id=payload["customer_id"],

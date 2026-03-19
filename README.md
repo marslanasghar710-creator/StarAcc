@@ -167,3 +167,86 @@ curl -X POST http://localhost:8000/organizations/$ORG_ID/tax/calculate-preview  
 
 curl -G http://localhost:8000/organizations/$ORG_ID/tax/reports/summary   -H "Authorization: Bearer $ACCESS"   --data-urlencode from_date=2026-01-01   --data-urlencode to_date=2026-03-31
 ```
+
+## Settings, documents, and notifications foundation
+
+This module adds the operational layer needed before frontend work begins:
+- Organization-scoped preferences, branding, numbering, and notification settings.
+- Stored file metadata plus local filesystem-backed binary storage abstraction.
+- Generic document links so one file can be attached to multiple business entities without changing accounting meaning.
+- Email templates, deterministic rendering, outbound email logs, and invoice send-email foundation.
+- In-app notifications with unread tracking and read acknowledgements.
+
+### Settings / document / notification endpoints
+
+- `GET /organizations/{organization_id}/settings/preferences`
+- `PATCH /organizations/{organization_id}/settings/preferences`
+- `GET /organizations/{organization_id}/settings/branding`
+- `PATCH /organizations/{organization_id}/settings/branding`
+- `GET /organizations/{organization_id}/settings/numbering`
+- `PATCH /organizations/{organization_id}/settings/numbering`
+- `GET /organizations/{organization_id}/settings/notifications`
+- `PATCH /organizations/{organization_id}/settings/notifications`
+- `GET /organizations/{organization_id}/users/me/notification-preferences`
+- `PATCH /organizations/{organization_id}/users/me/notification-preferences`
+- `POST /organizations/{organization_id}/files/upload`
+- `GET /organizations/{organization_id}/files`
+- `GET /organizations/{organization_id}/files/{file_id}`
+- `GET /organizations/{organization_id}/files/{file_id}/download`
+- `DELETE /organizations/{organization_id}/files/{file_id}`
+- `POST /organizations/{organization_id}/documents/links`
+- `GET /organizations/{organization_id}/documents/links`
+- `DELETE /organizations/{organization_id}/documents/links/{link_id}`
+- `GET /organizations/{organization_id}/documents/entity/{entity_type}/{entity_id}`
+- `POST /organizations/{organization_id}/email-templates`
+- `GET /organizations/{organization_id}/email-templates`
+- `GET /organizations/{organization_id}/email-templates/{template_id}`
+- `PATCH /organizations/{organization_id}/email-templates/{template_id}`
+- `DELETE /organizations/{organization_id}/email-templates/{template_id}`
+- `POST /organizations/{organization_id}/emails/send`
+- `GET /organizations/{organization_id}/emails`
+- `GET /organizations/{organization_id}/emails/{email_log_id}`
+- `POST /organizations/{organization_id}/invoices/{invoice_id}/send-email`
+- `GET /organizations/{organization_id}/notifications`
+- `GET /organizations/{organization_id}/notifications/unread-count`
+- `POST /organizations/{organization_id}/notifications/{notification_id}/read`
+- `POST /organizations/{organization_id}/notifications/read-all`
+
+### Settings / document / notification curl examples
+
+```bash
+curl -X PATCH http://localhost:8000/organizations/$ORG_ID/settings/preferences \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"default_locale":"en_GB","timezone":"America/New_York","date_format":"YYYY-MM-DD","number_format":"1,234.56","week_start_day":1}'
+
+curl -X PATCH http://localhost:8000/organizations/$ORG_ID/settings/numbering \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"invoice_prefix":"INV","next_invoice_number":1001,"bill_prefix":"BIL","next_bill_number":501}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/files/upload \
+  -H "Authorization: Bearer $ACCESS" \
+  -F upload=@./sample-invoice.pdf
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/documents/links \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"file_id":"'$FILE_ID'","entity_type":"invoice","entity_id":"'$INVOICE_ID'","label":"Vendor source document"}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/email-templates \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"template_type":"invoice_send","subject_template":"Invoice {{ invoice_number }}","body_template":"Hello {{ customer_name }}, amount due {{ amount_due }}","is_active":true}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/emails/send \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{"to_email":"ops@example.com","subject":"Ops alert","body":"The nightly export completed successfully."}'
+
+curl -X POST http://localhost:8000/organizations/$ORG_ID/invoices/$INVOICE_ID/send-email \
+  -H "Authorization: Bearer $ACCESS"
+
+curl -G http://localhost:8000/organizations/$ORG_ID/notifications \
+  -H "Authorization: Bearer $ACCESS"
+```

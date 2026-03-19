@@ -11,6 +11,7 @@ from app.repositories.audit import AuditRepository
 from app.repositories.supplier_credit_repository import SupplierCreditRepository
 from app.services.supplier_credit_calculation_service import SupplierCreditCalculationService
 from app.services.supplier_credit_posting_service import SupplierCreditPostingService
+from app.services.numbering_service import NumberingService
 from app.services.tax_calculation_service import TaxCalculationService
 from app.services.tax_settings_service import TaxSettingsService
 from app.core.enums import TaxCodeAppliesTo
@@ -23,9 +24,10 @@ class SupplierCreditService:
         self.audit = AuditRepository(db)
         self.tax = TaxCalculationService(db)
         self.tax_settings = TaxSettingsService(db)
+        self.numbering = NumberingService(db)
 
     def create(self, organization_id, actor_user_id, payload):
-        number = self.supplier_credits.next_number(organization_id)
+        number = self.numbering.next_number(organization_id, "supplier_credit")
         credit = self.supplier_credits.create(
             organization_id=organization_id,
             supplier_id=payload["supplier_id"],

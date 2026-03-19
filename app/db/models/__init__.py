@@ -6,6 +6,18 @@ from app.db.models.banking import BankAccount, BankTransaction
 from app.db.models.invitation import Invitation
 from app.db.models.membership import OrganizationUser
 from app.db.models.organization import Organization, OrganizationSettings
+from app.db.models.settings import (
+    BrandingSettings,
+    DocumentLink,
+    EmailLog,
+    EmailTemplate,
+    InAppNotification,
+    NumberingSettings,
+    OrganizationNotificationSettings,
+    OrganizationPreferences,
+    StoredFile,
+    UserNotificationPreference,
+)
 from app.db.models.rbac import Permission, Role, RolePermission
 from app.db.models.reporting import ReportExport, ReportRun
 from app.db.models.session import Session
@@ -32,6 +44,16 @@ __all__ = [
     "UserProfile",
     "Organization",
     "OrganizationSettings",
+    "OrganizationPreferences",
+    "BrandingSettings",
+    "NumberingSettings",
+    "OrganizationNotificationSettings",
+    "UserNotificationPreference",
+    "StoredFile",
+    "DocumentLink",
+    "EmailTemplate",
+    "EmailLog",
+    "InAppNotification",
     "Role",
     "Permission",
     "RolePermission",
