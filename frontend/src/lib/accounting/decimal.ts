@@ -30,16 +30,9 @@ function decimalToScaledBigInt(value: string, scale: number) {
   return negative ? -result : result;
 }
 
-export function addDecimalStrings(values: Array<string | number | null | undefined>) {
-  const normalizedValues = values.map((value) => sanitizeDecimalInput(value));
-  const scale = normalizedValues.reduce((max, value) => {
-    const [, fraction = ""] = value.split(".");
-    return Math.max(max, fraction.length);
-  }, 0);
-
-  const total = normalizedValues.reduce((sum, value) => sum + decimalToScaledBigInt(value, scale), 0n);
-  const sign = total < 0n ? "-" : "";
-  const absolute = total < 0n ? -total : total;
+function formatScaledBigInt(value: bigint, scale: number) {
+  const sign = value < 0n ? "-" : "";
+  const absolute = value < 0n ? -value : value;
   const digits = absolute.toString().padStart(scale + 1, "0");
 
   if (scale === 0) {
@@ -51,14 +44,40 @@ export function addDecimalStrings(values: Array<string | number | null | undefin
   return fractionalPart ? `${sign}${integerPart}.${fractionalPart}` : `${sign}${integerPart}`;
 }
 
-export function compareDecimalStrings(left: string | number | null | undefined, right: string | number | null | undefined) {
-  const values = [sanitizeDecimalInput(left), sanitizeDecimalInput(right)];
-  const scale = values.reduce((max, value) => {
-    const [, fraction = ""] = value.split(".");
+function resolveScale(values: Array<string | number | null | undefined>) {
+  return values.reduce<number>((max, value) => {
+    const normalized = sanitizeDecimalInput(value);
+    const [, fraction = ""] = normalized.split(".");
     return Math.max(max, fraction.length);
   }, 0);
+}
 
-  const [leftValue, rightValue] = values.map((value) => decimalToScaledBigInt(value, scale));
+export function addDecimalStrings(values: Array<string | number | null | undefined>) {
+  const normalizedValues = values.map((value) => sanitizeDecimalInput(value));
+  const scale = resolveScale(normalizedValues);
+  const total = normalizedValues.reduce<bigint>((sum, value) => sum + decimalToScaledBigInt(value, scale), 0n);
+  return formatScaledBigInt(total, scale);
+}
+
+export function subtractDecimalStrings(left: string | number | null | undefined, right: string | number | null | undefined) {
+  const scale = resolveScale([left, right]);
+  return formatScaledBigInt(decimalToScaledBigInt(sanitizeDecimalInput(left), scale) - decimalToScaledBigInt(sanitizeDecimalInput(right), scale), scale);
+}
+
+export function multiplyDecimalStrings(left: string | number | null | undefined, right: string | number | null | undefined) {
+  const leftNormalized = sanitizeDecimalInput(left);
+  const rightNormalized = sanitizeDecimalInput(right);
+  const leftScale = (leftNormalized.split(".")[1] ?? "").length;
+  const rightScale = (rightNormalized.split(".")[1] ?? "").length;
+  const leftValue = decimalToScaledBigInt(leftNormalized, leftScale);
+  const rightValue = decimalToScaledBigInt(rightNormalized, rightScale);
+  return formatScaledBigInt(leftValue * rightValue, leftScale + rightScale);
+}
+
+export function compareDecimalStrings(left: string | number | null | undefined, right: string | number | null | undefined) {
+  const values = [sanitizeDecimalInput(left), sanitizeDecimalInput(right)];
+  const scale = resolveScale(values);
+  const [leftValue, rightValue] = values.map((value) => decimalToScaledBigInt(value, scale)) as [bigint, bigint];
 
   if (leftValue === rightValue) {
     return 0;
