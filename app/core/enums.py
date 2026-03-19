@@ -123,3 +123,25 @@ class BankTransactionType(StrEnum):
 class BankTransactionStatus(StrEnum):
     UNRECONCILED = "unreconciled"
     RECONCILED = "reconciled"
+
+
+class ReportType(StrEnum):
+    PROFIT_LOSS = "profit_loss"
+    BALANCE_SHEET = "balance_sheet"
+    TRIAL_BALANCE = "trial_balance"
+    GENERAL_LEDGER = "general_ledger"
+    ACCOUNT_STATEMENT = "account_statement"
+    AGED_RECEIVABLES = "aged_receivables"
+    AGED_PAYABLES = "aged_payables"
+
+
+class ReportExportFormat(StrEnum):
+    JSON = "json"
+    CSV = "csv"
+    PDF = "pdf"
+
+
+class ReportRunStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
