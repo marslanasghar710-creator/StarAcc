@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Numeric, String, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import BankTransactionStatus, BankTransactionType
@@ -49,6 +49,13 @@ class BankTransaction(Base, UUIDPKMixin, TimestampMixin):
     source_module: Mapped[str | None] = mapped_column(String(50), nullable=True)
     source_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     source_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    target_account_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True)
+    tax_code_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("tax_codes.id"), nullable=True)
+    tax_breakdown_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    taxable_amount: Mapped[Decimal | None] = mapped_column(Numeric(20, 8), nullable=True)
+    tax_amount: Mapped[Decimal | None] = mapped_column(Numeric(20, 8), nullable=True)
+    gross_amount: Mapped[Decimal | None] = mapped_column(Numeric(20, 8), nullable=True)
+    tax_inclusive_flag: Mapped[bool | None] = mapped_column(nullable=True)
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     reconciled_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     reconciled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

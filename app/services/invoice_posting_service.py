@@ -13,6 +13,8 @@ from app.repositories.audit import AuditRepository
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.invoice_repository import InvoiceRepository
 from app.services.journal_service import JournalService
+from app.services.tax_posting_integration_service import TaxPostingIntegrationService
+from app.core.enums import TaxTransactionDirection
 
 
 class InvoicePostingService:
@@ -22,6 +24,7 @@ class InvoicePostingService:
         self.customers = CustomerRepository(db)
         self.accounts = AccountRepository(db)
         self.audit = AuditRepository(db)
+        self.tax = TaxPostingIntegrationService(db)
 
     def post(self, organization_id, invoice_id, actor_user_id):
         invoice = self.invoices.get(organization_id, invoice_id)
@@ -42,9 +45,13 @@ class InvoicePostingService:
         if not lines:
             raise forbidden("Invoice requires at least one line")
 
+        tax_total = sum((Decimal(line.line_tax_amount or 0) for line in lines), Decimal("0"))
+        tax_account_id = self.tax.control_account_id(organization_id, TaxTransactionDirection.OUTPUT, tax_total)
         journal_lines = [{"account_id": settings.accounts_receivable_control_account_id, "description": f"AR Invoice {invoice.invoice_number}", "debit_amount": Decimal(invoice.total_amount), "credit_amount": Decimal("0"), "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate}]
         for line in lines:
-            journal_lines.append({"account_id": line.account_id, "description": line.description, "debit_amount": Decimal("0"), "credit_amount": Decimal(line.line_total), "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate})
+            journal_lines.append({"account_id": line.account_id, "description": line.description, "debit_amount": Decimal("0"), "credit_amount": Decimal(line.line_taxable_amount or line.line_subtotal), "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate})
+        if tax_total > 0:
+            journal_lines.append({"account_id": tax_account_id, "description": f"Output tax {invoice.invoice_number}", "debit_amount": Decimal("0"), "credit_amount": tax_total, "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate})
 
         payload = {
             "entry_date": invoice.issue_date,
@@ -62,6 +69,18 @@ class InvoicePostingService:
         invoice.posted_at = datetime.now(UTC)
         invoice.amount_due = Decimal(invoice.total_amount) - Decimal(invoice.amount_paid)
         invoice.status = InvoiceStatus.SENT if invoice.amount_due > 0 else InvoiceStatus.PAID
+        self.tax.create_transactions(
+            organization_id=organization_id,
+            source_module="accounts_receivable",
+            source_type="invoice",
+            source_id=invoice.id,
+            journal_entry_id=journal.id,
+            transaction_date=invoice.issue_date,
+            currency_code=invoice.currency_code,
+            direction=TaxTransactionDirection.OUTPUT,
+            tax_account_id=tax_account_id,
+            lines=lines,
+        )
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="invoice.posted", entity_type="invoice", entity_id=str(invoice.id))
         self.db.commit()
         return invoice
