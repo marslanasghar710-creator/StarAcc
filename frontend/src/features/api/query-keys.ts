@@ -22,6 +22,21 @@ export const queryKeys = {
     balance: (organizationId: string, accountId: string) => ["accounts", organizationId, "balance", accountId] as const,
     ledger: (organizationId: string, accountId: string) => ["accounts", organizationId, "ledger", accountId] as const,
   },
+  suppliers: {
+    root: (organizationId: string) => ["suppliers", organizationId] as const,
+    list: (organizationId: string, search = "") => ["suppliers", organizationId, "list", search] as const,
+    detail: (organizationId: string, supplierId: string) => ["suppliers", organizationId, "detail", supplierId] as const,
+    balance: (organizationId: string, supplierId: string) => ["suppliers", organizationId, "balance", supplierId] as const,
+    activity: (organizationId: string, supplierId: string) => ["suppliers", organizationId, "activity", supplierId] as const,
+  },
+  bills: {
+    root: (organizationId: string) => ["bills", organizationId] as const,
+    list: (organizationId: string, search = "") => ["bills", organizationId, "list", search] as const,
+    open: (organizationId: string) => ["bills", organizationId, "open"] as const,
+    overdue: (organizationId: string) => ["bills", organizationId, "overdue"] as const,
+    detail: (organizationId: string, billId: string) => ["bills", organizationId, "detail", billId] as const,
+    attachments: (organizationId: string, billId: string) => ["bills", organizationId, "attachments", billId] as const,
+  },
   customers: {
     root: (organizationId: string) => ["customers", organizationId] as const,
     list: (organizationId: string, search = "") => ["customers", organizationId, "list", search] as const,
