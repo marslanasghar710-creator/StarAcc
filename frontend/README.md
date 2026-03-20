@@ -17,7 +17,9 @@ This frontend layer now includes the first real accounting workflows for:
 - journal posting and reversal actions
 - financial period visibility in journal workflows
 
-Detailed invoice, bill, banking, reporting, and tax workflows remain out of scope for this milestone.
+Detailed banking, reporting, and tax workflows remain out of scope for this milestone.
+
+Suppliers and bills are now live with backend-backed list/detail/create/edit, approval/posting state actions, payment status visibility, and attachment scaffolding.
 
 ## Stack
 
@@ -70,6 +72,11 @@ pnpm test
 - `/journals`
 - `/journals/new`
 - `/journals/[journalId]`
+- `/suppliers`
+- `/suppliers/[supplierId]`
+- `/bills`
+- `/bills/new`
+- `/bills/[billId]`
 
 ## Backend assumptions and adapters
 
@@ -130,6 +137,45 @@ Used endpoints:
 - `POST /organizations/{organization_id}/journals/{journal_id}/post`
 - `POST /organizations/{organization_id}/journals/{journal_id}/reverse`
 - `POST /organizations/{organization_id}/journals/{journal_id}/void`
+
+
+### Suppliers
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/suppliers`
+- `GET /organizations/{organization_id}/suppliers`
+- `GET /organizations/{organization_id}/suppliers/search`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}`
+- `PATCH /organizations/{organization_id}/suppliers/{supplier_id}`
+- `DELETE /organizations/{organization_id}/suppliers/{supplier_id}`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}/activity`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}/balance`
+
+### Bills
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/bills`
+- `GET /organizations/{organization_id}/bills`
+- `GET /organizations/{organization_id}/bills/search`
+- `GET /organizations/{organization_id}/bills/open`
+- `GET /organizations/{organization_id}/bills/overdue`
+- `GET /organizations/{organization_id}/bills/{bill_id}`
+- `PATCH /organizations/{organization_id}/bills/{bill_id}`
+- `DELETE /organizations/{organization_id}/bills/{bill_id}`
+- `POST /organizations/{organization_id}/bills/{bill_id}/approve`
+- `POST /organizations/{organization_id}/bills/{bill_id}/post`
+- `POST /organizations/{organization_id}/bills/{bill_id}/void`
+- `GET /organizations/{organization_id}/documents/entity/bill/{bill_id}`
+- `GET /organizations/{organization_id}/files`
+- `POST /organizations/{organization_id}/documents/links`
+
+### AP adapter notes
+
+- Supplier detail adapters accept richer fields such as website, tax number, billing address, remittance address, and timestamps if the backend returns them, while still remaining compatible with the narrower schema currently documented in the repository.
+- Bill detail adapters accept richer fields such as `supplier_name`, `supplier_invoice_number`, `items`, `approved_at`, and `posted_at` when present. When those fields are missing, the UI keeps rendering with graceful fallbacks rather than inventing accounting state on the client.
+- Bill forms only save drafts. Approval, posting, voiding, payment visibility, and attachments all reflect backend state; the frontend does not calculate authoritative totals or posting outcomes.
 
 ### Periods
 
