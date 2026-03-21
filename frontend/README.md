@@ -17,9 +17,9 @@ This frontend layer now includes the first real accounting workflows for:
 - journal posting and reversal actions
 - financial period visibility in journal workflows
 
-Detailed reporting and tax workflows remain out of scope for this milestone.
+Detailed tax workflows remain out of scope for this milestone.
 
-Suppliers, bills, and banking are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, payment/status visibility, and attachment foundations where endpoints exist.
+Suppliers, bills, banking, and core financial reporting are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, and attachment foundations where endpoints exist.
 
 ## Stack
 
@@ -83,6 +83,11 @@ pnpm test
 - `/banking/transactions/[transactionId]`
 - `/banking/reconciliations`
 - `/banking/rules`
+- `/reports`
+- `/reports/trial-balance`
+- `/reports/profit-loss`
+- `/reports/balance-sheet`
+- `/reports/general-ledger`
 
 ## Backend assumptions and adapters
 
@@ -188,6 +193,29 @@ Used endpoints:
 - Cashbook data falls back to the existing `/banking/cash-position` endpoint when `/cashbook` is unavailable.
 - Journal reconciliation falls back to the existing `/bank-transactions/{transaction_id}/reconcile-journal` route when the richer `/reconcile/match-journal` route is unavailable.
 - Imports, rules, reconciliation history, suggestions, ignore, unreconcile, and several banking detail endpoints are treated as backend-driven optional enhancements: the UI is wired for them, but it does not invent results when the backend does not yet provide them.
+
+### Reporting
+
+Used endpoints:
+
+- `GET /organizations/{organization_id}/reports`
+- `GET /organizations/{organization_id}/reports/metadata`
+- `GET /organizations/{organization_id}/reports/trial-balance`
+- `GET /organizations/{organization_id}/reports/profit-loss`
+- `GET /organizations/{organization_id}/reports/balance-sheet`
+- `GET /organizations/{organization_id}/reports/general-ledger`
+- `GET /organizations/{organization_id}/reports/trial-balance/export`
+- `GET /organizations/{organization_id}/reports/profit-loss/export`
+- `GET /organizations/{organization_id}/reports/balance-sheet/export`
+- `GET /organizations/{organization_id}/reports/general-ledger/export`
+- `GET /organizations/{organization_id}/periods`
+- `GET /organizations/{organization_id}/accounts`
+
+### Reporting adapter notes
+
+- Report metadata prefers `/reports/metadata` and falls back to `/reports` when the dedicated metadata endpoint is unavailable.
+- The frontend accepts either broad reporting permissions such as `reports.read` / `reporting.read` or the more specific permission names already present in this repository, such as `reports.profit_loss.read` and `reports.general_ledger.read`.
+- Financial statement structure, totals, comparisons, hierarchy, and export generation remain backend-owned; the frontend only adapts payload shapes for presentation and does not derive accounting truth.
 
 ### Suppliers
 
