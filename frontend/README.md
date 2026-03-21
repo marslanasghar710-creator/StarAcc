@@ -17,9 +17,9 @@ This frontend layer now includes the first real accounting workflows for:
 - journal posting and reversal actions
 - financial period visibility in journal workflows
 
-Detailed banking, reporting, and tax workflows remain out of scope for this milestone.
+Detailed reporting and tax workflows remain out of scope for this milestone.
 
-Suppliers and bills are now live with backend-backed list/detail/create/edit, approval/posting state actions, payment status visibility, and attachment scaffolding.
+Suppliers, bills, and banking are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, payment/status visibility, and attachment foundations where endpoints exist.
 
 ## Stack
 
@@ -77,6 +77,12 @@ pnpm test
 - `/bills`
 - `/bills/new`
 - `/bills/[billId]`
+- `/banking`
+- `/banking/accounts/[bankAccountId]`
+- `/banking/imports/[importId]`
+- `/banking/transactions/[transactionId]`
+- `/banking/reconciliations`
+- `/banking/rules`
 
 ## Backend assumptions and adapters
 
@@ -138,6 +144,50 @@ Used endpoints:
 - `POST /organizations/{organization_id}/journals/{journal_id}/reverse`
 - `POST /organizations/{organization_id}/journals/{journal_id}/void`
 
+
+
+### Banking
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/bank-accounts`
+- `GET /organizations/{organization_id}/bank-accounts`
+- `GET /organizations/{organization_id}/bank-accounts/search`
+- `GET /organizations/{organization_id}/bank-accounts/{bank_account_id}`
+- `PATCH /organizations/{organization_id}/bank-accounts/{bank_account_id}`
+- `DELETE /organizations/{organization_id}/bank-accounts/{bank_account_id}`
+- `GET /organizations/{organization_id}/bank-accounts/{bank_account_id}/summary`
+- `GET /organizations/{organization_id}/bank-accounts/{bank_account_id}/register`
+- `POST /organizations/{organization_id}/bank-imports`
+- `GET /organizations/{organization_id}/bank-imports`
+- `GET /organizations/{organization_id}/bank-imports/{import_id}`
+- `GET /organizations/{organization_id}/bank-imports/{import_id}/transactions`
+- `GET /organizations/{organization_id}/bank-transactions`
+- `GET /organizations/{organization_id}/bank-transactions/{bank_transaction_id}`
+- `GET /organizations/{organization_id}/bank-transactions/unreconciled`
+- `GET /organizations/{organization_id}/bank-transactions/reconciled`
+- `GET /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/suggestions`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/ignore`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/unreconcile`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/match-customer-payment`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/match-supplier-payment`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/match-journal`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/cash-code`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/transfer`
+- `GET /organizations/{organization_id}/reconciliations`
+- `GET /organizations/{organization_id}/reconciliations/{reconciliation_id}`
+- `GET /organizations/{organization_id}/cashbook`
+- `GET /organizations/{organization_id}/reconciliation-summary`
+- `GET /organizations/{organization_id}/customer-payments`
+- `GET /organizations/{organization_id}/supplier-payments`
+- `GET /organizations/{organization_id}/journals`
+
+### Banking adapter notes
+
+- The repository backend currently exposes a narrower banking surface than the forward-looking frontend contract, so optional banking calls fall back gracefully when endpoints return `404`/`405` instead of blocking the whole workspace.
+- Cashbook data falls back to the existing `/banking/cash-position` endpoint when `/cashbook` is unavailable.
+- Journal reconciliation falls back to the existing `/bank-transactions/{transaction_id}/reconcile-journal` route when the richer `/reconcile/match-journal` route is unavailable.
+- Imports, rules, reconciliation history, suggestions, ignore, unreconcile, and several banking detail endpoints are treated as backend-driven optional enhancements: the UI is wired for them, but it does not invent results when the backend does not yet provide them.
 
 ### Suppliers
 
