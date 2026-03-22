@@ -16,6 +16,7 @@ from app.core.exceptions import forbidden, not_found
 from app.repositories.account_repository import AccountRepository
 from app.repositories.audit import AuditRepository
 from app.repositories.inventory_repository import InventoryRepository
+from app.repositories.orgs import OrganizationRepository
 from app.repositories.period_repository import PeriodRepository
 from app.services.journal_service import JournalService
 from app.services.journal_validation_service import JournalValidationService
@@ -33,9 +34,16 @@ class InventoryService:
         self.accounts = AccountRepository(db)
         self.audit = AuditRepository(db)
         self.periods = PeriodRepository(db)
+        self.organizations = OrganizationRepository(db)
 
     def _q(self, value: Decimal | int | str | None) -> Decimal:
         return Decimal(value or 0).quantize(PRECISION, rounding=ROUND_HALF_UP)
+
+    def _organization_currency(self, organization_id) -> str:
+        organization = self.organizations.get(organization_id)
+        if not organization:
+            raise not_found("Organization not found")
+        return organization.base_currency
 
     def _require_open_period(self, organization_id, occurred_at: datetime):
         period = self.periods.resolve_by_date(organization_id, occurred_at.date())
@@ -290,7 +298,7 @@ class InventoryService:
                 {"account_id": offset_account.id, "description": payload["reason"], "debit_amount": total_cost_abs, "credit_amount": ZERO},
                 {"account_id": item.inventory_asset_account_id, "description": f"Inventory adjustment {item.name}", "debit_amount": ZERO, "credit_amount": total_cost_abs},
             ]
-        journal = JournalService(self.db).create(
+        journal = JournalService(self.db).create_and_post(
             organization_id,
             actor_user_id,
             {
@@ -300,10 +308,9 @@ class InventoryService:
                 "source_module": "inventory",
                 "source_type": "adjustment",
                 "source_id": "pending",
-                "lines": [type("L", (), line | {"currency_code": "USD", "exchange_rate": None}) for line in journal_lines],
+                "lines": [type("L", (), line | {"currency_code": self._organization_currency(organization_id), "exchange_rate": None}) for line in journal_lines],
             },
         )
-        journal = JournalService(self.db).post(organization_id, journal.id, actor_user_id)
         movement.accounting_journal_id = journal.id
         adjustment = self.inventory.create_adjustment(
             organization_id=organization_id,

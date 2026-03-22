@@ -44,6 +44,7 @@ class BillPostingService:
         if not lines:
             raise forbidden("Bill requires at least one line")
 
+        movements = self.inventory.post_bill_movements(organization_id, bill, lines, actor_user_id)
         tax_total = sum((Decimal(line.line_tax_amount or 0) for line in lines), Decimal("0"))
         tax_account_id = self.tax.control_account_id(organization_id, TaxTransactionDirection.INPUT, tax_total)
         journal_lines = []
@@ -62,9 +63,7 @@ class BillPostingService:
             "source_id": str(bill.id),
             "lines": [type("L", (), l) for l in journal_lines],
         }
-        journal = JournalService(self.db).create(organization_id, actor_user_id, payload)
-        journal = JournalService(self.db).post(organization_id, journal.id, actor_user_id)
-        movements = self.inventory.post_bill_movements(organization_id, bill, lines, actor_user_id)
+        journal = JournalService(self.db).create_and_post(organization_id, actor_user_id, payload)
         for movement in movements:
             movement.accounting_journal_id = journal.id
 
