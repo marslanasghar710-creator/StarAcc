@@ -6,6 +6,7 @@ import { queryKeys } from "@/features/api/query-keys";
 import {
   createAsset,
   createAssetCategory,
+  deleteAssetCategory,
   disposeAsset,
   generateAssetDepreciation,
   getAsset,
@@ -103,6 +104,22 @@ export function useUpdateAssetCategory(organizationId?: string, categoryId?: str
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.assets.categories(organizationId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.assets.root(organizationId) }),
+      ]);
+    },
+  });
+}
+
+export function useDeleteAssetCategory(organizationId?: string, categoryId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => deleteAssetCategory(organizationId as string, categoryId as string),
+    onSuccess: async () => {
+      if (!organizationId || !categoryId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.assets.categories(organizationId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.assets.root(organizationId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.assets.category(organizationId, categoryId) }),
       ]);
     },
   });

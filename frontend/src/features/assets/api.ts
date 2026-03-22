@@ -57,6 +57,13 @@ export async function updateAssetCategory(organizationId: string, categoryId: st
   return adaptAssetCategory(response);
 }
 
+
+export async function deleteAssetCategory(organizationId: string, categoryId: string) {
+  await apiClient<void>(`/organizations/${organizationId}/asset-categories/${categoryId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function listAssets(organizationId: string) {
   const response = await apiClient<{ items?: RawAsset[] } | RawAsset[]>(`/organizations/${organizationId}/assets`);
   return extractItems(response).map(adaptAsset);

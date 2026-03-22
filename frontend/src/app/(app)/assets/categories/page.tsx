@@ -14,9 +14,10 @@ import { PageActionBar } from "@/components/shared/page-action-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAccounts } from "@/features/accounts/hooks";
+import { AssetCategoryDeleteDialog } from "@/features/assets/components/asset-category-delete-dialog";
 import { AssetCategoryFormDialog } from "@/features/assets/components/asset-category-form-dialog";
 import { AssetCategoryListTable } from "@/features/assets/components/asset-category-list-table";
-import { useAssetCategories, useCreateAssetCategory, useUpdateAssetCategory } from "@/features/assets/hooks";
+import { useAssetCategories, useCreateAssetCategory, useDeleteAssetCategory, useUpdateAssetCategory } from "@/features/assets/hooks";
 import { type AssetCategoryFormValues } from "@/features/assets/schemas";
 import type { AssetCategory, AssetCategoryMutationPayload } from "@/features/assets/types";
 import { usePermissions } from "@/features/permissions/hooks";
@@ -41,11 +42,13 @@ export default function AssetCategoriesPage() {
   const [search, setSearch] = React.useState("");
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [editingCategory, setEditingCategory] = React.useState<AssetCategory | null>(null);
+  const [deletingCategory, setDeletingCategory] = React.useState<AssetCategory | null>(null);
 
   const categoriesQuery = useAssetCategories(currentOrganizationId ?? undefined, canManage);
   const accountsQuery = useAccounts(currentOrganizationId ?? undefined, "", canReadAccounts);
   const createCategoryMutation = useCreateAssetCategory(currentOrganizationId ?? undefined);
   const updateCategoryMutation = useUpdateAssetCategory(currentOrganizationId ?? undefined, editingCategory?.id);
+  const deleteCategoryMutation = useDeleteAssetCategory(currentOrganizationId ?? undefined, deletingCategory?.id);
 
   const filteredCategories = React.useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -76,6 +79,16 @@ export default function AssetCategoriesPage() {
     const updated = await updateCategoryMutation.mutateAsync(toPayload(values));
     toast.success(`Updated asset category ${updated.name}`);
     setEditingCategory(null);
+  }
+
+  async function handleDelete() {
+    if (!deletingCategory) {
+      return;
+    }
+
+    await deleteCategoryMutation.mutateAsync();
+    toast.success(`Deleted asset category ${deletingCategory.name}`);
+    setDeletingCategory(null);
   }
 
   if (isLoadingOrganizations) {
@@ -119,7 +132,7 @@ export default function AssetCategoriesPage() {
         />
       ) : null}
       {!categoriesQuery.isLoading && !categoriesQuery.isError && filteredCategories.length > 0 ? (
-        <AssetCategoryListTable categories={filteredCategories} accountNames={accountNames} onEdit={setEditingCategory} />
+        <AssetCategoryListTable categories={filteredCategories} accountNames={accountNames} onEdit={setEditingCategory} onDelete={setDeletingCategory} />
       ) : null}
 
       <AssetCategoryFormDialog
@@ -141,6 +154,18 @@ export default function AssetCategoriesPage() {
         onSubmit={handleUpdate}
         isSubmitting={updateCategoryMutation.isPending}
         accountOptions={accountOptions}
+      />
+
+      <AssetCategoryDeleteDialog
+        open={Boolean(deletingCategory)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingCategory(null);
+          }
+        }}
+        category={deletingCategory}
+        onConfirm={handleDelete}
+        isSubmitting={deleteCategoryMutation.isPending}
       />
     </div>
   );

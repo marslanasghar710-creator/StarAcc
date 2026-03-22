@@ -416,6 +416,7 @@ Used endpoints:
 - `GET /organizations/{organization_id}/asset-categories`
 - `GET /organizations/{organization_id}/asset-categories/{category_id}`
 - `PATCH /organizations/{organization_id}/asset-categories/{category_id}`
+- `DELETE /organizations/{organization_id}/asset-categories/{category_id}`
 - `POST /organizations/{organization_id}/assets`
 - `GET /organizations/{organization_id}/assets`
 - `GET /organizations/{organization_id}/assets/{asset_id}`
