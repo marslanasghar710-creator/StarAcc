@@ -29,6 +29,36 @@ function defaults(preferences: OrganizationPreferences): OrganizationPreferences
   };
 }
 
+const FIELD_GROUPS = [
+  {
+    title: "Identity",
+    fields: [
+      ["name", "Business name"],
+      ["legal_name", "Legal name"],
+      ["registration_number", "Registration number"],
+      ["tax_number", "Tax identifier"],
+    ],
+  },
+  {
+    title: "Regional defaults",
+    fields: [
+      ["base_currency", "Base currency"],
+      ["timezone", "Timezone"],
+      ["country", "Country"],
+      ["fiscal_year_start_month", "Fiscal year start month"],
+      ["fiscal_year_start_day", "Fiscal year start day"],
+    ],
+  },
+  {
+    title: "Contact",
+    fields: [
+      ["contact_email", "Contact email"],
+      ["contact_phone", "Contact phone"],
+      ["website", "Website"],
+    ],
+  },
+] as const;
+
 export function OrganizationPreferencesForm({ preferences, onSubmit, isSubmitting, readOnly = false }: { preferences: OrganizationPreferences; onSubmit: (values: OrganizationPreferencesFormValues) => Promise<void>; isSubmitting?: boolean; readOnly?: boolean }) {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const form = useForm<OrganizationPreferencesFormValues>({ resolver: zodResolver(organizationPreferencesSchema), defaultValues: defaults(preferences) });
@@ -51,37 +81,32 @@ export function OrganizationPreferencesForm({ preferences, onSubmit, isSubmittin
     <Form {...form}>
       <form className="space-y-5" onSubmit={form.handleSubmit(handleSubmit)}>
         <InlineValidationMessage message={serverError} />
-        <div className="grid gap-4 lg:grid-cols-2">
-          {[
-            ["name", "Organization name"],
-            ["legal_name", "Legal name"],
-            ["registration_number", "Registration number"],
-            ["tax_number", "Tax identifier"],
-            ["base_currency", "Base currency"],
-            ["timezone", "Timezone"],
-            ["country", "Country"],
-            ["contact_email", "Contact email"],
-            ["contact_phone", "Contact phone"],
-            ["website", "Website"],
-            ["fiscal_year_start_month", "Fiscal year start month"],
-            ["fiscal_year_start_day", "Fiscal year start day"],
-          ].map(([name, label]) => (
-            <FormField
-              key={name}
-              control={form.control}
-              name={name as keyof OrganizationPreferencesFormValues}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{label}</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={String(field.value ?? "")} disabled={readOnly || isSubmitting} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
-        </div>
+        {FIELD_GROUPS.map((group) => (
+          <div key={group.title} className="space-y-4 rounded-xl border border-border/70 p-4">
+            <div>
+              <h3 className="text-sm font-semibold">{group.title}</h3>
+              <p className="text-xs text-muted-foreground">Saved values come from the active organization record and remain backend authoritative.</p>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {group.fields.map(([name, label]) => (
+                <FormField
+                  key={name}
+                  control={form.control}
+                  name={name as keyof OrganizationPreferencesFormValues}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{label}</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={String(field.value ?? "")} disabled={readOnly || isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
         {!readOnly ? <div className="flex justify-end"><Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving…" : "Save organization"}</Button></div> : null}
       </form>
     </Form>

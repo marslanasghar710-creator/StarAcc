@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,8 +8,10 @@ import { AccessDeniedState } from "@/components/feedback/access-denied-state";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/layout/page-header";
+import { PageActionBar } from "@/components/shared/page-action-bar";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/features/permissions/hooks";
+import { SETTINGS_NAV_SECTIONS, SETTINGS_PERMISSION_GROUPS } from "@/features/settings/constants";
 import { ClosePeriodDialog } from "@/features/settings/components/close-period-dialog";
 import { FiscalPeriodDetailCard } from "@/features/settings/components/fiscal-period-detail-card";
 import { FiscalPeriodFormDialog } from "@/features/settings/components/fiscal-period-form-dialog";
@@ -22,23 +23,17 @@ import { SettingsNav } from "@/features/settings/components/settings-nav";
 import { SettingsSectionShell } from "@/features/settings/components/settings-section-shell";
 import { useCloseFiscalPeriod, useCreateFiscalPeriod, useFiscalPeriods, useReopenFiscalPeriod, useUpdateFiscalPeriod } from "@/features/settings/hooks";
 import type { FiscalPeriodFormValues } from "@/features/settings/schemas";
-import type { FiscalPeriodRecord, SettingsSectionStatus } from "@/features/settings/types";
+import type { FiscalPeriodRecord } from "@/features/settings/types";
 import { useOrganization } from "@/providers/organization-provider";
-
-const READ_PERMISSIONS = ["settings.read", "periods.read", "fiscal_periods.read"];
-const CREATE_PERMISSIONS = ["periods.create", "fiscal_periods.create"];
-const UPDATE_PERMISSIONS = ["periods.update", "fiscal_periods.update"];
-const CLOSE_PERMISSIONS = ["periods.close", "fiscal_periods.close"];
-const REOPEN_PERMISSIONS = ["periods.reopen", "fiscal_periods.reopen"];
 
 export default function FiscalPeriodsPage() {
   const { currentOrganizationId, currentOrganization, isLoadingOrganizations } = useOrganization();
   const { hasAnyPermission } = usePermissions();
-  const canRead = hasAnyPermission(READ_PERMISSIONS);
-  const canCreate = hasAnyPermission(CREATE_PERMISSIONS);
-  const canUpdate = hasAnyPermission(UPDATE_PERMISSIONS);
-  const canClose = hasAnyPermission(CLOSE_PERMISSIONS);
-  const canReopen = hasAnyPermission(REOPEN_PERMISSIONS);
+  const canRead = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.fiscalPeriodsRead);
+  const canCreate = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.fiscalPeriodsCreate);
+  const canUpdate = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.fiscalPeriodsUpdate);
+  const canClose = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.fiscalPeriodsClose);
+  const canReopen = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.fiscalPeriodsReopen);
   const periodsQuery = useFiscalPeriods(currentOrganizationId ?? undefined, canRead);
   const createMutation = useCreateFiscalPeriod(currentOrganizationId ?? undefined);
   const [editingPeriod, setEditingPeriod] = React.useState<FiscalPeriodRecord | null>(null);
@@ -49,19 +44,24 @@ export default function FiscalPeriodsPage() {
   const reopenMutation = useReopenFiscalPeriod(currentOrganizationId ?? undefined, reopeningPeriod?.id ?? undefined);
   const [actionError, setActionError] = React.useState<string | null>(null);
 
-  const sectionDefinitions: SettingsSectionStatus[] = [
-    { id: "organization", title: "Organization", description: "Entity profile and metadata", href: "/settings/organization", availability: "available", requiredPermissions: ["settings.read"], reason: "Organization profile." },
-    { id: "fiscal-periods", title: "Fiscal periods", description: "Open and close posting periods", href: "/settings/fiscal-periods", availability: "available", requiredPermissions: READ_PERMISSIONS, reason: "Backend period management." },
-    { id: "tax", title: "Tax", description: "Tax code maintenance", href: "/settings/tax", availability: "available", requiredPermissions: ["settings.read", "tax_codes.read", "tax.settings.read"], reason: "Tax configuration surface." },
-    { id: "preferences", title: "Preferences", description: "Numbering and accounting defaults", href: "/settings/preferences", availability: "available", requiredPermissions: ["settings.read", "branding.read", "numbering.read"], reason: "Preferences surface." },
-  ];
-  const sections = sectionDefinitions.map((section) => ({
+  const sections = SETTINGS_NAV_SECTIONS.map((section) => ({
     ...section,
+    availability: "available" as const,
+    reason: section.id === "fiscal-periods" ? "Backend-owned period lifecycle." : "Related settings module.",
     isPermitted: hasAnyPermission(section.requiredPermissions),
   }));
 
   async function handleSubmit(values: FiscalPeriodFormValues) {
-    const payload = { name: values.name.trim(), start_date: values.start_date, end_date: values.end_date, notes: values.notes || null };
+    const startDate = new Date(values.start_date);
+    const payload = {
+      name: values.name.trim(),
+      start_date: values.start_date,
+      end_date: values.end_date,
+      fiscal_year: startDate.getUTCFullYear(),
+      period_number: startDate.getUTCMonth() + 1,
+      notes: values.notes || null,
+    };
+
     if (editingPeriod?.id) {
       await updateMutation.mutateAsync(payload);
       toast.success(`Updated ${editingPeriod.name}`);
@@ -76,8 +76,8 @@ export default function FiscalPeriodsPage() {
     if (!closingPeriod) return;
     setActionError(null);
     try {
-      await closeMutation.mutateAsync();
-      toast.success(`Closed ${closingPeriod.name}`);
+      const updated = await closeMutation.mutateAsync();
+      toast.success(`Closed ${updated.name}`);
       setClosingPeriod(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Unable to close fiscal period.");
@@ -88,8 +88,8 @@ export default function FiscalPeriodsPage() {
     if (!reopeningPeriod) return;
     setActionError(null);
     try {
-      await reopenMutation.mutateAsync();
-      toast.success(`Reopened ${reopeningPeriod.name}`);
+      const updated = await reopenMutation.mutateAsync();
+      toast.success(`Reopened ${updated.name}`);
       setReopeningPeriod(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Unable to reopen fiscal period.");
@@ -106,7 +106,8 @@ export default function FiscalPeriodsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow={currentOrganization?.name || "Settings"} title="Fiscal periods" description="Manage reporting periods and backend-owned close/reopen actions for the active organization." actions={canCreate ? <Button onClick={() => setEditingPeriod({ id: "", organizationId: currentOrganizationId, name: "", startDate: "", endDate: "", status: "open", fiscalYear: null, periodNumber: null, closedAt: null, closedBy: null, notes: null })}><Plus className="size-4" />New period</Button> : null} />
+      <PageHeader eyebrow={currentOrganization?.name || "Settings"} title="Fiscal periods" description="Manage reporting periods while leaving close and reopen rules entirely to the backend." actions={canCreate ? <Button onClick={() => setEditingPeriod({ id: "", organizationId: currentOrganizationId, name: "", startDate: "", endDate: "", status: "open", fiscalYear: null, periodNumber: null, closedAt: null, closedBy: null, notes: null })}><Plus className="size-4" />New period</Button> : null} />
+      <PageActionBar left={<div className="text-sm text-muted-foreground">Close and reopen actions always round-trip to the backend; validation failures are surfaced without local overrides.</div>} right={<div className="text-sm text-muted-foreground">{periods.length} period{periods.length === 1 ? "" : "s"}</div>} />
       <SettingsNav sections={sections} activeHref="/settings/fiscal-periods" />
       {periods.length === 0 ? <SettingsEmptyState title="No fiscal periods" description="The backend returned no fiscal periods for this organization." /> : (
         <>
