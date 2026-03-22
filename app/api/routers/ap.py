@@ -39,6 +39,7 @@ from app.schemas.ap import (
 )
 from app.services.ap_query_service import APQueryService
 from app.services.bill_service import BillService
+from app.services.project_service import ProjectService
 from app.services.supplier_credit_service import SupplierCreditService
 from app.services.supplier_payment_service import SupplierPaymentService
 from app.services.supplier_service import SupplierService
@@ -159,7 +160,10 @@ def add_bill_item(organization_id: str, bill_id: str, payload: BillItemCreateReq
 def update_bill_item(organization_id: str, bill_id: str, item_id: str, payload: BillItemUpdateRequest, _=Depends(require_permission("bills.update")), db: Session = Depends(get_db)):
     svc = BillService(db)
     item = svc.bills.get_item(item_id)
-    for k, v in payload.model_dump(exclude_none=True).items():
+    update_payload = payload.model_dump(exclude_none=True)
+    if update_payload.get("project_id"):
+        ProjectService(db).validate_project_attribution(organization_id, update_payload["project_id"])
+    for k, v in update_payload.items():
         setattr(item, k, v)
     from app.services.bill_calculation_service import BillCalculationService
 
