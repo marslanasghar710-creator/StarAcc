@@ -59,6 +59,7 @@ class BillItemCreateRequest(BaseModel):
     account_id: UUID | None = None
     item_id: UUID | None = None
     location_id: UUID | None = None
+    project_id: UUID | None = None
     item_code: str | None = None
     discount_percent: Decimal | None = None
     discount_amount: Decimal | None = None
@@ -73,6 +74,7 @@ class BillItemUpdateRequest(BaseModel):
     account_id: UUID | None = None
     item_id: UUID | None = None
     location_id: UUID | None = None
+    project_id: UUID | None = None
     discount_percent: Decimal | None = None
     discount_amount: Decimal | None = None
     line_tax_amount: Decimal | None = None
@@ -85,6 +87,9 @@ class BillItemResponse(ORMModel):
     quantity: Decimal
     unit_price: Decimal
     account_id: UUID
+    item_id: UUID | None = None
+    location_id: UUID | None = None
+    project_id: UUID | None = None
     tax_code_id: UUID | None = None
     line_subtotal: Decimal
     line_taxable_amount: Decimal | None = None

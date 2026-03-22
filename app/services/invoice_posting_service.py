@@ -12,6 +12,7 @@ from app.repositories.audit import AuditRepository
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.invoice_repository import InvoiceRepository
 from app.services.inventory_service import InventoryService
+from app.services.project_service import ProjectService
 from app.services.journal_service import JournalService
 from app.services.tax_posting_integration_service import TaxPostingIntegrationService
 
@@ -24,6 +25,7 @@ class InvoicePostingService:
         self.audit = AuditRepository(db)
         self.tax = TaxPostingIntegrationService(db)
         self.inventory = InventoryService(db)
+        self.projects = ProjectService(db)
 
     def post(self, organization_id, invoice_id, actor_user_id):
         invoice = self.invoices.get(organization_id, invoice_id)
@@ -45,6 +47,7 @@ class InvoicePostingService:
             raise forbidden("Invoice requires at least one line")
 
         movements, inventory_hooks = self.inventory.post_invoice_movements(organization_id, invoice, lines, actor_user_id)
+        self.projects.record_invoice_entries(organization_id, invoice, lines, inventory_hooks, actor_user_id)
         tax_total = sum((Decimal(line.line_tax_amount or 0) for line in lines), Decimal("0"))
         tax_account_id = self.tax.control_account_id(organization_id, TaxTransactionDirection.OUTPUT, tax_total)
         journal_lines = [{"account_id": settings.accounts_receivable_control_account_id, "description": f"AR Invoice {invoice.invoice_number}", "debit_amount": Decimal(invoice.total_amount), "credit_amount": Decimal("0"), "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate}]

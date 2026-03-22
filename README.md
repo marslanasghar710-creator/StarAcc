@@ -290,3 +290,43 @@ The inventory module keeps stock, valuation, and movement truth on the backend:
 - Tracked inventory purchasing recognizes stock when the bill is posted, not when the draft is created.
 - Tracked inventory sales recognize stock when the invoice is posted, not when the draft is created or sent.
 - Purchase receiving workflows, warehouse transfers, serial/lot tracking, manufacturing, and advanced valuation layers remain deferred for later modules.
+
+
+## Projects / job costing foundation
+
+The projects module adds organization-scoped job costing foundations while keeping the GL as the single accounting source of truth:
+- `projects`, `project_cost_entries`, `project_revenue_entries`, `project_time_entries`, and `project_status_history` persist project master data plus analytical financial/activity records.
+- Project profitability is derived from project-linked posted bills, invoices, time entries, and project-side reversal entries; it is not a second set of books.
+- Revenue attribution is recognized for reporting when project-linked invoices are posted. Cost attribution is recognized when project-linked bills are posted and when tracked-inventory invoice posting creates COGS movements.
+- Draft document lines may optionally carry `project_id`, but project linkage is validated server-side for organization scope, active/archive semantics, and invoice customer compatibility.
+- Time entries are intentionally a backend-only foundation: billable flags and rate capture are stored now, while approvals, billing automation, payroll integration, richer UX, retainers, and milestone billing remain deferred.
+- Archive semantics are safe: projects are soft-archived, history is retained, and reversals preserve traceability back to source documents and journals.
+
+### Project endpoints
+
+- `POST /organizations/{organization_id}/projects`
+- `GET /organizations/{organization_id}/projects`
+- `GET /organizations/{organization_id}/projects/search`
+- `GET /organizations/{organization_id}/projects/{project_id}`
+- `PATCH /organizations/{organization_id}/projects/{project_id}`
+- `DELETE /organizations/{organization_id}/projects/{project_id}`
+- `GET /organizations/{organization_id}/projects/{project_id}/costs`
+- `GET /organizations/{organization_id}/projects/{project_id}/revenue`
+- `GET /organizations/{organization_id}/projects/{project_id}/activity`
+- `GET /organizations/{organization_id}/projects/{project_id}/profitability`
+- `POST /organizations/{organization_id}/projects/{project_id}/budget`
+- `PATCH /organizations/{organization_id}/projects/{project_id}/budget`
+- `GET /organizations/{organization_id}/projects/{project_id}/budget`
+- `POST /organizations/{organization_id}/projects/{project_id}/time-entries`
+- `GET /organizations/{organization_id}/projects/{project_id}/time-entries`
+- `PATCH /organizations/{organization_id}/projects/{project_id}/time-entries/{time_entry_id}`
+- `DELETE /organizations/{organization_id}/projects/{project_id}/time-entries/{time_entry_id}`
+- `GET /organizations/{organization_id}/project-profitability`
+- `GET /organizations/{organization_id}/project-budget-vs-actual`
+- `GET /organizations/{organization_id}/project-summary`
+
+### Project reporting assumptions
+
+- Budget vs actual currently reports budgeted revenue/cost/hours alongside actual revenue, actual cost, actual hours, and derived variances per project.
+- Project activity timelines combine status history, analytical cost/revenue entries, and time entries so reports can trace profitability back to source documents.
+- Frontend profitability truth is intentionally deferred; consumers should use the backend reporting endpoints above.

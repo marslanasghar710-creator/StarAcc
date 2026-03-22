@@ -143,6 +143,19 @@ SETTINGS_DOCS_NOTIFICATIONS_PERMISSIONS = [
 
 
 
+
+
+PROJECTS_PERMISSIONS = [
+    "projects.read",
+    "projects.create",
+    "projects.update",
+    "projects.archive",
+    "projects.budget.manage",
+    "projects.time.create",
+    "projects.time.update",
+    "projects.profitability.read",
+]
+
 INVENTORY_PERMISSIONS = [
     "inventory.create",
     "inventory.read",
@@ -161,14 +174,14 @@ BANKING_PERMISSIONS = [
     "bank_reconciliation.read",
     "bank_reconciliation.reconcile",
 ]
-PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS + AR_PERMISSIONS + AP_PERMISSIONS + REPORTING_PERMISSIONS + TAX_PERMISSIONS + SETTINGS_DOCS_NOTIFICATIONS_PERMISSIONS + INVENTORY_PERMISSIONS + BANKING_PERMISSIONS
+PERMISSIONS = BASE_PERMISSIONS + ACCOUNTING_PERMISSIONS + AR_PERMISSIONS + AP_PERMISSIONS + REPORTING_PERMISSIONS + TAX_PERMISSIONS + SETTINGS_DOCS_NOTIFICATIONS_PERMISSIONS + PROJECTS_PERMISSIONS + INVENTORY_PERMISSIONS + BANKING_PERMISSIONS
 
 ROLE_DEFAULTS = {
     "owner": PERMISSIONS,
     "admin": [p for p in PERMISSIONS if p != "periods.reopen"],
     "accountant": sorted(set([p for p in PERMISSIONS if p not in {"org.delete", "periods.reopen", "files.delete", "files.unlink", "notification_settings.update"}] + ["branding.read", "branding.update", "numbering.read", "files.upload", "files.read", "files.link", "email_templates.read", "emails.send", "emails.read", "notifications.read", "notification_settings.read"])),
-    "staff": ["org.read", "customers.read", "invoices.create", "invoices.read", "invoices.update", "invoices.send", "suppliers.read", "bills.create", "bills.read", "bills.update", "accounts.read", "journals.read", "ledger.read", "inventory.read", "bank_accounts.read", "bank_transactions.create", "bank_transactions.read", "bank_reconciliation.read", "files.upload", "files.read", "notifications.read", "notifications.update"],
-    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "suppliers.read", "bills.read", "supplier_credits.read", "supplier_payments.read", "ar.read", "ar_aging.read", "ap.read", "ap_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read", "reports.profit_loss.read", "reports.balance_sheet.read", "reports.trial_balance.read", "reports.general_ledger.read", "reports.account_statement.read", "reports.aged_receivables.read", "reports.aged_payables.read", "tax.settings.read", "tax_rates.read", "tax_codes.read", "tax_reports.read", "inventory.read", "inventory.valuation.read", "branding.read", "numbering.read", "notification_settings.read", "files.read", "notifications.read", "emails.read", "email_templates.read", "bank_accounts.read", "bank_transactions.read", "bank_reconciliation.read"],
+    "staff": ["org.read", "customers.read", "invoices.create", "invoices.read", "invoices.update", "invoices.send", "suppliers.read", "bills.create", "bills.read", "bills.update", "accounts.read", "journals.read", "ledger.read", "projects.read", "projects.time.create", "projects.time.update", "inventory.read", "bank_accounts.read", "bank_transactions.create", "bank_transactions.read", "bank_reconciliation.read", "files.upload", "files.read", "notifications.read", "notifications.update"],
+    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "suppliers.read", "bills.read", "supplier_credits.read", "supplier_payments.read", "ar.read", "ar_aging.read", "ap.read", "ap_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read", "reports.profit_loss.read", "reports.balance_sheet.read", "reports.trial_balance.read", "reports.general_ledger.read", "reports.account_statement.read", "reports.aged_receivables.read", "reports.aged_payables.read", "tax.settings.read", "tax_rates.read", "tax_codes.read", "tax_reports.read", "projects.read", "projects.profitability.read", "inventory.read", "inventory.valuation.read", "branding.read", "numbering.read", "notification_settings.read", "files.read", "notifications.read", "emails.read", "email_templates.read", "bank_accounts.read", "bank_transactions.read", "bank_reconciliation.read"],
 }
 
 

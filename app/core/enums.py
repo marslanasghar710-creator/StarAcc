@@ -278,3 +278,11 @@ class InventoryAdjustmentType(StrEnum):
 
 class InventoryValuationMethod(StrEnum):
     WEIGHTED_AVERAGE = "weighted_average"
+
+
+class ProjectStatus(StrEnum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    ON_HOLD = "on_hold"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"

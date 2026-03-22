@@ -15,6 +15,7 @@ from app.services.branding_service import BrandingService
 from app.services.inventory_service import InventoryService
 from app.services.invoice_calculation_service import InvoiceCalculationService
 from app.services.invoice_posting_service import InvoicePostingService
+from app.services.project_service import ProjectService
 from app.services.numbering_service import NumberingService
 from app.services.tax_calculation_service import TaxCalculationService
 from app.services.tax_settings_service import TaxSettingsService
@@ -32,6 +33,7 @@ class InvoiceService:
         self.branding = BrandingService(db)
         self.numbering = NumberingService(db)
         self.inventory = InventoryService(db)
+        self.project_service = ProjectService(db)
 
     def create(self, organization_id, actor_user_id, payload):
         if payload["due_date"] < payload["issue_date"]:
@@ -86,6 +88,8 @@ class InvoiceService:
         if inv.status != InvoiceStatus.DRAFT:
             raise forbidden("Only draft invoice can be modified")
         src = item if isinstance(item, dict) else item.__dict__
+        if src.get("project_id"):
+            self.project_service.validate_project_attribution(organization_id, src["project_id"], customer_id=inv.customer_id)
         linked_item, account_id, tax_code_id, description, item_code = self._resolve_item_context(organization_id, src)
         account = self.accounts.get(organization_id, account_id)
         if not account or not account.is_postable or not account.is_active:
@@ -106,6 +110,7 @@ class InvoiceService:
             line_number=line_number,
             item_id=linked_item.id if linked_item else None,
             location_id=src.get("location_id"),
+            project_id=src.get("project_id"),
             item_code=item_code,
             description=description,
             quantity=src["quantity"],
@@ -203,6 +208,7 @@ class InvoiceService:
                 datetime.combine(inv.issue_date, datetime.min.time(), tzinfo=UTC),
                 f"Invoice {inv.invoice_number} void reversal",
             )
+            self.project_service.reverse_source_entries(organization_id, "invoice", inv.id, actor_user_id, inv.issue_date)
             inv.voided_journal_id = reversal.id
         inv.status = InvoiceStatus.VOIDED
         inv.voided_at = datetime.now(UTC)

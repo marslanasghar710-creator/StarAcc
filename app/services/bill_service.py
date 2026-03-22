@@ -15,6 +15,7 @@ from app.services.bill_calculation_service import BillCalculationService
 from app.services.bill_posting_service import BillPostingService
 from app.services.branding_service import BrandingService
 from app.services.inventory_service import InventoryService
+from app.services.project_service import ProjectService
 from app.services.numbering_service import NumberingService
 from app.services.tax_calculation_service import TaxCalculationService
 from app.services.tax_settings_service import TaxSettingsService
@@ -32,6 +33,7 @@ class BillService:
         self.branding = BrandingService(db)
         self.numbering = NumberingService(db)
         self.inventory = InventoryService(db)
+        self.project_service = ProjectService(db)
 
     def create(self, organization_id, actor_user_id, payload):
         if payload["due_date"] < payload["issue_date"]:
@@ -88,6 +90,8 @@ class BillService:
         if bill.status != BillStatus.DRAFT:
             raise forbidden("Only draft bill can be modified")
         src = item if isinstance(item, dict) else item.__dict__
+        if src.get("project_id"):
+            self.project_service.validate_project_attribution(organization_id, src["project_id"])
         linked_item, account_id, tax_code_id, description, item_code = self._resolve_item_context(organization_id, src)
         account = self.accounts.get(organization_id, account_id)
         if not account or not account.is_postable or not account.is_active:
@@ -108,6 +112,7 @@ class BillService:
             line_number=line_number,
             item_id=linked_item.id if linked_item else None,
             location_id=src.get("location_id"),
+            project_id=src.get("project_id"),
             item_code=item_code,
             description=description,
             quantity=src["quantity"],
@@ -193,6 +198,7 @@ class BillService:
                 datetime.combine(bill.issue_date, datetime.min.time(), tzinfo=UTC),
                 f"Bill {bill.bill_number} void reversal",
             )
+            self.project_service.reverse_source_entries(organization_id, "bill", bill.id, actor_user_id, bill.issue_date)
             bill.voided_journal_id = reversal.id
         bill.status = BillStatus.VOIDED
         bill.voided_at = datetime.now(UTC)
