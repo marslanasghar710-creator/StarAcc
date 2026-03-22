@@ -330,3 +330,39 @@ The projects module adds organization-scoped job costing foundations while keepi
 - Budget vs actual currently reports budgeted revenue/cost/hours alongside actual revenue, actual cost, actual hours, and derived variances per project.
 - Project activity timelines combine status history, analytical cost/revenue entries, and time entries so reports can trace profitability back to source documents.
 - Frontend profitability truth is intentionally deferred; consumers should use the backend reporting endpoints above.
+
+
+## Payroll foundation
+
+The payroll module adds a backend-first gross-to-net and posting foundation while keeping compliance-specific logic deferred:
+- Employee master records store employment status, salary/hourly defaults, and payroll settings/account mappings per organization.
+- Payroll periods and runs are separate from financial periods, but posting still respects the accounting calendar through the journal service.
+- Payroll calculations produce immutable run entries and line-item payslip data for earnings, employee deductions, and employer costs using Decimal-safe arithmetic only.
+- Posting debits payroll expense accounts, credits deduction liability accounts, and credits the selected funding account for net pay; posted payroll runs cannot be recalculated.
+- Country-specific tax engines, pension provider integrations, payroll payment execution, and richer HR/time UX remain deferred.
+
+### Payroll endpoints
+
+- `POST /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees/{employee_id}`
+- `PATCH /organizations/{organization_id}/employees/{employee_id}`
+- `DELETE /organizations/{organization_id}/employees/{employee_id}`
+- `POST /organizations/{organization_id}/payroll-earning-types`
+- `GET /organizations/{organization_id}/payroll-earning-types`
+- `PATCH /organizations/{organization_id}/payroll-earning-types/{earning_type_id}`
+- `POST /organizations/{organization_id}/payroll-deduction-types`
+- `GET /organizations/{organization_id}/payroll-deduction-types`
+- `PATCH /organizations/{organization_id}/payroll-deduction-types/{deduction_type_id}`
+- `POST /organizations/{organization_id}/payroll-periods`
+- `GET /organizations/{organization_id}/payroll-periods`
+- `GET /organizations/{organization_id}/payroll-periods/{period_id}`
+- `POST /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/calculate`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/post`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}/entries`
+- `GET /organizations/{organization_id}/payroll-entries/{entry_id}`
+- `GET /organizations/{organization_id}/payroll-summary`
+- `GET /organizations/{organization_id}/payroll-liabilities`

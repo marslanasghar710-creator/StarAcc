@@ -22,6 +22,7 @@ from app.db.models.settings import (
 from app.db.models.rbac import Permission, Role, RolePermission
 from app.db.models.reporting import ReportExport, ReportRun
 from app.db.models.projects import Project, ProjectCostEntry, ProjectRevenueEntry, ProjectStatusHistory, ProjectTimeEntry
+from app.db.models.payroll import Employee, PayrollDeductionType, PayrollEarningType, PayrollEntry, PayrollLineItem, PayrollPeriod, PayrollRun
 from app.db.models.session import Session
 from app.db.models.tax import TaxCode, TaxCodeComponent, TaxRate, TaxSettings, TaxTransaction
 from app.db.models.user import User, UserProfile
@@ -83,6 +84,13 @@ __all__ = [
     "ProjectRevenueEntry",
     "ProjectTimeEntry",
     "ProjectStatusHistory",
+    "Employee",
+    "PayrollEarningType",
+    "PayrollDeductionType",
+    "PayrollPeriod",
+    "PayrollRun",
+    "PayrollEntry",
+    "PayrollLineItem",
     "Item",
     "InventoryLocation",
     "InventoryBalance",

@@ -286,3 +286,39 @@ class ProjectStatus(StrEnum):
     ON_HOLD = "on_hold"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+
+
+class EmployeeStatus(StrEnum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    TERMINATED = "terminated"
+
+
+class EmploymentType(StrEnum):
+    SALARIED = "salaried"
+    HOURLY = "hourly"
+    CONTRACTOR_SCAFFOLD = "contractor_scaffold"
+
+
+class PayrollPeriodStatus(StrEnum):
+    DRAFT = "draft"
+    PROCESSED = "processed"
+    POSTED = "posted"
+
+
+class PayrollRunStatus(StrEnum):
+    DRAFT = "draft"
+    CALCULATED = "calculated"
+    POSTED = "posted"
+
+
+class PayrollLineItemType(StrEnum):
+    EARNING = "earning"
+    DEDUCTION = "deduction"
+    EMPLOYER_COST = "employer_cost"
+
+
+class PayrollEarningAmountType(StrEnum):
+    FIXED = "fixed"
+    HOURLY = "hourly"
+    MANUAL = "manual"
