@@ -19,7 +19,7 @@ This frontend layer now includes the first real accounting workflows for:
 
 Detailed tax workflows remain out of scope for this milestone.
 
-Suppliers, bills, banking, and core financial reporting are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, and attachment foundations where endpoints exist.
+Suppliers, bills, banking, core financial reporting, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, and configuration foundations where endpoints exist.
 
 ## Stack
 
@@ -88,6 +88,11 @@ pnpm test
 - `/reports/profit-loss`
 - `/reports/balance-sheet`
 - `/reports/general-ledger`
+- `/settings`
+- `/settings/organization`
+- `/settings/fiscal-periods`
+- `/settings/tax`
+- `/settings/preferences`
 
 ## Backend assumptions and adapters
 
@@ -216,6 +221,41 @@ Used endpoints:
 - Report metadata prefers `/reports/metadata` and falls back to `/reports` when the dedicated metadata endpoint is unavailable.
 - The frontend accepts either broad reporting permissions such as `reports.read` / `reporting.read` or the more specific permission names already present in this repository, such as `reports.profit_loss.read` and `reports.general_ledger.read`.
 - Financial statement structure, totals, comparisons, hierarchy, and export generation remain backend-owned; the frontend only adapts payload shapes for presentation and does not derive accounting truth.
+
+### Settings
+
+Used endpoints:
+
+- `GET /organizations/{organization_id}`
+- `PATCH /organizations/{organization_id}`
+- `GET /organizations/{organization_id}/settings`
+- `PATCH /organizations/{organization_id}/settings`
+- `GET /organizations/{organization_id}/fiscal-periods`
+- `GET /organizations/{organization_id}/fiscal-periods/{period_id}`
+- `POST /organizations/{organization_id}/fiscal-periods`
+- `PATCH /organizations/{organization_id}/fiscal-periods/{period_id}`
+- `POST /organizations/{organization_id}/fiscal-periods/{period_id}/close`
+- `POST /organizations/{organization_id}/fiscal-periods/{period_id}/reopen`
+- `GET /organizations/{organization_id}/periods`
+- `GET /organizations/{organization_id}/periods/{period_id}`
+- `POST /organizations/{organization_id}/periods`
+- `PATCH /organizations/{organization_id}/periods/{period_id}`
+- `POST /organizations/{organization_id}/periods/{period_id}/close`
+- `POST /organizations/{organization_id}/periods/{period_id}/reopen`
+- `GET /organizations/{organization_id}/tax-codes`
+- `POST /organizations/{organization_id}/tax-codes`
+- `PATCH /organizations/{organization_id}/tax-codes/{tax_code_id}`
+- `DELETE /organizations/{organization_id}/tax-codes/{tax_code_id}`
+- `GET /organizations/{organization_id}/document-settings`
+- `PATCH /organizations/{organization_id}/document-settings`
+- `GET /organizations/{organization_id}/accounting-settings`
+- `PATCH /organizations/{organization_id}/accounting-settings`
+
+### Settings adapter notes
+
+- Organization preferences use `PATCH /organizations/{organization_id}` for entity-level fields and reuse `/organizations/{organization_id}/settings` for accounting and numbering preferences where dedicated settings endpoints are not available.
+- Fiscal periods prefer the explicit `/fiscal-periods` endpoints and fall back to the already-existing `/periods` endpoints in this repository when the richer route names are unavailable.
+- Tax code and document settings sections intentionally surface unavailable/read-only states when the backend responds with `404`/`405` rather than pretending the feature is fully implemented.
 
 ### Suppliers
 

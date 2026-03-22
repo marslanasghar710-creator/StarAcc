@@ -50,6 +50,16 @@ export const queryKeys = {
     balanceSheet: (organizationId: string, filters: Record<string, unknown>) => ["reports", organizationId, "balance-sheet", filters] as const,
     generalLedger: (organizationId: string, filters: Record<string, unknown>) => ["reports", organizationId, "general-ledger", filters] as const,
   },
+  settings: {
+    root: (organizationId: string) => ["settings", organizationId] as const,
+    organization: (organizationId: string) => ["settings", organizationId, "organization"] as const,
+    fiscalPeriods: (organizationId: string) => ["settings", organizationId, "fiscal-periods"] as const,
+    fiscalPeriod: (organizationId: string, periodId: string) => ["settings", organizationId, "fiscal-periods", periodId] as const,
+    taxCodes: (organizationId: string) => ["settings", organizationId, "tax-codes"] as const,
+    taxCode: (organizationId: string, taxCodeId: string) => ["settings", organizationId, "tax-codes", taxCodeId] as const,
+    documentSettings: (organizationId: string) => ["settings", organizationId, "document-settings"] as const,
+    accountingSettings: (organizationId: string) => ["settings", organizationId, "accounting-settings"] as const,
+  },
   suppliers: {
     root: (organizationId: string) => ["suppliers", organizationId] as const,
     list: (organizationId: string, search = "") => ["suppliers", organizationId, "list", search] as const,
