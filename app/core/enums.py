@@ -244,3 +244,141 @@ class NotificationType(StrEnum):
     RECONCILIATION_NEEDED = "reconciliation_needed"
     REPORT_EXPORT_READY = "report_export_ready"
     GENERIC = "generic"
+
+
+class InventoryCostingMethod(StrEnum):
+    WEIGHTED_AVERAGE = "weighted_average"
+
+
+class InventoryMovementType(StrEnum):
+    OPENING = "opening"
+    PURCHASE = "purchase"
+    SALE = "sale"
+    ADJUSTMENT_IN = "adjustment_in"
+    ADJUSTMENT_OUT = "adjustment_out"
+    TRANSFER_IN = "transfer_in"
+    TRANSFER_OUT = "transfer_out"
+    REVERSAL = "reversal"
+
+
+class InventorySourceEntityType(StrEnum):
+    OPENING_STOCK = "opening_stock"
+    BILL = "bill"
+    INVOICE = "invoice"
+    ADJUSTMENT = "adjustment"
+    TRANSFER = "transfer"
+    MANUAL = "manual"
+
+
+class InventoryAdjustmentType(StrEnum):
+    OPENING_STOCK = "opening_stock"
+    QUANTITY_WRITE_UP = "quantity_write_up"
+    QUANTITY_WRITE_DOWN = "quantity_write_down"
+
+
+class InventoryValuationMethod(StrEnum):
+    WEIGHTED_AVERAGE = "weighted_average"
+
+
+class ProjectStatus(StrEnum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    ON_HOLD = "on_hold"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class EmployeeStatus(StrEnum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    TERMINATED = "terminated"
+
+
+class EmploymentType(StrEnum):
+    SALARIED = "salaried"
+    HOURLY = "hourly"
+    CONTRACTOR_SCAFFOLD = "contractor_scaffold"
+
+
+class PayrollPeriodStatus(StrEnum):
+    DRAFT = "draft"
+    PROCESSED = "processed"
+    POSTED = "posted"
+
+
+class PayrollRunStatus(StrEnum):
+    DRAFT = "draft"
+    CALCULATED = "calculated"
+    POSTED = "posted"
+
+
+class PayrollLineItemType(StrEnum):
+    EARNING = "earning"
+    DEDUCTION = "deduction"
+    EMPLOYER_COST = "employer_cost"
+
+
+class PayrollEarningAmountType(StrEnum):
+    FIXED = "fixed"
+    HOURLY = "hourly"
+    MANUAL = "manual"
+
+
+class AutomationRuleType(StrEnum):
+    BANK_TRANSACTION_CATEGORIZATION = "bank_transaction_categorization"
+    DOCUMENT_ROUTING = "document_routing"
+    ACCOUNT_CODING = "account_coding"
+    TAX_TREATMENT = "tax_treatment"
+    PAYABLE_TAGGING = "payable_tagging"
+    RECEIVABLE_TAGGING = "receivable_tagging"
+
+
+class SuggestionStatus(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+    APPLIED = "applied"
+
+
+class SuggestionSourceType(StrEnum):
+    RULE = "rule"
+    MODEL = "model"
+    HYBRID = "hybrid"
+    HEURISTIC = "heuristic"
+
+
+class SuggestionFeedbackAction(StrEnum):
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    IGNORED = "ignored"
+
+
+class DocumentExtractionStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class DocumentClassifierLabel(StrEnum):
+    INVOICE = "invoice"
+    BILL = "bill"
+    RECEIPT = "receipt"
+    STATEMENT = "statement"
+    UNKNOWN = "unknown"
+
+
+class AIJobStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    DEAD_LETTER = "dead_letter"
+
+
+class AIJobType(StrEnum):
+    DOCUMENT_EXTRACTION = "document_extraction"
+    RECONCILIATION_SUGGESTIONS = "reconciliation_suggestions"
+    CODING_SUGGESTIONS = "coding_suggestions"
+    ANOMALY_SCAN = "anomaly_scan"

@@ -27,7 +27,7 @@ function defaults(taxCode?: TaxCodeRecord | null): TaxCodeFormValues {
   };
 }
 
-export function TaxCodeFormDialog({ open, onOpenChange, taxCode, onSubmit, isSubmitting }: { open: boolean; onOpenChange: (open: boolean) => void; taxCode?: TaxCodeRecord | null; onSubmit: (values: TaxCodeFormValues) => Promise<void>; isSubmitting?: boolean; }) {
+export function TaxCodeFormDialog({ open, onOpenChange, taxCode, onSubmit, isSubmitting, readOnlyReason }: { open: boolean; onOpenChange: (open: boolean) => void; taxCode?: TaxCodeRecord | null; onSubmit: (values: TaxCodeFormValues) => Promise<void>; isSubmitting?: boolean; readOnlyReason?: string | null; }) {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const form = useForm<TaxCodeFormValues>({ resolver: zodResolver(taxCodeSchema), defaultValues: defaults(taxCode) });
 
@@ -46,29 +46,36 @@ export function TaxCodeFormDialog({ open, onOpenChange, taxCode, onSubmit, isSub
     }
   }
 
+  const isReadOnly = Boolean(readOnlyReason);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{taxCode ? `Edit ${taxCode.name}` : "Create tax code"}</DialogTitle>
-          <DialogDescription>Tax rates and validity remain backend-owned. Frontend validation is for UX only.</DialogDescription>
+          <DialogDescription>Tax rates, validity, and calculation behavior remain backend-owned. Frontend validation is for UX only.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
-            <InlineValidationMessage message={serverError} />
+            <InlineValidationMessage message={serverError ?? readOnlyReason} />
             <div className="grid gap-4 md:grid-cols-2">
-              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="rate" render={({ field }) => (<FormItem><FormLabel>Rate</FormLabel><FormControl><Input {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><FormControl><Input {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} value={field.value ?? ""} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} value={field.value ?? ""} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="rate" render={({ field }) => (<FormItem><FormLabel>Rate</FormLabel><FormControl><Input {...field} value={field.value ?? ""} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><FormControl><Input {...field} value={field.value ?? ""} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
             </div>
-            <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
             {(["applies_to_sales", "applies_to_purchases", "is_active"] as const).map((name) => (
-              <FormField key={name} control={form.control} name={name} render={({ field }) => (<FormItem className="rounded-lg border border-border/70 p-3"><FormLabel className="flex items-center justify-between"><span>{name.replaceAll("_", " ")}</span><input type="checkbox" checked={field.value} onChange={(event) => field.onChange(event.target.checked)} /></FormLabel><FormMessage /></FormItem>)} />
+              <FormField key={name} control={form.control} name={name} render={({ field }) => (
+                <FormItem className="rounded-lg border border-border/70 p-3">
+                  <FormLabel className="flex items-center justify-between"><span>{name.replaceAll("_", " ")}</span><input type="checkbox" checked={field.value} onChange={(event) => field.onChange(event.target.checked)} disabled={isReadOnly} /></FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )} />
             ))}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving…" : taxCode ? "Save tax code" : "Create tax code"}</Button>
+              {!isReadOnly ? <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving…" : taxCode ? "Save tax code" : "Create tax code"}</Button> : null}
             </DialogFooter>
           </form>
         </Form>
