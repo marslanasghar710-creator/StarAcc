@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TaxCodeStatusBadge } from "@/features/settings/components/tax-code-status-badge";
@@ -22,12 +20,22 @@ export function TaxCodeListTable({ taxCodes, canEdit, canArchive, onEdit, onArch
       <TableBody>
         {taxCodes.map((taxCode) => (
           <TableRow key={taxCode.id}>
-            <TableCell>{taxCode.name}</TableCell>
+            <TableCell>
+              <div className="space-y-1">
+                <div className="font-medium">{taxCode.name}</div>
+                {taxCode.description ? <div className="text-xs text-muted-foreground">{taxCode.description}</div> : null}
+              </div>
+            </TableCell>
             <TableCell>{taxCode.code}</TableCell>
-            <TableCell>{taxCode.rate}%</TableCell>
+            <TableCell>{taxCode.rate ? `${taxCode.rate}%` : "—"}</TableCell>
             <TableCell>{taxCode.type || "—"}</TableCell>
             <TableCell>{[taxCode.appliesToSales ? "Sales" : null, taxCode.appliesToPurchases ? "Purchases" : null].filter(Boolean).join(" / ") || "—"}</TableCell>
-            <TableCell><TaxCodeStatusBadge isActive={taxCode.isActive} /></TableCell>
+            <TableCell>
+              <div className="space-y-1">
+                <TaxCodeStatusBadge isActive={taxCode.isActive} />
+                {taxCode.readOnlyReason ? <div className="text-xs text-muted-foreground">Read only</div> : null}
+              </div>
+            </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
                 {canEdit ? <Button type="button" variant="outline" onClick={() => onEdit(taxCode)}>Edit</Button> : null}

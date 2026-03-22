@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ClosePeriodDialog } from '@/features/settings/components/close-period-dialog';
 import { ReopenPeriodDialog } from '@/features/settings/components/reopen-period-dialog';
 import { SettingsAvailabilityCard } from '@/features/settings/components/settings-availability-card';
+import { SettingsNav } from '@/features/settings/components/settings-nav';
 import { SettingsReadonlyCard } from '@/features/settings/components/settings-readonly-card';
 import { TaxCodeStatusBadge } from '@/features/settings/components/tax-code-status-badge';
 import { accountingSettingsSchema, documentSettingsSchema, fiscalPeriodSchema, organizationPreferencesSchema, taxCodeSchema } from '@/features/settings/schemas';
@@ -37,8 +38,32 @@ describe('settings form validation', () => {
   });
 
   it('accepts document and accounting settings payloads', () => {
-    expect(documentSettingsSchema.safeParse({ invoice_prefix: 'INV', bill_prefix: 'BILL', journal_prefix: 'JRN', credit_note_prefix: 'CRN' }).success).toBe(true);
-    expect(accountingSettingsSchema.safeParse({ default_locale: 'en-US', date_format: 'MM/DD/YYYY', number_format: '1,234.56', tax_enabled: true, multi_currency_enabled: false, base_currency: 'USD', timezone: 'UTC' }).success).toBe(true);
+    expect(documentSettingsSchema.safeParse({
+      invoice_prefix: 'INV',
+      bill_prefix: 'BILL',
+      journal_prefix: 'JRN',
+      credit_note_prefix: 'CRN',
+      payment_prefix: 'PAY',
+      supplier_credit_prefix: 'SCN',
+      supplier_payment_prefix: 'SPY',
+      quote_prefix: 'QTE',
+      purchase_order_prefix: 'PO',
+      next_invoice_number: '1001',
+      next_bill_number: '',
+      next_journal_number: '88',
+      next_credit_note_number: '42',
+    }).success).toBe(true);
+    expect(accountingSettingsSchema.safeParse({
+      default_locale: 'en-US',
+      date_format: 'MM/DD/YYYY',
+      number_format: '1,234.56',
+      tax_enabled: true,
+      multi_currency_enabled: false,
+      base_currency: 'USD',
+      timezone: 'UTC',
+      week_start_day: '1',
+      default_document_language: 'en',
+    }).success).toBe(true);
   });
 });
 
@@ -59,7 +84,7 @@ describe('settings UI helpers', () => {
     expect(screen.getByText(/open section/i)).toBeInTheDocument();
 
     rerender(<SettingsAvailabilityCard section={{ ...availableSection, availability: 'unavailable', reason: 'Backend incomplete.' }} isPermitted={false} />);
-    expect(screen.getByText(/backend incomplete/i)).toBeInTheDocument();
+    expect(screen.getByText(/restricted by permissions/i)).toBeInTheDocument();
   });
 
   it('renders readonly and status badges', () => {
@@ -72,6 +97,21 @@ describe('settings UI helpers', () => {
 
     expect(screen.getByText('Read only')).toBeInTheDocument();
     expect(screen.getByText('Inactive')).toBeInTheDocument();
+  });
+
+  it('renders permission-aware navigation state', () => {
+    render(
+      <SettingsNav
+        activeHref="/settings/organization"
+        sections={[
+          { ...availableSection, id: 'organization', title: 'Organization', href: '/settings/organization', availability: 'available', isPermitted: true },
+          { ...availableSection, id: 'preferences', title: 'Preferences', href: '/settings/preferences', availability: 'read-only', isPermitted: false },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Restricted')).toBeInTheDocument();
+    expect(screen.getByText(/permission restricted for your current role/i)).toBeInTheDocument();
   });
 
   it('renders close and reopen warnings', () => {

@@ -1,0 +1,57 @@
+export const SETTINGS_PERMISSION_GROUPS = {
+  landing: [
+    "settings.read",
+    "organization.read",
+    "org.read",
+    "periods.read",
+    "fiscal_periods.read",
+    "tax_codes.read",
+    "tax.settings.read",
+    "branding.read",
+    "numbering.read",
+  ],
+  organizationRead: ["settings.read", "organization.read", "org.read"],
+  organizationWrite: ["settings.update", "organization.update", "org.update"],
+  fiscalPeriodsRead: ["settings.read", "periods.read", "fiscal_periods.read"],
+  fiscalPeriodsCreate: ["periods.create", "fiscal_periods.create"],
+  fiscalPeriodsUpdate: ["periods.update", "fiscal_periods.update"],
+  fiscalPeriodsClose: ["periods.close", "fiscal_periods.close"],
+  fiscalPeriodsReopen: ["periods.reopen", "fiscal_periods.reopen"],
+  taxRead: ["settings.read", "tax_codes.read", "tax.settings.read"],
+  taxCreate: ["tax_codes.create", "tax_rates.create"],
+  taxUpdate: ["tax_codes.update", "tax_rates.update"],
+  taxArchive: ["tax_codes.archive", "tax_rates.archive"],
+  preferencesRead: ["settings.read", "branding.read", "numbering.read"],
+  preferencesWrite: ["settings.update", "branding.update", "numbering.update"],
+} as const;
+
+export const SETTINGS_NAV_SECTIONS = [
+  {
+    id: "organization",
+    title: "Organization",
+    description: "Entity profile, registration identifiers, and organization metadata.",
+    href: "/settings/organization",
+    requiredPermissions: SETTINGS_PERMISSION_GROUPS.organizationRead,
+  },
+  {
+    id: "fiscal-periods",
+    title: "Fiscal periods",
+    description: "Period definitions plus backend-driven close and reopen actions.",
+    href: "/settings/fiscal-periods",
+    requiredPermissions: SETTINGS_PERMISSION_GROUPS.fiscalPeriodsRead,
+  },
+  {
+    id: "tax",
+    title: "Tax configuration",
+    description: "Tax code maintenance while keeping tax truth in backend services.",
+    href: "/settings/tax",
+    requiredPermissions: SETTINGS_PERMISSION_GROUPS.taxRead,
+  },
+  {
+    id: "preferences",
+    title: "Preferences",
+    description: "Document numbering, locale, and accounting defaults.",
+    href: "/settings/preferences",
+    requiredPermissions: SETTINGS_PERMISSION_GROUPS.preferencesRead,
+  },
+] as const;

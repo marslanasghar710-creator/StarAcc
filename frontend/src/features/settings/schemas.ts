@@ -2,6 +2,8 @@ import { z } from "zod";
 
 const optionalText = z.string().trim().max(255).optional().or(z.literal(""));
 const optionalLongText = z.string().trim().max(2000).optional().or(z.literal(""));
+const optionalNumberText = z.string().trim().regex(/^\d*$/, "Must be a whole number").optional().or(z.literal(""));
+const optionalIsoDate = z.string().trim().min(1, "Date is required").refine((value) => !Number.isNaN(Date.parse(value)), "Date must be valid");
 const decimalRate = z.string().trim().min(1, "Rate is required").refine((value) => /^-?\d+(\.\d{1,4})?$/.test(value), "Rate must be a valid decimal");
 
 export const organizationPreferencesSchema = z.object({
@@ -21,8 +23,8 @@ export const organizationPreferencesSchema = z.object({
 
 export const fiscalPeriodSchema = z.object({
   name: z.string().trim().min(1, "Period name is required").max(255),
-  start_date: z.string().trim().min(1, "Start date is required"),
-  end_date: z.string().trim().min(1, "End date is required"),
+  start_date: optionalIsoDate,
+  end_date: optionalIsoDate,
   notes: optionalLongText,
 }).refine((value) => value.start_date <= value.end_date, {
   message: "End date must be after start date",
@@ -45,6 +47,15 @@ export const documentSettingsSchema = z.object({
   bill_prefix: optionalText,
   journal_prefix: optionalText,
   credit_note_prefix: optionalText,
+  payment_prefix: optionalText,
+  supplier_credit_prefix: optionalText,
+  supplier_payment_prefix: optionalText,
+  quote_prefix: optionalText,
+  purchase_order_prefix: optionalText,
+  next_invoice_number: optionalNumberText,
+  next_bill_number: optionalNumberText,
+  next_journal_number: optionalNumberText,
+  next_credit_note_number: optionalNumberText,
 });
 
 export const accountingSettingsSchema = z.object({
@@ -55,6 +66,8 @@ export const accountingSettingsSchema = z.object({
   multi_currency_enabled: z.boolean(),
   base_currency: optionalText,
   timezone: optionalText,
+  week_start_day: z.union([z.literal(""), z.enum(["0", "1", "2", "3", "4", "5", "6"])]),
+  default_document_language: optionalText,
 });
 
 export type OrganizationPreferencesFormValues = z.infer<typeof organizationPreferencesSchema>;

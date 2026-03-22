@@ -8,7 +8,7 @@ export function canPermission(permissionSet: Set<string>, permission?: string) {
   return permissionSet.has(permission);
 }
 
-export function hasAnyPermission(permissionSet: Set<string>, permissions: string[]) {
+export function hasAnyPermission(permissionSet: Set<string>, permissions: readonly string[]) {
   if (permissions.length === 0) {
     return true;
   }
@@ -16,7 +16,7 @@ export function hasAnyPermission(permissionSet: Set<string>, permissions: string
   return permissions.some((permission) => permissionSet.has(permission));
 }
 
-export function hasAllPermissions(permissionSet: Set<string>, permissions: string[]) {
+export function hasAllPermissions(permissionSet: Set<string>, permissions: readonly string[]) {
   if (permissions.length === 0) {
     return true;
   }
