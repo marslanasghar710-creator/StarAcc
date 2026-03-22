@@ -93,6 +93,9 @@ pnpm test
 - `/settings/fiscal-periods`
 - `/settings/tax`
 - `/settings/preferences`
+- `/inventory`
+- `/inventory/items/[itemId]`
+- `/inventory/adjustments`
 
 ## Backend assumptions and adapters
 
@@ -373,3 +376,30 @@ frontend/
 - Period state is visible throughout journal workflows, but period mutation UI is intentionally out of scope.
 - Archive, post, reverse, and void actions all refetch backend state after successful mutations.
 - This implementation favors dense, audit-friendly tables and metadata layouts over marketing-style presentation.
+
+
+### Inventory
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items/search`
+- `GET /organizations/{organization_id}/items/{item_id}`
+- `PATCH /organizations/{organization_id}/items/{item_id}`
+- `GET /organizations/{organization_id}/inventory/balances`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/balance`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/movements`
+- `GET /organizations/{organization_id}/inventory/adjustments`
+- `POST /organizations/{organization_id}/inventory/adjustments`
+- `GET /organizations/{organization_id}/inventory/valuation`
+- `GET /organizations/{organization_id}/inventory/locations`
+- `GET /organizations/{organization_id}/accounts`
+- `GET /organizations/{organization_id}/tax-codes`
+
+### Inventory adapter notes
+
+- Item, balance, movement, and adjustment adapters accept both snake_case and camelCase payloads so the UI remains compatible with evolving backend response shapes.
+- Inventory quantity, costing, movement status, and valuation totals remain backend-owned; the frontend only formats and combines returned records for display.
+- Item creation supports an inactive initial state by creating the item first and then issuing an update when `is_active=false`, matching the narrower backend create contract.
+- Location data is optional: adjustment and item workflows surface location selectors only when the backend exposes location rows.

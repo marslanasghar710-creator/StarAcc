@@ -95,6 +95,17 @@ export const queryKeys = {
     list: (organizationId: string, search = "") => ["journals", organizationId, "list", search] as const,
     detail: (organizationId: string, journalId: string) => ["journals", organizationId, "detail", journalId] as const,
   },
+  inventory: {
+    root: (organizationId: string) => ["inventory", organizationId] as const,
+    items: (organizationId: string, search = "") => ["inventory", organizationId, "items", search] as const,
+    item: (organizationId: string, itemId: string) => ["inventory", organizationId, "item", itemId] as const,
+    balances: (organizationId: string) => ["inventory", organizationId, "balances"] as const,
+    balance: (organizationId: string, itemId: string) => ["inventory", organizationId, "balance", itemId] as const,
+    movements: (organizationId: string, itemId: string) => ["inventory", organizationId, "movements", itemId] as const,
+    adjustments: (organizationId: string) => ["inventory", organizationId, "adjustments"] as const,
+    valuation: (organizationId: string) => ["inventory", organizationId, "valuation"] as const,
+    locations: (organizationId: string) => ["inventory", organizationId, "locations"] as const,
+  },
   periods: {
     root: (organizationId: string) => ["periods", organizationId] as const,
     list: (organizationId: string) => ["periods", organizationId, "list"] as const,
