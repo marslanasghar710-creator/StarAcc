@@ -56,7 +56,9 @@ class BillItemCreateRequest(BaseModel):
     description: str
     quantity: Decimal = Field(gt=0)
     unit_price: Decimal = Field(ge=0)
-    account_id: UUID
+    account_id: UUID | None = None
+    item_id: UUID | None = None
+    location_id: UUID | None = None
     item_code: str | None = None
     discount_percent: Decimal | None = None
     discount_amount: Decimal | None = None
@@ -69,6 +71,8 @@ class BillItemUpdateRequest(BaseModel):
     quantity: Decimal | None = Field(default=None, gt=0)
     unit_price: Decimal | None = Field(default=None, ge=0)
     account_id: UUID | None = None
+    item_id: UUID | None = None
+    location_id: UUID | None = None
     discount_percent: Decimal | None = None
     discount_amount: Decimal | None = None
     line_tax_amount: Decimal | None = None

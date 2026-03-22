@@ -250,3 +250,43 @@ curl -X POST http://localhost:8000/organizations/$ORG_ID/invoices/$INVOICE_ID/se
 curl -G http://localhost:8000/organizations/$ORG_ID/notifications \
   -H "Authorization: Bearer $ACCESS"
 ```
+
+## Inventory foundation
+
+The inventory module keeps stock, valuation, and movement truth on the backend:
+- Organization-scoped item master data supports sellable, purchasable, and tracked inventory items.
+- Weighted-average costing is the active valuation method for tracked stock.
+- Inventory movements are append-only, audit-linked, and reversible rather than destructively edited.
+- Bill posting creates inbound stock movements for tracked items and debits the configured inventory asset account.
+- Invoice posting creates outbound stock movements, relieves inventory using the current weighted-average cost, and books a COGS foundation line against the item's expense account.
+- Manual stock adjustments create both inventory movements and balancing journals using an explicit offset account.
+- Locations are implemented as a lightweight warehouse foundation for future transfers and warehouse-aware reporting.
+- Negative inventory is currently disallowed and enforced at the service layer.
+
+### Inventory endpoints
+
+- `POST /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items/search`
+- `GET /organizations/{organization_id}/items/{item_id}`
+- `PATCH /organizations/{organization_id}/items/{item_id}`
+- `DELETE /organizations/{organization_id}/items/{item_id}`
+- `POST /organizations/{organization_id}/inventory/locations`
+- `GET /organizations/{organization_id}/inventory/locations`
+- `GET /organizations/{organization_id}/inventory/locations/{location_id}`
+- `PATCH /organizations/{organization_id}/inventory/locations/{location_id}`
+- `GET /organizations/{organization_id}/inventory/balances`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/balance`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/movements`
+- `GET /organizations/{organization_id}/inventory/stock-on-hand`
+- `GET /organizations/{organization_id}/inventory/valuation`
+- `POST /organizations/{organization_id}/inventory/adjustments`
+- `GET /organizations/{organization_id}/inventory/adjustments`
+- `GET /organizations/{organization_id}/inventory/adjustments/{adjustment_id}`
+
+### Inventory notes and current deferrals
+
+- `invoice_items` and `bill_items` now accept optional `item_id` and `location_id`; service lines without an item continue to work.
+- Tracked inventory purchasing recognizes stock when the bill is posted, not when the draft is created.
+- Tracked inventory sales recognize stock when the invoice is posted, not when the draft is created or sent.
+- Purchase receiving workflows, warehouse transfers, serial/lot tracking, manufacturing, and advanced valuation layers remain deferred for later modules.
