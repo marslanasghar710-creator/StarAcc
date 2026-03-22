@@ -41,6 +41,7 @@ from app.services.credit_note_service import CreditNoteService
 from app.services.customer_payment_service import CustomerPaymentService
 from app.services.customer_service import CustomerService
 from app.services.invoice_service import InvoiceService
+from app.services.project_service import ProjectService
 
 router = APIRouter(prefix="/organizations/{organization_id}", tags=["accounts_receivable"])
 
@@ -165,7 +166,11 @@ def add_invoice_item(organization_id: str, invoice_id: str, payload: InvoiceItem
 def update_invoice_item(organization_id: str, invoice_id: str, item_id: str, payload: InvoiceItemUpdateRequest, _=Depends(require_permission("invoices.update")), db: Session = Depends(get_db)):
     svc = InvoiceService(db)
     item = svc.invoices.get_item(item_id)
-    for k, v in payload.model_dump(exclude_none=True).items():
+    update_payload = payload.model_dump(exclude_none=True)
+    if update_payload.get("project_id"):
+        inv = svc.invoices.get(organization_id, invoice_id)
+        ProjectService(db).validate_project_attribution(organization_id, update_payload["project_id"], customer_id=inv.customer_id)
+    for k, v in update_payload.items():
         setattr(item, k, v)
     from app.services.invoice_calculation_service import InvoiceCalculationService
 

@@ -93,6 +93,12 @@ pnpm test
 - `/settings/fiscal-periods`
 - `/settings/tax`
 - `/settings/preferences`
+- `/inventory`
+- `/inventory/items/[itemId]`
+- `/inventory/adjustments`
+- `/assets`
+- `/assets/[assetId]`
+- `/assets/categories`
 
 ## Backend assumptions and adapters
 
@@ -253,9 +259,10 @@ Used endpoints:
 
 ### Settings adapter notes
 
-- Organization preferences use `PATCH /organizations/{organization_id}` for entity-level fields and reuse `/organizations/{organization_id}/settings` for accounting and numbering preferences where dedicated settings endpoints are not available.
-- Fiscal periods prefer the explicit `/fiscal-periods` endpoints and fall back to the already-existing `/periods` endpoints in this repository when the richer route names are unavailable.
-- Tax code and document settings sections intentionally surface unavailable/read-only states when the backend responds with `404`/`405` rather than pretending the feature is fully implemented.
+- Organization preferences use `PATCH /organizations/{organization_id}` for entity-level fields and merge `GET /organizations/{organization_id}/settings` values where locale/date-format metadata is only exposed through the broader settings record.
+- Fiscal periods prefer the explicit `/fiscal-periods` endpoints and fall back to the already-existing `/periods` endpoints in this repository when the richer route names are unavailable. When the legacy `/periods` create contract is used, the frontend derives `fiscal_year` and `period_number` from the selected start date purely to satisfy the request schema; backend period status and close/reopen truth still remain authoritative.
+- Preferences prefer the Prompt-08-style `/document-settings` and `/accounting-settings` routes, then fall back to repository-native equivalents: `/settings/numbering`, `/settings/preferences`, and finally `/organizations/{organization_id}/settings` when necessary.
+- Tax configuration prefers `/tax-codes`, but the repository currently exposes a richer legacy `/organizations/{organization_id}/tax/codes` surface built around calculation methods and components rather than a simple rate-only form. The frontend therefore adapts that legacy response for read-only visibility and disables write actions in compatibility mode instead of inventing tax truth in the client.
 
 ### Suppliers
 
@@ -372,3 +379,59 @@ frontend/
 - Period state is visible throughout journal workflows, but period mutation UI is intentionally out of scope.
 - Archive, post, reverse, and void actions all refetch backend state after successful mutations.
 - This implementation favors dense, audit-friendly tables and metadata layouts over marketing-style presentation.
+
+
+### Inventory
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items/search`
+- `GET /organizations/{organization_id}/items/{item_id}`
+- `PATCH /organizations/{organization_id}/items/{item_id}`
+- `GET /organizations/{organization_id}/inventory/balances`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/balance`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/movements`
+- `GET /organizations/{organization_id}/inventory/adjustments`
+- `POST /organizations/{organization_id}/inventory/adjustments`
+- `GET /organizations/{organization_id}/inventory/valuation`
+- `GET /organizations/{organization_id}/inventory/locations`
+- `GET /organizations/{organization_id}/accounts`
+- `GET /organizations/{organization_id}/tax-codes`
+
+### Inventory adapter notes
+
+- Item, balance, movement, and adjustment adapters accept both snake_case and camelCase payloads so the UI remains compatible with evolving backend response shapes.
+- Inventory quantity, costing, movement status, and valuation totals remain backend-owned; the frontend only formats and combines returned records for display.
+- Item creation supports an inactive initial state by creating the item first and then issuing an update when `is_active=false`, matching the narrower backend create contract.
+- Location data is optional: adjustment and item workflows surface location selectors only when the backend exposes location rows.
+
+
+### Fixed assets
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/asset-categories`
+- `GET /organizations/{organization_id}/asset-categories`
+- `GET /organizations/{organization_id}/asset-categories/{category_id}`
+- `PATCH /organizations/{organization_id}/asset-categories/{category_id}`
+- `POST /organizations/{organization_id}/assets`
+- `GET /organizations/{organization_id}/assets`
+- `GET /organizations/{organization_id}/assets/{asset_id}`
+- `PATCH /organizations/{organization_id}/assets/{asset_id}`
+- `GET /organizations/{organization_id}/assets/{asset_id}/depreciation-schedule`
+- `POST /organizations/{organization_id}/assets/{asset_id}/generate-depreciation`
+- `POST /organizations/{organization_id}/assets/{asset_id}/dispose`
+- `POST /organizations/{organization_id}/depreciation/run`
+- `GET /organizations/{organization_id}/depreciation-runs`
+- `GET /organizations/{organization_id}/asset-register`
+- `GET /organizations/{organization_id}/asset-valuation`
+- `GET /organizations/{organization_id}/asset-depreciation-summary`
+- `GET /organizations/{organization_id}/accounts`
+
+### Fixed assets adapter notes
+
+- Asset and category adapters accept both snake_case and camelCase payloads where appropriate so the UI tolerates backend response-shape variations.
+- Depreciation schedules, accumulated depreciation, net book value, valuation totals, and disposal accounting remain fully backend-owned.
+- The frontend only triggers create/update/disposal/run actions and formats the backend responses for register, summary, and schedule screens.

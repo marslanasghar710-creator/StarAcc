@@ -5,15 +5,16 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import BillStatus
+from app.core.enums import BillStatus, TaxTransactionDirection
 from app.core.exceptions import forbidden
 from app.db.models import AccountingSettings
 from app.repositories.audit import AuditRepository
 from app.repositories.bill_repository import BillRepository
 from app.repositories.supplier_repository import SupplierRepository
+from app.services.inventory_service import InventoryService
+from app.services.project_service import ProjectService
 from app.services.journal_service import JournalService
 from app.services.tax_posting_integration_service import TaxPostingIntegrationService
-from app.core.enums import TaxTransactionDirection
 
 
 class BillPostingService:
@@ -23,6 +24,8 @@ class BillPostingService:
         self.suppliers = SupplierRepository(db)
         self.audit = AuditRepository(db)
         self.tax = TaxPostingIntegrationService(db)
+        self.inventory = InventoryService(db)
+        self.projects = ProjectService(db)
 
     def post(self, organization_id, bill_id, actor_user_id):
         bill = self.bills.get(organization_id, bill_id)
@@ -43,6 +46,8 @@ class BillPostingService:
         if not lines:
             raise forbidden("Bill requires at least one line")
 
+        movements = self.inventory.post_bill_movements(organization_id, bill, lines, actor_user_id)
+        self.projects.record_bill_costs(organization_id, bill, lines, actor_user_id)
         tax_total = sum((Decimal(line.line_tax_amount or 0) for line in lines), Decimal("0"))
         tax_account_id = self.tax.control_account_id(organization_id, TaxTransactionDirection.INPUT, tax_total)
         journal_lines = []
@@ -61,8 +66,9 @@ class BillPostingService:
             "source_id": str(bill.id),
             "lines": [type("L", (), l) for l in journal_lines],
         }
-        journal = JournalService(self.db).create(organization_id, actor_user_id, payload)
-        journal = JournalService(self.db).post(organization_id, journal.id, actor_user_id)
+        journal = JournalService(self.db).create_and_post(organization_id, actor_user_id, payload)
+        for movement in movements:
+            movement.accounting_journal_id = journal.id
 
         bill.posted_journal_id = journal.id
         bill.posted_at = datetime.now(UTC)

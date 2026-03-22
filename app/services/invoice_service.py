@@ -5,19 +5,20 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import InvoiceStatus
+from app.core.enums import InvoiceStatus, TaxCodeAppliesTo
 from app.core.exceptions import forbidden, not_found
 from app.repositories.account_repository import AccountRepository
 from app.repositories.audit import AuditRepository
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.invoice_repository import InvoiceRepository
+from app.services.branding_service import BrandingService
+from app.services.inventory_service import InventoryService
 from app.services.invoice_calculation_service import InvoiceCalculationService
 from app.services.invoice_posting_service import InvoicePostingService
-from app.services.tax_calculation_service import TaxCalculationService
-from app.services.branding_service import BrandingService
+from app.services.project_service import ProjectService
 from app.services.numbering_service import NumberingService
+from app.services.tax_calculation_service import TaxCalculationService
 from app.services.tax_settings_service import TaxSettingsService
-from app.core.enums import TaxCodeAppliesTo
 
 
 class InvoiceService:
@@ -31,6 +32,8 @@ class InvoiceService:
         self.tax_settings = TaxSettingsService(db)
         self.branding = BrandingService(db)
         self.numbering = NumberingService(db)
+        self.inventory = InventoryService(db)
+        self.project_service = ProjectService(db)
 
     def create(self, organization_id, actor_user_id, payload):
         if payload["due_date"] < payload["issue_date"]:
@@ -61,23 +64,43 @@ class InvoiceService:
         self.db.commit()
         return invoice
 
+    def _resolve_item_context(self, organization_id, src):
+        item = self.inventory._resolve_line_item(organization_id, src)
+        account_id = src.get("account_id")
+        tax_code_id = src.get("tax_code_id")
+        description = src["description"]
+        item_code = src.get("item_code")
+        if item:
+            description = src.get("description") or item.name
+            item_code = src.get("item_code") or item.sku
+            if not account_id:
+                account_id = item.income_account_id
+            if not tax_code_id:
+                tax_code_id = item.sales_tax_code_id
+        if not account_id:
+            raise forbidden("Invoice item requires an account or linked item default account")
+        return item, account_id, tax_code_id, description, item_code
+
     def add_item(self, organization_id, invoice_id, item, line_number=None):
         inv = self.invoices.get(organization_id, invoice_id)
         if not inv:
             raise not_found("Invoice not found")
         if inv.status != InvoiceStatus.DRAFT:
             raise forbidden("Only draft invoice can be modified")
-        account = self.accounts.get(organization_id, item["account_id"]) if isinstance(item, dict) else self.accounts.get(organization_id, item.account_id)
+        src = item if isinstance(item, dict) else item.__dict__
+        if src.get("project_id"):
+            self.project_service.validate_project_attribution(organization_id, src["project_id"], customer_id=inv.customer_id)
+        linked_item, account_id, tax_code_id, description, item_code = self._resolve_item_context(organization_id, src)
+        account = self.accounts.get(organization_id, account_id)
         if not account or not account.is_postable or not account.is_active:
             raise forbidden("Invalid account for invoice item")
-        src = item if isinstance(item, dict) else item.__dict__
         calc = self.tax.calculate_line(
             organization_id,
             quantity=src["quantity"],
             unit_price=src["unit_price"],
             discount_percent=src.get("discount_percent"),
             discount_amount=src.get("discount_amount"),
-            tax_code_id=src.get("tax_code_id"),
+            tax_code_id=tax_code_id,
             usage=TaxCodeAppliesTo.SALES,
         )
         line_number = line_number or (len(self.invoices.list_items(invoice_id)) + 1)
@@ -85,14 +108,17 @@ class InvoiceService:
             invoice_id=invoice_id,
             organization_id=organization_id,
             line_number=line_number,
-            item_code=src.get("item_code"),
-            description=src["description"],
+            item_id=linked_item.id if linked_item else None,
+            location_id=src.get("location_id"),
+            project_id=src.get("project_id"),
+            item_code=item_code,
+            description=description,
             quantity=src["quantity"],
             unit_price=src["unit_price"],
             discount_percent=src.get("discount_percent"),
             discount_amount=src.get("discount_amount"),
-            tax_code_id=src.get("tax_code_id"),
-            account_id=src["account_id"],
+            tax_code_id=tax_code_id,
+            account_id=account_id,
             tax_breakdown_json=calc.tax_breakdown,
             line_taxable_amount=calc.taxable_amount,
             line_subtotal=calc.taxable_amount,
@@ -170,6 +196,20 @@ class InvoiceService:
             raise not_found("Invoice not found")
         if inv.amount_paid > 0:
             raise forbidden("Cannot void paid/partially paid invoice")
+        if inv.posted_journal_id and not inv.voided_journal_id:
+            from app.services.journal_service import JournalService
+
+            reversal = JournalService(self.db).reverse(organization_id, inv.posted_journal_id, actor_user_id, inv.issue_date, "Invoice void")
+            self.inventory.reverse_document_movements(
+                organization_id,
+                InventorySourceEntityType.INVOICE,
+                inv.id,
+                actor_user_id,
+                datetime.combine(inv.issue_date, datetime.min.time(), tzinfo=UTC),
+                f"Invoice {inv.invoice_number} void reversal",
+            )
+            self.project_service.reverse_source_entries(organization_id, "invoice", inv.id, actor_user_id, inv.issue_date)
+            inv.voided_journal_id = reversal.id
         inv.status = InvoiceStatus.VOIDED
         inv.voided_at = datetime.now(UTC)
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="invoice.voided", entity_type="invoice", entity_id=str(inv.id))
