@@ -369,3 +369,44 @@ The payroll module adds a backend-first gross-to-net and posting foundation whil
 - `GET /organizations/{organization_id}/payroll-entries/{entry_id}`
 - `GET /organizations/{organization_id}/payroll-summary`
 - `GET /organizations/{organization_id}/payroll-liabilities`
+
+## AI / automation layer foundation
+
+The AI and automation layer is backend-governed, audit-safe, and intentionally non-authoritative:
+- Automation rules provide deterministic, explainable matching for bank-transaction categorization and document coding suggestions using constrained condition operators and priority ordering.
+- Suggestions are stored with lifecycle state, confidence, explainability metadata, provider provenance, expiry, and reviewer feedback so advisory outputs remain traceable.
+- Document-intelligence jobs operate on existing uploaded files, classify them heuristically, extract reviewable structured fields, and persist both the extraction job record and the underlying AI processing job.
+- Reconciliation and coding assistance never bypass existing accounting workflows; suggestion acceptance remains advisory by default, and only explicitly safe, feature-flagged bank-transaction updates can auto-apply through the existing bank transaction service.
+- AI processing jobs and reconciliation suggestion sets provide queue/job visibility, retry-safe status tracking foundations, and audit hooks for future asynchronous workers.
+- External model dependence is intentionally deferred: the current provider adapter uses local deterministic heuristics so the module stays testable without network access or opaque black-box writes.
+
+### AI / automation endpoints
+
+- `POST /organizations/{organization_id}/automation-rules`
+- `GET /organizations/{organization_id}/automation-rules`
+- `GET /organizations/{organization_id}/automation-rules/{rule_id}`
+- `PATCH /organizations/{organization_id}/automation-rules/{rule_id}`
+- `DELETE /organizations/{organization_id}/automation-rules/{rule_id}`
+- `POST /organizations/{organization_id}/automation-rules/{rule_id}/test`
+- `GET /organizations/{organization_id}/suggestions`
+- `GET /organizations/{organization_id}/suggestions/{suggestion_id}`
+- `GET /organizations/{organization_id}/suggestions/for/{entity_type}/{entity_id}`
+- `POST /organizations/{organization_id}/suggestions/{suggestion_id}/accept`
+- `POST /organizations/{organization_id}/suggestions/{suggestion_id}/reject`
+- `POST /organizations/{organization_id}/document-intelligence/extract`
+- `GET /organizations/{organization_id}/document-intelligence/jobs`
+- `GET /organizations/{organization_id}/document-intelligence/jobs/{job_id}`
+- `GET /organizations/{organization_id}/document-intelligence/jobs/{job_id}/result`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/generate-suggestions`
+- `GET /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/suggestions`
+- `POST /organizations/{organization_id}/documents/{entity_type}/{entity_id}/generate-coding-suggestions`
+- `GET /organizations/{organization_id}/documents/{entity_type}/{entity_id}/coding-suggestions`
+- `GET /organizations/{organization_id}/ai-jobs`
+- `GET /organizations/{organization_id}/ai-jobs/{job_id}`
+
+### AI safety notes and current deferrals
+
+- Suggestions do not become accounting truth. Accepted suggestions can be reviewed without changing books, and only safe bank-transaction coding updates can be auto-applied when `ai_auto_apply_safe_workflows=true`.
+- Document extraction currently supports uploaded text and CSV content best; PDFs and images are intentionally deferred to future provider integrations while the job/audit contract stays stable.
+- Rule conflict handling is priority-based per suggestion type: the highest-priority matching rule wins for a given target and suggestion type.
+- Rejected or expired suggestions cannot be silently reused; regeneration creates a fresh suggestion record with a new fingerprint and review cycle.

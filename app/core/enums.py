@@ -322,3 +322,63 @@ class PayrollEarningAmountType(StrEnum):
     FIXED = "fixed"
     HOURLY = "hourly"
     MANUAL = "manual"
+
+
+class AutomationRuleType(StrEnum):
+    BANK_TRANSACTION_CATEGORIZATION = "bank_transaction_categorization"
+    DOCUMENT_ROUTING = "document_routing"
+    ACCOUNT_CODING = "account_coding"
+    TAX_TREATMENT = "tax_treatment"
+    PAYABLE_TAGGING = "payable_tagging"
+    RECEIVABLE_TAGGING = "receivable_tagging"
+
+
+class SuggestionStatus(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+    APPLIED = "applied"
+
+
+class SuggestionSourceType(StrEnum):
+    RULE = "rule"
+    MODEL = "model"
+    HYBRID = "hybrid"
+    HEURISTIC = "heuristic"
+
+
+class SuggestionFeedbackAction(StrEnum):
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    IGNORED = "ignored"
+
+
+class DocumentExtractionStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class DocumentClassifierLabel(StrEnum):
+    INVOICE = "invoice"
+    BILL = "bill"
+    RECEIPT = "receipt"
+    STATEMENT = "statement"
+    UNKNOWN = "unknown"
+
+
+class AIJobStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    DEAD_LETTER = "dead_letter"
+
+
+class AIJobType(StrEnum):
+    DOCUMENT_EXTRACTION = "document_extraction"
+    RECONCILIATION_SUGGESTIONS = "reconciliation_suggestions"
+    CODING_SUGGESTIONS = "coding_suggestions"
+    ANOMALY_SCAN = "anomaly_scan"

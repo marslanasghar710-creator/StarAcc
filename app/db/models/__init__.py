@@ -2,6 +2,7 @@ from app.db.models.ap import Bill, BillItem, Supplier, SupplierCredit, SupplierC
 from app.db.models.ar import AccountingSettings, CreditNote, CreditNoteItem, Customer, CustomerPayment, CustomerPaymentAllocation, Invoice, InvoiceItem
 from app.db.models.accounting import Account, AccountBalance, AccountPeriodBalance, FinancialPeriod, JournalEntry, JournalLine
 from app.db.models.audit import AuditLog
+from app.db.models.ai import AIProcessingJob, AutomationRule, DocumentExtractionJob, ReconciliationSuggestionSet, Suggestion, SuggestionFeedback
 from app.db.models.banking import BankAccount, BankTransaction
 from app.db.models.invitation import Invitation
 from app.db.models.inventory import InventoryAdjustment, InventoryBalance, InventoryLocation, InventoryMovement, Item
@@ -64,6 +65,12 @@ __all__ = [
     "Invitation",
     "Session",
     "AuditLog",
+    "AutomationRule",
+    "Suggestion",
+    "SuggestionFeedback",
+    "DocumentExtractionJob",
+    "ReconciliationSuggestionSet",
+    "AIProcessingJob",
     "BankAccount",
     "BankTransaction",
     "Account",
