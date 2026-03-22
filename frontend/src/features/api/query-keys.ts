@@ -95,6 +95,18 @@ export const queryKeys = {
     list: (organizationId: string, search = "") => ["journals", organizationId, "list", search] as const,
     detail: (organizationId: string, journalId: string) => ["journals", organizationId, "detail", journalId] as const,
   },
+  assets: {
+    root: (organizationId: string) => ["assets", organizationId] as const,
+    list: (organizationId: string) => ["assets", organizationId, "list"] as const,
+    detail: (organizationId: string, assetId: string) => ["assets", organizationId, "detail", assetId] as const,
+    categories: (organizationId: string) => ["assets", organizationId, "categories"] as const,
+    category: (organizationId: string, categoryId: string) => ["assets", organizationId, "category", categoryId] as const,
+    register: (organizationId: string) => ["assets", organizationId, "register"] as const,
+    valuation: (organizationId: string) => ["assets", organizationId, "valuation"] as const,
+    depreciationSummary: (organizationId: string) => ["assets", organizationId, "depreciation-summary"] as const,
+    depreciationSchedule: (organizationId: string, assetId: string) => ["assets", organizationId, "depreciation-schedule", assetId] as const,
+    depreciationRuns: (organizationId: string) => ["assets", organizationId, "depreciation-runs"] as const,
+  },
   inventory: {
     root: (organizationId: string) => ["inventory", organizationId] as const,
     items: (organizationId: string, search = "") => ["inventory", organizationId, "items", search] as const,

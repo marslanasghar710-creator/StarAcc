@@ -96,6 +96,9 @@ pnpm test
 - `/inventory`
 - `/inventory/items/[itemId]`
 - `/inventory/adjustments`
+- `/assets`
+- `/assets/[assetId]`
+- `/assets/categories`
 
 ## Backend assumptions and adapters
 
@@ -403,3 +406,32 @@ Used endpoints:
 - Inventory quantity, costing, movement status, and valuation totals remain backend-owned; the frontend only formats and combines returned records for display.
 - Item creation supports an inactive initial state by creating the item first and then issuing an update when `is_active=false`, matching the narrower backend create contract.
 - Location data is optional: adjustment and item workflows surface location selectors only when the backend exposes location rows.
+
+
+### Fixed assets
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/asset-categories`
+- `GET /organizations/{organization_id}/asset-categories`
+- `GET /organizations/{organization_id}/asset-categories/{category_id}`
+- `PATCH /organizations/{organization_id}/asset-categories/{category_id}`
+- `POST /organizations/{organization_id}/assets`
+- `GET /organizations/{organization_id}/assets`
+- `GET /organizations/{organization_id}/assets/{asset_id}`
+- `PATCH /organizations/{organization_id}/assets/{asset_id}`
+- `GET /organizations/{organization_id}/assets/{asset_id}/depreciation-schedule`
+- `POST /organizations/{organization_id}/assets/{asset_id}/generate-depreciation`
+- `POST /organizations/{organization_id}/assets/{asset_id}/dispose`
+- `POST /organizations/{organization_id}/depreciation/run`
+- `GET /organizations/{organization_id}/depreciation-runs`
+- `GET /organizations/{organization_id}/asset-register`
+- `GET /organizations/{organization_id}/asset-valuation`
+- `GET /organizations/{organization_id}/asset-depreciation-summary`
+- `GET /organizations/{organization_id}/accounts`
+
+### Fixed assets adapter notes
+
+- Asset and category adapters accept both snake_case and camelCase payloads where appropriate so the UI tolerates backend response-shape variations.
+- Depreciation schedules, accumulated depreciation, net book value, valuation totals, and disposal accounting remain fully backend-owned.
+- The frontend only triggers create/update/disposal/run actions and formats the backend responses for register, summary, and schedule screens.
