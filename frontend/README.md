@@ -17,7 +17,9 @@ This frontend layer now includes the first real accounting workflows for:
 - journal posting and reversal actions
 - financial period visibility in journal workflows
 
-Detailed invoice, bill, banking, reporting, and tax workflows remain out of scope for this milestone.
+Detailed tax workflows remain out of scope for this milestone.
+
+Suppliers, bills, banking, core financial reporting, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, and configuration foundations where endpoints exist.
 
 ## Stack
 
@@ -70,6 +72,27 @@ pnpm test
 - `/journals`
 - `/journals/new`
 - `/journals/[journalId]`
+- `/suppliers`
+- `/suppliers/[supplierId]`
+- `/bills`
+- `/bills/new`
+- `/bills/[billId]`
+- `/banking`
+- `/banking/accounts/[bankAccountId]`
+- `/banking/imports/[importId]`
+- `/banking/transactions/[transactionId]`
+- `/banking/reconciliations`
+- `/banking/rules`
+- `/reports`
+- `/reports/trial-balance`
+- `/reports/profit-loss`
+- `/reports/balance-sheet`
+- `/reports/general-ledger`
+- `/settings`
+- `/settings/organization`
+- `/settings/fiscal-periods`
+- `/settings/tax`
+- `/settings/preferences`
 
 ## Backend assumptions and adapters
 
@@ -130,6 +153,147 @@ Used endpoints:
 - `POST /organizations/{organization_id}/journals/{journal_id}/post`
 - `POST /organizations/{organization_id}/journals/{journal_id}/reverse`
 - `POST /organizations/{organization_id}/journals/{journal_id}/void`
+
+
+
+### Banking
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/bank-accounts`
+- `GET /organizations/{organization_id}/bank-accounts`
+- `GET /organizations/{organization_id}/bank-accounts/search`
+- `GET /organizations/{organization_id}/bank-accounts/{bank_account_id}`
+- `PATCH /organizations/{organization_id}/bank-accounts/{bank_account_id}`
+- `DELETE /organizations/{organization_id}/bank-accounts/{bank_account_id}`
+- `GET /organizations/{organization_id}/bank-accounts/{bank_account_id}/summary`
+- `GET /organizations/{organization_id}/bank-accounts/{bank_account_id}/register`
+- `POST /organizations/{organization_id}/bank-imports`
+- `GET /organizations/{organization_id}/bank-imports`
+- `GET /organizations/{organization_id}/bank-imports/{import_id}`
+- `GET /organizations/{organization_id}/bank-imports/{import_id}/transactions`
+- `GET /organizations/{organization_id}/bank-transactions`
+- `GET /organizations/{organization_id}/bank-transactions/{bank_transaction_id}`
+- `GET /organizations/{organization_id}/bank-transactions/unreconciled`
+- `GET /organizations/{organization_id}/bank-transactions/reconciled`
+- `GET /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/suggestions`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/ignore`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/unreconcile`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/match-customer-payment`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/match-supplier-payment`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/match-journal`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/cash-code`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/reconcile/transfer`
+- `GET /organizations/{organization_id}/reconciliations`
+- `GET /organizations/{organization_id}/reconciliations/{reconciliation_id}`
+- `GET /organizations/{organization_id}/cashbook`
+- `GET /organizations/{organization_id}/reconciliation-summary`
+- `GET /organizations/{organization_id}/customer-payments`
+- `GET /organizations/{organization_id}/supplier-payments`
+- `GET /organizations/{organization_id}/journals`
+
+### Banking adapter notes
+
+- The repository backend currently exposes a narrower banking surface than the forward-looking frontend contract, so optional banking calls fall back gracefully when endpoints return `404`/`405` instead of blocking the whole workspace.
+- Cashbook data falls back to the existing `/banking/cash-position` endpoint when `/cashbook` is unavailable.
+- Journal reconciliation falls back to the existing `/bank-transactions/{transaction_id}/reconcile-journal` route when the richer `/reconcile/match-journal` route is unavailable.
+- Imports, rules, reconciliation history, suggestions, ignore, unreconcile, and several banking detail endpoints are treated as backend-driven optional enhancements: the UI is wired for them, but it does not invent results when the backend does not yet provide them.
+
+### Reporting
+
+Used endpoints:
+
+- `GET /organizations/{organization_id}/reports`
+- `GET /organizations/{organization_id}/reports/metadata`
+- `GET /organizations/{organization_id}/reports/trial-balance`
+- `GET /organizations/{organization_id}/reports/profit-loss`
+- `GET /organizations/{organization_id}/reports/balance-sheet`
+- `GET /organizations/{organization_id}/reports/general-ledger`
+- `GET /organizations/{organization_id}/reports/trial-balance/export`
+- `GET /organizations/{organization_id}/reports/profit-loss/export`
+- `GET /organizations/{organization_id}/reports/balance-sheet/export`
+- `GET /organizations/{organization_id}/reports/general-ledger/export`
+- `GET /organizations/{organization_id}/periods`
+- `GET /organizations/{organization_id}/accounts`
+
+### Reporting adapter notes
+
+- Report metadata prefers `/reports/metadata` and falls back to `/reports` when the dedicated metadata endpoint is unavailable.
+- The frontend accepts either broad reporting permissions such as `reports.read` / `reporting.read` or the more specific permission names already present in this repository, such as `reports.profit_loss.read` and `reports.general_ledger.read`.
+- Financial statement structure, totals, comparisons, hierarchy, and export generation remain backend-owned; the frontend only adapts payload shapes for presentation and does not derive accounting truth.
+
+### Settings
+
+Used endpoints:
+
+- `GET /organizations/{organization_id}`
+- `PATCH /organizations/{organization_id}`
+- `GET /organizations/{organization_id}/settings`
+- `PATCH /organizations/{organization_id}/settings`
+- `GET /organizations/{organization_id}/fiscal-periods`
+- `GET /organizations/{organization_id}/fiscal-periods/{period_id}`
+- `POST /organizations/{organization_id}/fiscal-periods`
+- `PATCH /organizations/{organization_id}/fiscal-periods/{period_id}`
+- `POST /organizations/{organization_id}/fiscal-periods/{period_id}/close`
+- `POST /organizations/{organization_id}/fiscal-periods/{period_id}/reopen`
+- `GET /organizations/{organization_id}/periods`
+- `GET /organizations/{organization_id}/periods/{period_id}`
+- `POST /organizations/{organization_id}/periods`
+- `PATCH /organizations/{organization_id}/periods/{period_id}`
+- `POST /organizations/{organization_id}/periods/{period_id}/close`
+- `POST /organizations/{organization_id}/periods/{period_id}/reopen`
+- `GET /organizations/{organization_id}/tax-codes`
+- `POST /organizations/{organization_id}/tax-codes`
+- `PATCH /organizations/{organization_id}/tax-codes/{tax_code_id}`
+- `DELETE /organizations/{organization_id}/tax-codes/{tax_code_id}`
+- `GET /organizations/{organization_id}/document-settings`
+- `PATCH /organizations/{organization_id}/document-settings`
+- `GET /organizations/{organization_id}/accounting-settings`
+- `PATCH /organizations/{organization_id}/accounting-settings`
+
+### Settings adapter notes
+
+- Organization preferences use `PATCH /organizations/{organization_id}` for entity-level fields and reuse `/organizations/{organization_id}/settings` for accounting and numbering preferences where dedicated settings endpoints are not available.
+- Fiscal periods prefer the explicit `/fiscal-periods` endpoints and fall back to the already-existing `/periods` endpoints in this repository when the richer route names are unavailable.
+- Tax code and document settings sections intentionally surface unavailable/read-only states when the backend responds with `404`/`405` rather than pretending the feature is fully implemented.
+
+### Suppliers
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/suppliers`
+- `GET /organizations/{organization_id}/suppliers`
+- `GET /organizations/{organization_id}/suppliers/search`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}`
+- `PATCH /organizations/{organization_id}/suppliers/{supplier_id}`
+- `DELETE /organizations/{organization_id}/suppliers/{supplier_id}`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}/activity`
+- `GET /organizations/{organization_id}/suppliers/{supplier_id}/balance`
+
+### Bills
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/bills`
+- `GET /organizations/{organization_id}/bills`
+- `GET /organizations/{organization_id}/bills/search`
+- `GET /organizations/{organization_id}/bills/open`
+- `GET /organizations/{organization_id}/bills/overdue`
+- `GET /organizations/{organization_id}/bills/{bill_id}`
+- `PATCH /organizations/{organization_id}/bills/{bill_id}`
+- `DELETE /organizations/{organization_id}/bills/{bill_id}`
+- `POST /organizations/{organization_id}/bills/{bill_id}/approve`
+- `POST /organizations/{organization_id}/bills/{bill_id}/post`
+- `POST /organizations/{organization_id}/bills/{bill_id}/void`
+- `GET /organizations/{organization_id}/documents/entity/bill/{bill_id}`
+- `GET /organizations/{organization_id}/files`
+- `POST /organizations/{organization_id}/documents/links`
+
+### AP adapter notes
+
+- Supplier detail adapters accept richer fields such as website, tax number, billing address, remittance address, and timestamps if the backend returns them, while still remaining compatible with the narrower schema currently documented in the repository.
+- Bill detail adapters accept richer fields such as `supplier_name`, `supplier_invoice_number`, `items`, `approved_at`, and `posted_at` when present. When those fields are missing, the UI keeps rendering with graceful fallbacks rather than inventing accounting state on the client.
+- Bill forms only save drafts. Approval, posting, voiding, payment visibility, and attachments all reflect backend state; the frontend does not calculate authoritative totals or posting outcomes.
 
 ### Periods
 
