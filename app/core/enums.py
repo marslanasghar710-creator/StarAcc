@@ -244,3 +244,37 @@ class NotificationType(StrEnum):
     RECONCILIATION_NEEDED = "reconciliation_needed"
     REPORT_EXPORT_READY = "report_export_ready"
     GENERIC = "generic"
+
+
+class InventoryCostingMethod(StrEnum):
+    WEIGHTED_AVERAGE = "weighted_average"
+
+
+class InventoryMovementType(StrEnum):
+    OPENING = "opening"
+    PURCHASE = "purchase"
+    SALE = "sale"
+    ADJUSTMENT_IN = "adjustment_in"
+    ADJUSTMENT_OUT = "adjustment_out"
+    TRANSFER_IN = "transfer_in"
+    TRANSFER_OUT = "transfer_out"
+    REVERSAL = "reversal"
+
+
+class InventorySourceEntityType(StrEnum):
+    OPENING_STOCK = "opening_stock"
+    BILL = "bill"
+    INVOICE = "invoice"
+    ADJUSTMENT = "adjustment"
+    TRANSFER = "transfer"
+    MANUAL = "manual"
+
+
+class InventoryAdjustmentType(StrEnum):
+    OPENING_STOCK = "opening_stock"
+    QUANTITY_WRITE_UP = "quantity_write_up"
+    QUANTITY_WRITE_DOWN = "quantity_write_down"
+
+
+class InventoryValuationMethod(StrEnum):
+    WEIGHTED_AVERAGE = "weighted_average"

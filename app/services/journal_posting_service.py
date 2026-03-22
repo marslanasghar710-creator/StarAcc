@@ -22,7 +22,7 @@ class JournalPostingService:
         self.periods = PeriodRepository(db)
         self.audit = AuditRepository(db)
 
-    def post(self, organization_id, journal_id, actor_user_id):
+    def post(self, organization_id, journal_id, actor_user_id, *, commit: bool = True):
         journal = self.journals.get(organization_id, journal_id)
         if not journal:
             raise forbidden("Journal not found")
@@ -56,5 +56,8 @@ class JournalPostingService:
         journal.posted_at = datetime.now(UTC)
         journal.posted_by_user_id = actor_user_id
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="journal.posted", entity_type="journal", entity_id=str(journal.id))
-        self.db.commit()
+        if commit:
+            self.db.commit()
+        else:
+            self.db.flush()
         return journal

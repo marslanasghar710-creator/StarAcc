@@ -1,43 +1,37 @@
 "use client";
 
-import * as React from "react";
-
 import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/layout/page-header";
+import { PermissionGate } from "@/components/permissions/permission-gate";
+import { DateDisplay } from "@/components/shared/date-display";
+import { PageActionBar } from "@/components/shared/page-action-bar";
 import { usePermissions } from "@/features/permissions/hooks";
+import { SETTINGS_NAV_SECTIONS, SETTINGS_PERMISSION_GROUPS } from "@/features/settings/constants";
+import { OrganizationPreferencesForm } from "@/features/settings/components/organization-preferences-form";
+import { SettingsErrorState } from "@/features/settings/components/settings-error-state";
 import { SettingsNav } from "@/features/settings/components/settings-nav";
 import { SettingsReadonlyCard } from "@/features/settings/components/settings-readonly-card";
 import { SettingsSectionShell } from "@/features/settings/components/settings-section-shell";
-import { OrganizationPreferencesForm } from "@/features/settings/components/organization-preferences-form";
-import { SettingsErrorState } from "@/features/settings/components/settings-error-state";
 import { useOrganizationPreferences, useUpdateOrganizationPreferences } from "@/features/settings/hooks";
 import type { OrganizationPreferencesFormValues } from "@/features/settings/schemas";
-import type { SettingsSectionStatus } from "@/features/settings/types";
 import { useOrganization } from "@/providers/organization-provider";
-
-const READ_PERMISSIONS = ["settings.read", "organization.read", "org.read"];
-const WRITE_PERMISSIONS = ["settings.update", "organization.update", "org.update"];
 
 export default function OrganizationSettingsPage() {
   const { currentOrganizationId, currentOrganization, isLoadingOrganizations } = useOrganization();
   const { hasAnyPermission } = usePermissions();
-  const canRead = hasAnyPermission(READ_PERMISSIONS);
-  const canWrite = hasAnyPermission(WRITE_PERMISSIONS);
+  const canRead = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.organizationRead);
+  const canWrite = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.organizationWrite);
   const preferencesQuery = useOrganizationPreferences(currentOrganizationId ?? undefined, canRead);
   const updateMutation = useUpdateOrganizationPreferences(currentOrganizationId ?? undefined);
 
-  const sectionDefinitions: SettingsSectionStatus[] = [
-    { id: "organization", title: "Organization", description: "Entity profile and metadata", href: "/settings/organization", availability: "available", requiredPermissions: READ_PERMISSIONS, reason: "Live organization profile." },
-    { id: "fiscal-periods", title: "Fiscal periods", description: "Open and close posting periods", href: "/settings/fiscal-periods", availability: "available", requiredPermissions: ["settings.read", "periods.read"], reason: "Backend-backed period controls." },
-    { id: "tax", title: "Tax", description: "Tax code maintenance", href: "/settings/tax", availability: "available", requiredPermissions: ["settings.read", "tax_codes.read", "tax.settings.read"], reason: "Tax configuration surface." },
-    { id: "preferences", title: "Preferences", description: "Numbering and accounting defaults", href: "/settings/preferences", availability: "available", requiredPermissions: ["settings.read", "branding.read", "numbering.read"], reason: "Document/accounting preferences." },
-  ];
-  const sections = sectionDefinitions.map((section) => ({
+  const sections = SETTINGS_NAV_SECTIONS.map((section) => ({
     ...section,
+    availability: "available" as const,
+    reason: section.id === "organization" ? "Live organization profile." : "Backend-backed settings module.",
     isPermitted: hasAnyPermission(section.requiredPermissions),
   }));
 
@@ -65,12 +59,15 @@ export default function OrganizationSettingsPage() {
   if (preferencesQuery.isLoading) return <LoadingScreen label="Loading organization settings" />;
   if (preferencesQuery.isError || !preferencesQuery.data) return <SettingsErrorState title="Organization settings unavailable" description="We couldn't load organization settings from the backend." onRetry={() => void preferencesQuery.refetch()} />;
 
+  const preferences = preferencesQuery.data;
+
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow={currentOrganization?.name || "Settings"} title="Organization settings" description="Maintain entity profile fields while leaving validation and persistence rules to the backend." />
+      <PageHeader eyebrow={currentOrganization?.name || "Settings"} title="Organization settings" description="Maintain legal entity profile fields without moving validation or persistence truth into the client." />
+      <PageActionBar left={<div className="text-sm text-muted-foreground">Created <DateDisplay value={preferences.createdAt} includeTime /> · Last updated <DateDisplay value={preferences.updatedAt} includeTime /></div>} right={<PermissionGate anyPermissions={SETTINGS_PERMISSION_GROUPS.organizationWrite} fallback={<span className="text-sm text-muted-foreground">Read-only for your role</span>}><span className="text-sm font-medium">Updates enabled</span></PermissionGate>} />
       <SettingsNav sections={sections} activeHref="/settings/organization" />
-      <SettingsSectionShell title="Organization preferences" description="Editable when the backend exposes update support and your role includes write access.">
-        {canWrite ? <OrganizationPreferencesForm preferences={preferencesQuery.data} onSubmit={handleSubmit} isSubmitting={updateMutation.isPending} /> : <SettingsReadonlyCard title="Read-only organization settings" description="Your current role can view organization preferences but cannot update them." />}
+      <SettingsSectionShell title="Organization preferences" description="Editable only when both your permissions and the backend allow updates.">
+        {canWrite ? <OrganizationPreferencesForm preferences={preferences} onSubmit={handleSubmit} isSubmitting={updateMutation.isPending} /> : <SettingsReadonlyCard title="Read-only organization settings" description="Your current role can view organization preferences but cannot update them." />}
       </SettingsSectionShell>
     </div>
   );

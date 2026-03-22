@@ -24,7 +24,7 @@ export function usePermissions() {
     roleName: resolved.roleName,
     membership: resolved.membership,
     can: (permission: string) => canPermission(permissionSet, permission),
-    hasAnyPermission: (permissions: string[]) => hasAnyPermission(permissionSet, permissions),
-    hasAllPermissions: (permissions: string[]) => hasAllPermissions(permissionSet, permissions),
+    hasAnyPermission: (permissions: readonly string[]) => hasAnyPermission(permissionSet, permissions),
+    hasAllPermissions: (permissions: readonly string[]) => hasAllPermissions(permissionSet, permissions),
   };
 }

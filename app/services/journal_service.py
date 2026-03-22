@@ -22,7 +22,7 @@ class JournalService:
         self.accounts = AccountRepository(db)
         self.audit = AuditRepository(db)
 
-    def create(self, organization_id, actor_user_id, payload):
+    def _create_without_commit(self, organization_id, actor_user_id, payload):
         period = self.periods.resolve_by_date(organization_id, payload["entry_date"])
         if not period:
             raise forbidden("No financial period for entry date")
@@ -54,8 +54,19 @@ class JournalService:
                 base_credit_amount=line.credit_amount,
             )
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="journal.created", entity_type="journal", entity_id=str(journal.id))
+        self.db.flush()
+        return journal
+
+    def create(self, organization_id, actor_user_id, payload):
+        journal = self._create_without_commit(organization_id, actor_user_id, payload)
         self.db.commit()
         return journal
+
+    def create_and_post(self, organization_id, actor_user_id, payload):
+        journal = self._create_without_commit(organization_id, actor_user_id, payload)
+        posted = JournalPostingService(self.db).post(organization_id, journal.id, actor_user_id, commit=False)
+        self.db.commit()
+        return posted
 
     def update(self, organization_id, journal_id, actor_user_id, payload):
         journal = self.journals.get(organization_id, journal_id)
@@ -126,8 +137,7 @@ class JournalService:
                 for l in lines
             ],
         }
-        reversal = self.create(organization_id, actor_user_id, payload)
-        posted = self.post(organization_id, reversal.id, actor_user_id)
+        posted = self.create_and_post(organization_id, actor_user_id, payload)
         original.status = JournalStatus.REVERSED
         original.reversal_journal_id = posted.id
         posted.reversed_from_journal_id = original.id
