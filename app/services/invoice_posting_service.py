@@ -5,16 +5,16 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import InvoiceStatus
+from app.core.enums import InvoiceStatus, TaxTransactionDirection
 from app.core.exceptions import forbidden
 from app.db.models import AccountingSettings
-from app.repositories.account_repository import AccountRepository
 from app.repositories.audit import AuditRepository
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.invoice_repository import InvoiceRepository
+from app.services.inventory_service import InventoryService
+from app.services.project_service import ProjectService
 from app.services.journal_service import JournalService
 from app.services.tax_posting_integration_service import TaxPostingIntegrationService
-from app.core.enums import TaxTransactionDirection
 
 
 class InvoicePostingService:
@@ -22,9 +22,10 @@ class InvoicePostingService:
         self.db = db
         self.invoices = InvoiceRepository(db)
         self.customers = CustomerRepository(db)
-        self.accounts = AccountRepository(db)
         self.audit = AuditRepository(db)
         self.tax = TaxPostingIntegrationService(db)
+        self.inventory = InventoryService(db)
+        self.projects = ProjectService(db)
 
     def post(self, organization_id, invoice_id, actor_user_id):
         invoice = self.invoices.get(organization_id, invoice_id)
@@ -45,6 +46,8 @@ class InvoicePostingService:
         if not lines:
             raise forbidden("Invoice requires at least one line")
 
+        movements, inventory_hooks = self.inventory.post_invoice_movements(organization_id, invoice, lines, actor_user_id)
+        self.projects.record_invoice_entries(organization_id, invoice, lines, inventory_hooks, actor_user_id)
         tax_total = sum((Decimal(line.line_tax_amount or 0) for line in lines), Decimal("0"))
         tax_account_id = self.tax.control_account_id(organization_id, TaxTransactionDirection.OUTPUT, tax_total)
         journal_lines = [{"account_id": settings.accounts_receivable_control_account_id, "description": f"AR Invoice {invoice.invoice_number}", "debit_amount": Decimal(invoice.total_amount), "credit_amount": Decimal("0"), "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate}]
@@ -52,6 +55,14 @@ class InvoicePostingService:
             journal_lines.append({"account_id": line.account_id, "description": line.description, "debit_amount": Decimal("0"), "credit_amount": Decimal(line.line_taxable_amount or line.line_subtotal), "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate})
         if tax_total > 0:
             journal_lines.append({"account_id": tax_account_id, "description": f"Output tax {invoice.invoice_number}", "debit_amount": Decimal("0"), "credit_amount": tax_total, "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate})
+        for hook in inventory_hooks:
+            movement_cost = Decimal(abs(hook["movement"].total_cost))
+            if not hook["item"].expense_account_id or not hook["item"].inventory_asset_account_id:
+                raise forbidden("Tracked inventory item is missing COGS or asset account configuration")
+            if movement_cost == 0:
+                continue
+            journal_lines.append({"account_id": hook["item"].expense_account_id, "description": f"COGS {hook['item'].name}", "debit_amount": movement_cost, "credit_amount": Decimal("0"), "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate})
+            journal_lines.append({"account_id": hook["item"].inventory_asset_account_id, "description": f"Inventory issue {hook['item'].name}", "debit_amount": Decimal("0"), "credit_amount": movement_cost, "currency_code": invoice.currency_code, "exchange_rate": invoice.exchange_rate})
 
         payload = {
             "entry_date": invoice.issue_date,
@@ -62,8 +73,9 @@ class InvoicePostingService:
             "source_id": str(invoice.id),
             "lines": [type("L", (), l) for l in journal_lines],
         }
-        journal = JournalService(self.db).create(organization_id, actor_user_id, payload)
-        journal = JournalService(self.db).post(organization_id, journal.id, actor_user_id)
+        journal = JournalService(self.db).create_and_post(organization_id, actor_user_id, payload)
+        for movement in movements:
+            movement.accounting_journal_id = journal.id
 
         invoice.posted_journal_id = journal.id
         invoice.posted_at = datetime.now(UTC)

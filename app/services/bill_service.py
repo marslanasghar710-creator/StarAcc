@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import BillStatus
+from app.core.enums import BillStatus, InventorySourceEntityType, TaxCodeAppliesTo
 from app.core.exceptions import forbidden, not_found
 from app.repositories.account_repository import AccountRepository
 from app.repositories.audit import AuditRepository
@@ -13,11 +13,12 @@ from app.repositories.bill_repository import BillRepository
 from app.repositories.supplier_repository import SupplierRepository
 from app.services.bill_calculation_service import BillCalculationService
 from app.services.bill_posting_service import BillPostingService
-from app.services.tax_calculation_service import TaxCalculationService
 from app.services.branding_service import BrandingService
+from app.services.inventory_service import InventoryService
+from app.services.project_service import ProjectService
 from app.services.numbering_service import NumberingService
+from app.services.tax_calculation_service import TaxCalculationService
 from app.services.tax_settings_service import TaxSettingsService
-from app.core.enums import TaxCodeAppliesTo
 
 
 class BillService:
@@ -31,6 +32,8 @@ class BillService:
         self.tax_settings = TaxSettingsService(db)
         self.branding = BrandingService(db)
         self.numbering = NumberingService(db)
+        self.inventory = InventoryService(db)
+        self.project_service = ProjectService(db)
 
     def create(self, organization_id, actor_user_id, payload):
         if payload["due_date"] < payload["issue_date"]:
@@ -61,23 +64,45 @@ class BillService:
         self.db.commit()
         return bill
 
+    def _resolve_item_context(self, organization_id, src):
+        item = self.inventory._resolve_line_item(organization_id, src)
+        account_id = src.get("account_id")
+        tax_code_id = src.get("tax_code_id")
+        description = src["description"]
+        item_code = src.get("item_code")
+        if item:
+            description = src.get("description") or item.name
+            item_code = src.get("item_code") or item.sku
+            if item.is_tracked_inventory:
+                account_id = item.inventory_asset_account_id
+            elif not account_id:
+                account_id = item.expense_account_id
+            if not tax_code_id:
+                tax_code_id = item.purchase_tax_code_id
+        if not account_id:
+            raise forbidden("Bill item requires an account or linked item default account")
+        return item, account_id, tax_code_id, description, item_code
+
     def add_item(self, organization_id, bill_id, item, line_number=None):
         bill = self.bills.get(organization_id, bill_id)
         if not bill:
             raise not_found("Bill not found")
         if bill.status != BillStatus.DRAFT:
             raise forbidden("Only draft bill can be modified")
-        account = self.accounts.get(organization_id, item["account_id"]) if isinstance(item, dict) else self.accounts.get(organization_id, item.account_id)
+        src = item if isinstance(item, dict) else item.__dict__
+        if src.get("project_id"):
+            self.project_service.validate_project_attribution(organization_id, src["project_id"])
+        linked_item, account_id, tax_code_id, description, item_code = self._resolve_item_context(organization_id, src)
+        account = self.accounts.get(organization_id, account_id)
         if not account or not account.is_postable or not account.is_active:
             raise forbidden("Invalid account for bill item")
-        src = item if isinstance(item, dict) else item.__dict__
         calc = self.tax.calculate_line(
             organization_id,
             quantity=src["quantity"],
             unit_price=src["unit_price"],
             discount_percent=src.get("discount_percent"),
             discount_amount=src.get("discount_amount"),
-            tax_code_id=src.get("tax_code_id"),
+            tax_code_id=tax_code_id,
             usage=TaxCodeAppliesTo.PURCHASES,
         )
         line_number = line_number or (len(self.bills.list_items(bill_id)) + 1)
@@ -85,14 +110,17 @@ class BillService:
             bill_id=bill_id,
             organization_id=organization_id,
             line_number=line_number,
-            item_code=src.get("item_code"),
-            description=src["description"],
+            item_id=linked_item.id if linked_item else None,
+            location_id=src.get("location_id"),
+            project_id=src.get("project_id"),
+            item_code=item_code,
+            description=description,
             quantity=src["quantity"],
             unit_price=src["unit_price"],
             discount_percent=src.get("discount_percent"),
             discount_amount=src.get("discount_amount"),
-            tax_code_id=src.get("tax_code_id"),
-            account_id=src["account_id"],
+            tax_code_id=tax_code_id,
+            account_id=account_id,
             tax_breakdown_json=calc.tax_breakdown,
             line_taxable_amount=calc.taxable_amount,
             line_subtotal=calc.taxable_amount,
@@ -158,6 +186,20 @@ class BillService:
             raise not_found("Bill not found")
         if bill.amount_paid > 0:
             raise forbidden("Cannot void paid/partially paid bill")
+        if bill.posted_journal_id and not bill.voided_journal_id:
+            from app.services.journal_service import JournalService
+
+            reversal = JournalService(self.db).reverse(organization_id, bill.posted_journal_id, actor_user_id, bill.issue_date, "Bill void")
+            self.inventory.reverse_document_movements(
+                organization_id,
+                InventorySourceEntityType.BILL,
+                bill.id,
+                actor_user_id,
+                datetime.combine(bill.issue_date, datetime.min.time(), tzinfo=UTC),
+                f"Bill {bill.bill_number} void reversal",
+            )
+            self.project_service.reverse_source_entries(organization_id, "bill", bill.id, actor_user_id, bill.issue_date)
+            bill.voided_journal_id = reversal.id
         bill.status = BillStatus.VOIDED
         bill.voided_at = datetime.now(UTC)
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="bill.voided", entity_type="bill", entity_id=str(bill.id))
