@@ -175,6 +175,11 @@ class PayrollRunCalculateRequest(BaseModel):
     employee_inputs: list[PayrollEmployeeInput] = Field(default_factory=list)
 
 
+class PayrollRunReverseRequest(BaseModel):
+    reason: str
+    reversal_date: date | None = None
+
+
 class PayrollRunResponse(ORMModel):
     id: UUID
     organization_id: UUID
@@ -190,8 +195,10 @@ class PayrollRunResponse(ORMModel):
     total_employer_costs: Decimal
     entry_count: int
     posted_journal_id: UUID | None
+    reversal_journal_id: UUID | None
     calculated_at: datetime | None
     posted_at: datetime | None
+    reversed_at: datetime | None
 
 
 class PayrollRunListResponse(BaseModel):
@@ -245,6 +252,8 @@ class PayrollSummaryItemResponse(BaseModel):
     total_deductions: Decimal
     total_employer_costs: Decimal
     entry_count: int
+    posted_journal_id: UUID | None = None
+    reversal_journal_id: UUID | None = None
 
 
 class PayrollSummaryResponse(BaseModel):
@@ -259,3 +268,20 @@ class PayrollLiabilityItemResponse(BaseModel):
 
 class PayrollLiabilitiesResponse(BaseModel):
     items: list[PayrollLiabilityItemResponse]
+
+
+class EmployeePayrollHistoryItemResponse(BaseModel):
+    payroll_entry_id: UUID
+    payroll_run_id: UUID
+    payroll_period_id: UUID
+    pay_date: date
+    gross_pay: Decimal
+    total_deductions: Decimal
+    employer_costs: Decimal
+    net_pay: Decimal
+    posted_journal_id: UUID | None
+    reversal_journal_id: UUID | None
+
+
+class EmployeePayrollHistoryResponse(BaseModel):
+    items: list[EmployeePayrollHistoryItemResponse]

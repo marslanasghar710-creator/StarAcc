@@ -421,6 +421,24 @@ class PayrollService:
         self.get_run(organization_id, run_id)
         return self.payroll.list_entries(organization_id, run_id)
 
+    def employee_history(self, organization_id, employee_id):
+        self.get_employee(organization_id, employee_id)
+        return [
+            {
+                "payroll_entry_id": entry.id,
+                "payroll_run_id": run.id,
+                "payroll_period_id": period.id,
+                "pay_date": period.pay_date,
+                "gross_pay": entry.gross_pay,
+                "total_deductions": entry.total_deductions,
+                "employer_costs": entry.employer_costs,
+                "net_pay": entry.net_pay,
+                "posted_journal_id": run.posted_journal_id,
+                "reversal_journal_id": run.reversal_journal_id,
+            }
+            for entry, run, period in self.payroll.employee_history_rows(organization_id, employee_id)
+        ]
+
     def get_entry_detail(self, organization_id, entry_id):
         entry = self.payroll.get_entry(organization_id, entry_id)
         if not entry:
@@ -491,6 +509,33 @@ class PayrollService:
         self.db.commit()
         return run
 
+    def reverse_run(self, organization_id, run_id, actor_user_id, *, reason, reversal_date=None):
+        run = self.get_run(organization_id, run_id)
+        if run.status != PayrollRunStatus.POSTED or not run.posted_journal_id:
+            raise forbidden("Only posted payroll runs can be reversed")
+        if run.reversal_journal_id:
+            raise forbidden("Payroll run has already been reversed")
+        period = self.get_period(organization_id, run.payroll_period_id)
+        reversal = JournalService(self.db).reverse(
+            organization_id,
+            run.posted_journal_id,
+            actor_user_id,
+            reversal_date or period.pay_date,
+            reason,
+        )
+        run.reversal_journal_id = reversal.id
+        run.reversed_at = datetime.now(UTC)
+        self.audit.create(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="payroll.run_reversed",
+            entity_type="payroll_run",
+            entity_id=str(run.id),
+            metadata_json={"reversal_journal_id": str(reversal.id), "reason": reason},
+        )
+        self.db.commit()
+        return run
+
     def payroll_summary(self, organization_id):
         rows = self.payroll.payroll_summary_rows(organization_id)
         return [
@@ -506,6 +551,8 @@ class PayrollService:
                 "total_deductions": run.total_deductions,
                 "total_employer_costs": run.total_employer_costs,
                 "entry_count": run.entry_count,
+                "posted_journal_id": run.posted_journal_id,
+                "reversal_journal_id": run.reversal_journal_id,
             }
             for run, period in rows
         ]

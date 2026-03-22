@@ -181,12 +181,38 @@ def test_payroll_calculation_posting_and_reporting(client, db):
     bank_credit = next(line for line in journal_lines if str(line.account_id) == accounts["bank"]["id"])
     assert Decimal(bank_credit.credit_amount) == Decimal("5550.00000000")
 
+    history = client.get(
+        f"/organizations/{org['id']}/employees/{salaried['id']}/payroll-history",
+        headers=auth_header(tok["access_token"]),
+    ).json()["items"]
     summary = client.get(f"/organizations/{org['id']}/payroll-summary", headers=auth_header(tok["access_token"])).json()["items"]
     liabilities = client.get(f"/organizations/{org['id']}/payroll-liabilities", headers=auth_header(tok["access_token"])).json()["items"]
+    assert len(history) == 1
+    assert history[0]["payroll_run_id"] == payroll_run["id"]
+    assert history[0]["posted_journal_id"] == posted_run["posted_journal_id"]
+    assert history[0]["reversal_journal_id"] is None
     assert len(summary) == 1
     assert Decimal(str(summary[0]["total_net"])) == Decimal("5550.00000000")
+    assert summary[0]["posted_journal_id"] == posted_run["posted_journal_id"]
+    assert summary[0]["reversal_journal_id"] is None
     tax_liability = next(item for item in liabilities if item["name"] == "Tax")
     assert Decimal(str(tax_liability["amount"])) == Decimal("1080.00000000")
+
+    reversed_run = client.post(
+        f"/organizations/{org['id']}/payroll-runs/{payroll_run['id']}/reverse",
+        headers=auth_header(tok["access_token"]),
+        json={"reason": "Void payroll test", "reversal_date": "2026-01-31"},
+    )
+    assert reversed_run.status_code == 200
+    reversed_payload = reversed_run.json()
+    assert reversed_payload["reversal_journal_id"] is not None
+    assert reversed_payload["reversed_at"] is not None
+
+    summary_after_reverse = client.get(f"/organizations/{org['id']}/payroll-summary", headers=auth_header(tok["access_token"])).json()["items"]
+    assert summary_after_reverse[0]["reversal_journal_id"] == reversed_payload["reversal_journal_id"]
+
+    liabilities_after_reverse = client.get(f"/organizations/{org['id']}/payroll-liabilities", headers=auth_header(tok["access_token"])).json()["items"]
+    assert liabilities_after_reverse == []
 
     cannot_recalculate = client.post(
         f"/organizations/{org['id']}/payroll-runs/{payroll_run['id']}/calculate",

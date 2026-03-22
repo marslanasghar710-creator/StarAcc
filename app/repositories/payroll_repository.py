@@ -264,6 +264,19 @@ class PayrollRepository:
             .order_by(PayrollPeriod.pay_date.desc())
         ).all()
 
+    def employee_history_rows(self, organization_id, employee_id):
+        return self.db.execute(
+            select(PayrollEntry, PayrollRun, PayrollPeriod)
+            .join(PayrollRun, PayrollEntry.payroll_run_id == PayrollRun.id)
+            .join(PayrollPeriod, PayrollRun.payroll_period_id == PayrollPeriod.id)
+            .where(
+                PayrollEntry.organization_id == organization_id,
+                PayrollEntry.employee_id == employee_id,
+                PayrollRun.deleted_at.is_(None),
+            )
+            .order_by(PayrollPeriod.pay_date.desc(), PayrollEntry.created_at.desc())
+        ).all()
+
     def liability_breakdown(self, organization_id):
         return self.db.execute(
             select(
@@ -277,6 +290,7 @@ class PayrollRepository:
                 PayrollRun.organization_id == organization_id,
                 PayrollRun.deleted_at.is_(None),
                 PayrollRun.status == PayrollRunStatus.POSTED,
+                PayrollRun.reversal_journal_id.is_(None),
                 PayrollLineItem.liability_account_id.is_not(None),
             )
             .group_by(PayrollLineItem.name, PayrollLineItem.liability_account_id)
