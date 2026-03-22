@@ -1,8 +1,7 @@
-import * as React from "react";
-
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DateDisplay } from "@/components/shared/date-display";
+import { FiscalPeriodStatusBadge } from "@/features/settings/components/fiscal-period-status-badge";
 import type { FiscalPeriodRecord } from "@/features/settings/types";
 
 export function FiscalPeriodListTable({ periods, canEdit, canClose, canReopen, onEdit, onClose, onReopen }: { periods: FiscalPeriodRecord[]; canEdit: boolean; canClose: boolean; canReopen: boolean; onEdit: (period: FiscalPeriodRecord) => void; onClose: (period: FiscalPeriodRecord) => void; onReopen: (period: FiscalPeriodRecord) => void; }) {
@@ -14,6 +13,7 @@ export function FiscalPeriodListTable({ periods, canEdit, canClose, canReopen, o
           <TableHead>Start</TableHead>
           <TableHead>End</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Fiscal year</TableHead>
           <TableHead>Closed at</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -21,10 +21,16 @@ export function FiscalPeriodListTable({ periods, canEdit, canClose, canReopen, o
       <TableBody>
         {periods.map((period) => (
           <TableRow key={period.id}>
-            <TableCell>{period.name}</TableCell>
+            <TableCell>
+              <div className="space-y-1">
+                <div className="font-medium">{period.name}</div>
+                <div className="text-xs text-muted-foreground">#{period.periodNumber ?? "—"}</div>
+              </div>
+            </TableCell>
             <TableCell><DateDisplay value={period.startDate} /></TableCell>
             <TableCell><DateDisplay value={period.endDate} /></TableCell>
-            <TableCell className="capitalize">{period.status}</TableCell>
+            <TableCell><FiscalPeriodStatusBadge status={period.status} /></TableCell>
+            <TableCell>{period.fiscalYear ?? "—"}</TableCell>
             <TableCell><DateDisplay value={period.closedAt} includeTime /></TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">

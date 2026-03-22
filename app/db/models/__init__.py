@@ -4,6 +4,7 @@ from app.db.models.accounting import Account, AccountBalance, AccountPeriodBalan
 from app.db.models.audit import AuditLog
 from app.db.models.banking import BankAccount, BankTransaction
 from app.db.models.invitation import Invitation
+from app.db.models.inventory import InventoryAdjustment, InventoryBalance, InventoryLocation, InventoryMovement, Item
 from app.db.models.membership import OrganizationUser
 from app.db.models.organization import Organization, OrganizationSettings
 from app.db.models.settings import (
@@ -76,4 +77,9 @@ __all__ = [
     "TaxCode",
     "TaxCodeComponent",
     "TaxTransaction",
+    "Item",
+    "InventoryLocation",
+    "InventoryBalance",
+    "InventoryMovement",
+    "InventoryAdjustment",
 ]
