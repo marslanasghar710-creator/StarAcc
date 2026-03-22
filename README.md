@@ -250,3 +250,122 @@ curl -X POST http://localhost:8000/organizations/$ORG_ID/invoices/$INVOICE_ID/se
 curl -G http://localhost:8000/organizations/$ORG_ID/notifications \
   -H "Authorization: Bearer $ACCESS"
 ```
+
+## Inventory foundation
+
+The inventory module keeps stock, valuation, and movement truth on the backend:
+- Organization-scoped item master data supports sellable, purchasable, and tracked inventory items.
+- Weighted-average costing is the active valuation method for tracked stock.
+- Inventory movements are append-only, audit-linked, and reversible rather than destructively edited.
+- Bill posting creates inbound stock movements for tracked items and debits the configured inventory asset account.
+- Invoice posting creates outbound stock movements, relieves inventory using the current weighted-average cost, and books a COGS foundation line against the item's expense account.
+- Manual stock adjustments create both inventory movements and balancing journals using an explicit offset account.
+- Locations are implemented as a lightweight warehouse foundation for future transfers and warehouse-aware reporting.
+- Negative inventory is currently disallowed and enforced at the service layer.
+
+### Inventory endpoints
+
+- `POST /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items`
+- `GET /organizations/{organization_id}/items/search`
+- `GET /organizations/{organization_id}/items/{item_id}`
+- `PATCH /organizations/{organization_id}/items/{item_id}`
+- `DELETE /organizations/{organization_id}/items/{item_id}`
+- `POST /organizations/{organization_id}/inventory/locations`
+- `GET /organizations/{organization_id}/inventory/locations`
+- `GET /organizations/{organization_id}/inventory/locations/{location_id}`
+- `PATCH /organizations/{organization_id}/inventory/locations/{location_id}`
+- `GET /organizations/{organization_id}/inventory/balances`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/balance`
+- `GET /organizations/{organization_id}/inventory/items/{item_id}/movements`
+- `GET /organizations/{organization_id}/inventory/stock-on-hand`
+- `GET /organizations/{organization_id}/inventory/valuation`
+- `POST /organizations/{organization_id}/inventory/adjustments`
+- `GET /organizations/{organization_id}/inventory/adjustments`
+- `GET /organizations/{organization_id}/inventory/adjustments/{adjustment_id}`
+
+### Inventory notes and current deferrals
+
+- `invoice_items` and `bill_items` now accept optional `item_id` and `location_id`; service lines without an item continue to work.
+- Tracked inventory purchasing recognizes stock when the bill is posted, not when the draft is created.
+- Tracked inventory sales recognize stock when the invoice is posted, not when the draft is created or sent.
+- Purchase receiving workflows, warehouse transfers, serial/lot tracking, manufacturing, and advanced valuation layers remain deferred for later modules.
+
+
+## Projects / job costing foundation
+
+The projects module adds organization-scoped job costing foundations while keeping the GL as the single accounting source of truth:
+- `projects`, `project_cost_entries`, `project_revenue_entries`, `project_time_entries`, and `project_status_history` persist project master data plus analytical financial/activity records.
+- Project profitability is derived from project-linked posted bills, invoices, time entries, and project-side reversal entries; it is not a second set of books.
+- Revenue attribution is recognized for reporting when project-linked invoices are posted. Cost attribution is recognized when project-linked bills are posted and when tracked-inventory invoice posting creates COGS movements.
+- Draft document lines may optionally carry `project_id`, but project linkage is validated server-side for organization scope, active/archive semantics, and invoice customer compatibility.
+- Time entries are intentionally a backend-only foundation: billable flags and rate capture are stored now, while approvals, billing automation, payroll integration, richer UX, retainers, and milestone billing remain deferred.
+- Archive semantics are safe: projects are soft-archived, history is retained, and reversals preserve traceability back to source documents and journals.
+
+### Project endpoints
+
+- `POST /organizations/{organization_id}/projects`
+- `GET /organizations/{organization_id}/projects`
+- `GET /organizations/{organization_id}/projects/search`
+- `GET /organizations/{organization_id}/projects/{project_id}`
+- `PATCH /organizations/{organization_id}/projects/{project_id}`
+- `DELETE /organizations/{organization_id}/projects/{project_id}`
+- `GET /organizations/{organization_id}/projects/{project_id}/costs`
+- `GET /organizations/{organization_id}/projects/{project_id}/revenue`
+- `GET /organizations/{organization_id}/projects/{project_id}/activity`
+- `GET /organizations/{organization_id}/projects/{project_id}/profitability`
+- `POST /organizations/{organization_id}/projects/{project_id}/budget`
+- `PATCH /organizations/{organization_id}/projects/{project_id}/budget`
+- `GET /organizations/{organization_id}/projects/{project_id}/budget`
+- `POST /organizations/{organization_id}/projects/{project_id}/time-entries`
+- `GET /organizations/{organization_id}/projects/{project_id}/time-entries`
+- `PATCH /organizations/{organization_id}/projects/{project_id}/time-entries/{time_entry_id}`
+- `DELETE /organizations/{organization_id}/projects/{project_id}/time-entries/{time_entry_id}`
+- `GET /organizations/{organization_id}/project-profitability`
+- `GET /organizations/{organization_id}/project-budget-vs-actual`
+- `GET /organizations/{organization_id}/project-summary`
+
+### Project reporting assumptions
+
+- Budget vs actual currently reports budgeted revenue/cost/hours alongside actual revenue, actual cost, actual hours, and derived variances per project.
+- Project activity timelines combine status history, analytical cost/revenue entries, and time entries so reports can trace profitability back to source documents.
+- Frontend profitability truth is intentionally deferred; consumers should use the backend reporting endpoints above.
+
+
+## Payroll foundation
+
+The payroll module adds a backend-first gross-to-net and posting foundation while keeping compliance-specific logic deferred:
+- Employee master records store employment status, salary/hourly defaults, and payroll settings/account mappings per organization.
+- Payroll periods and runs are separate from financial periods, but posting still respects the accounting calendar through the journal service.
+- Payroll calculations produce immutable run entries and line-item payslip data for earnings, employee deductions, and employer costs using Decimal-safe arithmetic only.
+- Posting debits payroll expense accounts, credits deduction liability accounts, and credits the selected funding account for net pay; posted payroll runs cannot be recalculated, and reversals flow through the journal reversal mechanism.
+- Employee payroll history and liability reporting stay analytical and traceable back to payroll entries, line items, and posted/reversal journals.
+- Country-specific tax engines, pension provider integrations, payroll payment execution, and richer HR/time UX remain deferred.
+
+### Payroll endpoints
+
+- `POST /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees/{employee_id}`
+- `GET /organizations/{organization_id}/employees/{employee_id}/payroll-history`
+- `PATCH /organizations/{organization_id}/employees/{employee_id}`
+- `DELETE /organizations/{organization_id}/employees/{employee_id}`
+- `POST /organizations/{organization_id}/payroll-earning-types`
+- `GET /organizations/{organization_id}/payroll-earning-types`
+- `PATCH /organizations/{organization_id}/payroll-earning-types/{earning_type_id}`
+- `POST /organizations/{organization_id}/payroll-deduction-types`
+- `GET /organizations/{organization_id}/payroll-deduction-types`
+- `PATCH /organizations/{organization_id}/payroll-deduction-types/{deduction_type_id}`
+- `POST /organizations/{organization_id}/payroll-periods`
+- `GET /organizations/{organization_id}/payroll-periods`
+- `GET /organizations/{organization_id}/payroll-periods/{period_id}`
+- `POST /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/calculate`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/post`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/reverse`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}/entries`
+- `GET /organizations/{organization_id}/payroll-entries/{entry_id}`
+- `GET /organizations/{organization_id}/payroll-summary`
+- `GET /organizations/{organization_id}/payroll-liabilities`
