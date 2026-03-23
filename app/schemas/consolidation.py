@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 from app.core.enums import AccountType, ReportRunStatus
-from app.schemas.common import ORMModel
+from app.schemas.common import ORMModel, PaginationMeta
 
 
 class ConsolidationGroupCreate(BaseModel):
@@ -209,11 +209,14 @@ class ConsolidationRunResponse(BaseModel):
 
 class ConsolidationRunListResponse(BaseModel):
     items: list[ConsolidationRunResponse]
+    pagination: PaginationMeta
 
 
 class ConsolidationGroupListResponse(BaseModel):
     items: list[ConsolidationGroupResponse]
+    pagination: PaginationMeta
 
 
 class EliminationEntryListResponse(BaseModel):
     items: list[EliminationEntryResponse]
+    pagination: PaginationMeta

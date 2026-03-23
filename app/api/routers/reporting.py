@@ -452,10 +452,13 @@ def export_custom_report(
 @router.get("/report-runs", response_model=ReportRunListResponse)
 def list_report_runs(
     organization_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     _=Depends(require_permission("reports.general_ledger.read")),
     db: Session = Depends(get_db),
 ):
-    return ReportRunListResponse(items=[ReportRunResponse.model_validate(item) for item in ReportContextService(db).list_runs(organization_id)])
+    items, total = ReportContextService(db).list_runs(organization_id, limit=limit, offset=offset)
+    return ReportRunListResponse(items=[ReportRunResponse.model_validate(item) for item in items], pagination={"limit": limit, "offset": offset, "total": total})
 
 
 @router.get("/report-runs/{report_run_id}", response_model=ReportRunResponse)
@@ -471,10 +474,13 @@ def get_report_run(
 @router.get("/report-exports", response_model=ReportExportListResponse)
 def list_report_exports(
     organization_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     _=Depends(require_permission("reports.export")),
     db: Session = Depends(get_db),
 ):
-    return ReportExportListResponse(items=[ReportExportRecordResponse.model_validate(item) for item in ReportContextService(db).list_exports(organization_id)])
+    items, total = ReportContextService(db).list_exports(organization_id, limit=limit, offset=offset)
+    return ReportExportListResponse(items=[ReportExportRecordResponse.model_validate(item) for item in items], pagination={"limit": limit, "offset": offset, "total": total})
 
 
 @router.get("/report-exports/{export_id}", response_model=ReportExportRecordResponse)

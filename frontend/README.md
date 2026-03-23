@@ -531,3 +531,11 @@ The frontend now includes a consolidation workspace with:
 - run-consolidation controls with FX-rate inputs when currencies differ
 - persisted run detail views for consolidated statements
 - elimination review plus manual elimination entry creation
+
+
+### Frontend hardening notes
+
+- consolidation dashboard selection now supports deep-linking through URL state
+- permission-aware navigation includes the consolidation workspace
+- history/reporting-style list APIs now return pagination metadata even where current screens only consume `items`
+- keep sensitive accounting mutations backend-authoritative; avoid optimistic financial state

@@ -21,7 +21,6 @@ from app.schemas.consolidation import (
     EliminationEntryListResponse,
     EliminationEntryResponse,
     GroupEntityCreate,
-    GroupEntityResponse,
 )
 from app.services.reporting.consolidation_service import ConsolidationService
 
@@ -42,11 +41,14 @@ def create_group(
 @router.get("/organizations/{organization_id}/groups", response_model=ConsolidationGroupListResponse)
 def list_groups(
     organization_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     current_user=Depends(get_current_user),
     _=Depends(require_permission("consolidation.read")),
     db: Session = Depends(get_db),
 ):
-    return ConsolidationGroupListResponse(items=ConsolidationService(db).list_groups(organization_id, current_user.id))
+    items, total = ConsolidationService(db).list_groups(organization_id, current_user.id, limit=limit, offset=offset)
+    return ConsolidationGroupListResponse(items=items, pagination={"limit": limit, "offset": offset, "total": total})
 
 
 @router.get("/organizations/{organization_id}/groups/{group_id}", response_model=ConsolidationGroupResponse)
@@ -115,10 +117,13 @@ def run_consolidation(
 @router.get("/groups/{group_id}/consolidations", response_model=ConsolidationRunListResponse)
 def list_consolidations(
     group_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return ConsolidationRunListResponse(items=ConsolidationService(db).list_runs(group_id, current_user.id))
+    items, total = ConsolidationService(db).list_runs(group_id, current_user.id, limit=limit, offset=offset)
+    return ConsolidationRunListResponse(items=items, pagination={"limit": limit, "offset": offset, "total": total})
 
 
 @router.get("/groups/{group_id}/consolidations/{run_id}", response_model=ConsolidationRunResponse)
@@ -134,10 +139,13 @@ def get_consolidation(
 @router.get("/groups/{group_id}/eliminations", response_model=EliminationEntryListResponse)
 def list_eliminations(
     group_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return EliminationEntryListResponse(items=ConsolidationService(db).list_eliminations(group_id, current_user.id))
+    items, total = ConsolidationService(db).list_eliminations(group_id, current_user.id, limit=limit, offset=offset)
+    return EliminationEntryListResponse(items=items, pagination={"limit": limit, "offset": offset, "total": total})
 
 
 @router.post("/groups/{group_id}/eliminations", response_model=EliminationEntryResponse)

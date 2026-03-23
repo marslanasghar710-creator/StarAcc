@@ -74,6 +74,8 @@ class ConsolidationRun(Base, UUIDPKMixin, TimestampMixin):
     __tablename__ = "consolidation_runs"
     __table_args__ = (
         Index("ix_consolidation_runs_group_created", "group_id", "created_at"),
+        Index("ix_consolidation_runs_group_period", "group_id", "period_start", "period_end"),
+        Index("ix_consolidation_runs_group_fingerprint", "group_id", "request_fingerprint"),
     )
 
     group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("consolidation_groups.id"), nullable=False, index=True)
@@ -82,6 +84,7 @@ class ConsolidationRun(Base, UUIDPKMixin, TimestampMixin):
     status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="consolidation_run_status"), nullable=False, default=ReportRunStatus.PENDING)
     created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    request_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
     selected_entity_ids_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     fx_rates_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     report_snapshot_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
@@ -93,6 +96,7 @@ class EliminationEntry(Base, UUIDPKMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_elimination_entries_group_created", "group_id", "created_at"),
         Index("ix_elimination_entries_group_run_created", "group_id", "consolidation_run_id", "created_at"),
+        Index("ix_elimination_entries_group_period", "group_id", "period_start", "period_end"),
     )
 
     group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("consolidation_groups.id"), nullable=False, index=True)

@@ -517,3 +517,24 @@ This milestone adds backend-driven multi-entity consolidation for Xero-class fin
 - `GET /groups/{group_id}/reports/balance-sheet`
 - `GET /groups/{group_id}/reports/income-statement`
 - `GET /groups/{group_id}/reports/trial-balance`
+
+
+## Production hardening notes
+
+This hardening pass focuses on production readiness rather than new product surface area:
+- request correlation via `X-Request-ID` plus request-duration logging middleware
+- readiness foundation with `/ready` database checks alongside `/health`
+- consistent pagination metadata on reporting and consolidation history/list endpoints
+- consolidation run idempotency using request fingerprints to reduce duplicate work under retried submissions
+- additional model indexes for consolidation run lookup and elimination period access
+
+### Operational checklist
+- ensure the application can reach the primary database before using `/ready` in load balancers
+- seed RBAC before exercising protected routes: `python scripts/seed_rbac.py`
+- monitor slow request logs emitted by `app.middleware.request_context`
+- verify frontend build/test dependencies are available in CI before release
+
+### Known limitations
+- readiness depends on live database connectivity
+- frontend package installation in restricted environments may require registry/auth configuration
+- consolidation idempotency currently deduplicates matching run requests within a short time window; it does not replace a full async job queue

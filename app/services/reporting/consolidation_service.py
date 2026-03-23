@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+import hashlib
+import json
 from typing import Iterable
 from uuid import UUID
 
@@ -88,9 +90,11 @@ class ConsolidationService:
         self.db.refresh(group)
         return ConsolidationGroupResponse.model_validate(group)
 
-    def list_groups(self, organization_id: str, actor_user_id: str) -> list[ConsolidationGroupResponse]:
+    def list_groups(self, organization_id: str, actor_user_id: str, *, limit: int = 50, offset: int = 0):
         self._assert_org_permission(organization_id, actor_user_id, "consolidation.read")
-        return [ConsolidationGroupResponse.model_validate(group) for group in self.repo.list_groups(organization_id)]
+        items = [ConsolidationGroupResponse.model_validate(group) for group in self.repo.list_groups(organization_id, limit=limit, offset=offset)]
+        total = self.repo.count_groups(organization_id)
+        return items, total
 
     def get_group(self, organization_id: str, group_id: str, actor_user_id: str) -> ConsolidationGroupResponse:
         self._assert_org_permission(organization_id, actor_user_id, "consolidation.read")
@@ -187,9 +191,11 @@ class ConsolidationService:
         self.db.commit()
         return self._map_elimination(entry)
 
-    def list_eliminations(self, group_id: str, actor_user_id: str) -> list[EliminationEntryResponse]:
+    def list_eliminations(self, group_id: str, actor_user_id: str, *, limit: int = 50, offset: int = 0):
         self._assert_group_permission(group_id, actor_user_id, "consolidation.read")
-        return [self._map_elimination(entry) for entry in self.repo.list_elimination_entries(group_id)]
+        items = [self._map_elimination(entry) for entry in self.repo.list_elimination_entries(group_id, limit=limit, offset=offset)]
+        total = self.repo.count_elimination_entries(group_id)
+        return items, total
 
     def get_elimination(self, group_id: str, elimination_id: str, actor_user_id: str) -> EliminationEntryResponse:
         self._assert_group_permission(group_id, actor_user_id, "consolidation.read")
@@ -198,9 +204,11 @@ class ConsolidationService:
             raise not_found("Elimination entry not found")
         return self._map_elimination(entry)
 
-    def list_runs(self, group_id: str, actor_user_id: str) -> list[ConsolidationRunResponse]:
+    def list_runs(self, group_id: str, actor_user_id: str, *, limit: int = 50, offset: int = 0):
         self._assert_group_permission(group_id, actor_user_id, "consolidation.read")
-        return [self._map_run(run) for run in self.repo.list_runs(group_id)]
+        items = [self._map_run(run) for run in self.repo.list_runs(group_id, limit=limit, offset=offset)]
+        total = self.repo.count_runs(group_id)
+        return items, total
 
     def get_run(self, group_id: str, run_id: str, actor_user_id: str) -> ConsolidationRunResponse:
         self._assert_group_permission(group_id, actor_user_id, "consolidation.read")
@@ -213,6 +221,10 @@ class ConsolidationService:
         access = self._assert_group_permission(group_id, actor_user_id, "consolidation.run")
         selected_entities = self._validate_selected_entities(group_id, actor_user_id, payload.entity_ids)
         fx_rates = self._resolve_fx_rates(access.group.reporting_currency, selected_entities, payload.fx_rates)
+        request_fingerprint = self._build_run_fingerprint(access.group.id, payload.period_start, payload.period_end, selected_entities, fx_rates)
+        existing_run = self.repo.find_run_by_fingerprint(access.group.id, request_fingerprint)
+        if existing_run and existing_run.created_at and existing_run.created_at >= datetime.now(UTC) - timedelta(minutes=15):
+            return self._map_run(existing_run)
         run = self.repo.create_run(
             group_id=access.group.id,
             period_start=payload.period_start,
@@ -221,6 +233,7 @@ class ConsolidationService:
             created_by_user_id=access.membership.user_id,
             selected_entity_ids_json=[str(item.id) for item in selected_entities],
             fx_rates_json={str(key): str(value) for key, value in fx_rates.items()},
+            request_fingerprint=request_fingerprint,
         )
         snapshots, elimination_entries = self._build_consolidation_snapshots(
             access.group,
@@ -631,6 +644,16 @@ class ConsolidationService:
         if metadata.get("is_intercompany"):
             return journal.reference or journal.source_id or journal.description or str(journal.id)
         return None
+
+    def _build_run_fingerprint(self, group_id, period_start, period_end, organizations: list[Organization], fx_rates: dict[UUID, Decimal]) -> str:
+        payload = {
+            "group_id": str(group_id),
+            "period_start": str(period_start),
+            "period_end": str(period_end),
+            "entity_ids": sorted(str(item.id) for item in organizations),
+            "fx_rates": {str(key): str(value) for key, value in sorted(fx_rates.items(), key=lambda item: str(item[0]))},
+        }
+        return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
     def _map_elimination(self, entry) -> EliminationEntryResponse:
         return EliminationEntryResponse(

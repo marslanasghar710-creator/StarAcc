@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 from app.core.enums import ReportExportFormat, ReportRunStatus, ReportType
-from app.schemas.common import ORMModel
+from app.schemas.common import ORMModel, PaginationMeta
 
 
 class ReportFilters(BaseModel):
@@ -315,6 +315,7 @@ class ReportRunResponse(ORMModel):
 
 class ReportRunListResponse(BaseModel):
     items: list[ReportRunResponse]
+    pagination: PaginationMeta
 
 
 class ReportExportRecordResponse(ORMModel):
@@ -331,3 +332,4 @@ class ReportExportRecordResponse(ORMModel):
 
 class ReportExportListResponse(BaseModel):
     items: list[ReportExportRecordResponse]
+    pagination: PaginationMeta

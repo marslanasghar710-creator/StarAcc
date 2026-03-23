@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -10,29 +11,47 @@ import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
-import { useGroups, useConsolidationRuns, useRunConsolidation, useGroupEntities } from "@/features/consolidation/hooks";
 import { ConsolidatedReportTable } from "@/features/consolidation/components/consolidated-report-table";
 import { ConsolidationRunPanel } from "@/features/consolidation/components/consolidation-run-panel";
 import { ConsolidationStatusCard } from "@/features/consolidation/components/consolidation-status-card";
 import { GroupSelector } from "@/features/consolidation/components/group-selector";
+import { useConsolidationRuns, useGroupEntities, useGroups, useRunConsolidation } from "@/features/consolidation/hooks";
 import { usePermissions } from "@/features/permissions/hooks";
 import { useOrganization } from "@/providers/organization-provider";
 
 export default function ConsolidationDashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const groupIdFromUrl = searchParams.get("groupId") ?? undefined;
   const { currentOrganizationId, currentOrganization, isLoadingOrganizations } = useOrganization();
   const { can } = usePermissions();
   const canRead = can("consolidation.read");
   const groupsQuery = useGroups(currentOrganizationId ?? undefined);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>();
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(groupIdFromUrl);
   const entitiesQuery = useGroupEntities(selectedGroupId);
   const runsQuery = useConsolidationRuns(selectedGroupId);
   const runMutation = useRunConsolidation(selectedGroupId);
 
   useEffect(() => {
-    if (!selectedGroupId && groupsQuery.data?.length) {
-      setSelectedGroupId(groupsQuery.data[0]?.id);
+    if (groupIdFromUrl && groupIdFromUrl !== selectedGroupId) {
+      setSelectedGroupId(groupIdFromUrl);
     }
-  }, [groupsQuery.data, selectedGroupId]);
+  }, [groupIdFromUrl, selectedGroupId]);
+
+  useEffect(() => {
+    if (!selectedGroupId && groupsQuery.data?.length) {
+      setSelectedGroupId(groupIdFromUrl && groupsQuery.data.some((group) => group.id === groupIdFromUrl) ? groupIdFromUrl : groupsQuery.data[0]?.id);
+    }
+  }, [groupIdFromUrl, groupsQuery.data, selectedGroupId]);
+
+  useEffect(() => {
+    if (!selectedGroupId || groupIdFromUrl === selectedGroupId) {
+      return;
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("groupId", selectedGroupId);
+    router.replace(`/consolidation?${params.toString()}`, { scroll: false });
+  }, [groupIdFromUrl, router, searchParams, selectedGroupId]);
 
   const latestRun = useMemo(() => runsQuery.data?.[0] ?? null, [runsQuery.data]);
 

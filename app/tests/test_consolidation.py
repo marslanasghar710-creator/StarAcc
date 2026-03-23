@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import date
+
+from fastapi.testclient import TestClient
 from decimal import Decimal
 
 from app.core.enums import AccountType
+from app.main import app
 from app.core.security import create_access_token
 from app.tests.test_reporting_core import (
     add_membership,
@@ -138,6 +141,13 @@ def test_consolidation_run_reports_and_elimination_balancing(client, db):
     assert run.status_code == 200
     payload = run.json()
     assert payload["status"] == "completed"
+    rerun = client.post(
+        f"/groups/{group_id}/consolidations/run",
+        headers=auth_header(token),
+        json={"period_start": "2026-01-01", "period_end": "2026-01-31"},
+    )
+    assert rerun.status_code == 200
+    assert rerun.json()["id"] == payload["id"]
     assert payload["elimination_summary"]["auto_count"] >= 1
     assert Decimal(payload["income_statement"]["revenue"]["total"]) == Decimal("300.00")
     assert Decimal(payload["income_statement"]["expenses"]["total"]) == Decimal("0")
@@ -145,8 +155,13 @@ def test_consolidation_run_reports_and_elimination_balancing(client, db):
     assert payload["trial_balance"]["balances"] is True
     assert payload["balance_sheet"]["balances"] is True
 
-    eliminations = client.get(f"/groups/{group_id}/eliminations", headers=auth_header(token))
+    runs = client.get(f"/groups/{group_id}/consolidations?limit=10&offset=0", headers=auth_header(token))
+    assert runs.status_code == 200
+    assert runs.json()["pagination"]["total"] == 1
+
+    eliminations = client.get(f"/groups/{group_id}/eliminations?limit=10&offset=0", headers=auth_header(token))
     assert eliminations.status_code == 200
+    assert eliminations.json()["pagination"]["total"] >= 1
     first_entry = eliminations.json()["items"][0]
     debit_total = sum(Decimal(line["debit_amount"]) for line in first_entry["journal_lines"])
     credit_total = sum(Decimal(line["credit_amount"]) for line in first_entry["journal_lines"])
@@ -280,3 +295,10 @@ def test_consolidation_permissions_and_org_isolation(client, db):
         json={"organization_id": str(inaccessible_org.id)},
     )
     assert forbidden_entity.status_code == 403
+
+
+def test_health_returns_request_id_header():
+    with TestClient(app) as test_client:
+        response = test_client.get("/health")
+    assert response.status_code == 200
+    assert response.headers.get("X-Request-ID")

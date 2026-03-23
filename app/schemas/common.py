@@ -16,3 +16,9 @@ class SessionResponse(ORMModel):
     revoked_at: datetime | None
     created_at: datetime
     last_used_at: datetime | None
+
+
+class PaginationMeta(BaseModel):
+    limit: int
+    offset: int
+    total: int

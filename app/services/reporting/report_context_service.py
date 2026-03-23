@@ -90,8 +90,10 @@ class ReportContextService:
         )
         return export_row
 
-    def list_runs(self, organization_id: str):
-        return self.reports.list_report_runs(organization_id)
+    def list_runs(self, organization_id: str, *, limit: int = 50, offset: int = 0):
+        items = self.reports.list_report_runs(organization_id, limit=limit, offset=offset)
+        total = self.reports.count_report_runs(organization_id)
+        return items, total
 
     def get_run(self, organization_id: str, report_run_id: str):
         report_run = self.reports.get_report_run(organization_id, report_run_id)
@@ -99,8 +101,10 @@ class ReportContextService:
             raise not_found("Report run not found")
         return report_run
 
-    def list_exports(self, organization_id: str):
-        return self.report_exports.list_for_org(organization_id)
+    def list_exports(self, organization_id: str, *, limit: int = 50, offset: int = 0):
+        items = self.report_exports.list_for_org(organization_id, limit=limit, offset=offset)
+        total = self.report_exports.count_for_org(organization_id)
+        return items, total
 
     def get_export(self, organization_id: str, export_id: str):
         export_row = self.report_exports.get(organization_id, export_id)

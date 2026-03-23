@@ -267,9 +267,13 @@ class ReportRepository:
         self.db.flush()
         return report_run
 
-    def list_report_runs(self, organization_id: str | UUID) -> list[ReportRun]:
-        query = select(ReportRun).where(ReportRun.organization_id == organization_id).order_by(ReportRun.generated_at.desc())
+    def list_report_runs(self, organization_id: str | UUID, *, limit: int = 50, offset: int = 0) -> list[ReportRun]:
+        query = select(ReportRun).where(ReportRun.organization_id == organization_id).order_by(ReportRun.generated_at.desc()).limit(limit).offset(offset)
         return list(self.db.scalars(query).all())
+
+    def count_report_runs(self, organization_id: str | UUID) -> int:
+        return int(self.db.scalar(select(func.count()).select_from(ReportRun).where(ReportRun.organization_id == organization_id)) or 0)
+
 
     def get_report_run(self, organization_id: str | UUID, report_run_id: str | UUID) -> ReportRun | None:
         return self.db.scalar(select(ReportRun).where(ReportRun.organization_id == organization_id, ReportRun.id == report_run_id))
