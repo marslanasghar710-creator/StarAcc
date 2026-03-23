@@ -1,4 +1,4 @@
-import { Bell, BookOpenText, Boxes, Building2, ChartColumnBig, CreditCard, FileText, HandCoins, Landmark, LayoutGrid, Package, Receipt, Settings, ShieldCheck, Users } from "lucide-react";
+import { Activity, Bell, BookOpenText, Bot, Boxes, Building2, Calculator, ChartColumnBig, CreditCard, FileText, HandCoins, Landmark, LayoutGrid, Package, Receipt, Settings, ShieldCheck, Users } from "lucide-react";
 
 import type { NavItem } from "@/types";
 
