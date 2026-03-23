@@ -1,4 +1,4 @@
-import { Activity, Bell, BookOpenText, Bot, Boxes, Building2, Calculator, ChartColumnBig, CreditCard, FileText, HandCoins, Landmark, LayoutGrid, Package, Receipt, Settings, ShieldCheck, Users } from "lucide-react";
+import { Bell, BookOpenText, Boxes, Building2, ChartColumnBig, CreditCard, FileText, GitBranchPlus, HandCoins, Landmark, LayoutGrid, Package, Receipt, Settings, ShieldCheck, Users } from "lucide-react";
 
 import type { NavItem } from "@/types";
 
@@ -15,7 +15,8 @@ export const navigationItems: NavItem[] = [
   { title: "Banking", href: "/banking", description: "Cash and bank feeds", group: "Banking", icon: Landmark, requiredPermissions: ["bank_transactions.read", "bank_accounts.read"] },
   { title: "Inventory", href: "/inventory", description: "Items, stock, and valuation", group: "Operations", icon: Boxes, requiredPermissions: ["inventory.read"] },
   { title: "Fixed Assets", href: "/assets", description: "Register, depreciation, and disposal", group: "Operations", icon: Package, requiredPermissions: ["assets.read"] },
-  { title: "Reports", href: "/reports", description: "Financial reporting hub", group: "Insights", icon: ChartColumnBig, requiredPermissions: ["reports.read", "reporting.read", "reports.custom.read", "reports.profit_loss.read", "reports.balance_sheet.read", "reports.trial_balance.read", "reports.general_ledger.read", "trial_balance.read", "general_ledger.read"] },
+  { title: "Reports", href: "/reports", description: "Financial reporting hub", group: "Insights", icon: ChartColumnBig, requiredPermissions: ["reports.read", "reporting.read", "reports.profit_loss.read", "reports.balance_sheet.read", "reports.trial_balance.read", "reports.general_ledger.read", "trial_balance.read", "general_ledger.read"] },
+  { title: "Consolidation", href: "/consolidation", description: "Multi-entity reporting and eliminations", group: "Insights", icon: GitBranchPlus, requiredPermissions: ["consolidation.read"] },
   { title: "Tax", href: "/tax", description: "Tax center and filings", group: "Insights", icon: ShieldCheck, requiredPermissions: ["tax.settings.read", "tax_reports.read"] },
   { title: "Settings", href: "/settings", description: "Operational controls", group: "Administration", icon: Settings, requiredPermissions: ["settings.read", "organization.read", "org.read", "periods.read", "fiscal_periods.read", "tax_codes.read", "tax.settings.read", "branding.read", "numbering.read"] },
   { title: "Notifications", href: "/notifications", description: "Alerts and inbox", group: "Administration", icon: Bell, requiredPermissions: ["notifications.read"] },

@@ -489,11 +489,31 @@ The AI and automation layer is backend-governed, audit-safe, and intentionally n
 - Rejected or expired suggestions cannot be silently reused; regeneration creates a fresh suggestion record with a new fingerprint and review cycle.
 
 
-## Payroll workspace assumptions
+## Consolidation foundation
 
-The frontend payroll milestone expects organization-scoped payroll employee, period, run, entry, summary, and liability endpoints to be available. Backend payroll calculation, posting, deductions, liabilities, and journal truth remain server-owned; the UI only orchestrates review, calculate, and post actions.
+This milestone adds backend-driven multi-entity consolidation for Xero-class financial reporting:
+- consolidation groups that define reporting currency and entity scope
+- group memberships with org-boundary and permission checks
+- consolidation runs that produce persisted balance sheet, income statement, and trial balance snapshots
+- automatic intercompany elimination detection scaffolding plus manual elimination journals
+- basic FX conversion inputs for non-reporting-currency entities
+- group-level reporting endpoints under `/groups/{group_id}` for consolidated statements and eliminations
 
+### Consolidation endpoints
 
-## Frontend automation workspace assumptions
-
-The frontend automation milestone expects explainable automation-rule, suggestion, document-intelligence, and AI-job endpoints to be available per organization. Suggestion acceptance and rejection remain explicit user actions, and no frontend AI surface is authoritative for accounting state.
+- `POST /organizations/{organization_id}/groups`
+- `GET /organizations/{organization_id}/groups`
+- `GET /organizations/{organization_id}/groups/{group_id}`
+- `PATCH /organizations/{organization_id}/groups/{group_id}`
+- `POST /groups/{group_id}/entities`
+- `GET /groups/{group_id}/entities`
+- `DELETE /groups/{group_id}/entities/{entity_id}`
+- `POST /groups/{group_id}/consolidations/run`
+- `GET /groups/{group_id}/consolidations`
+- `GET /groups/{group_id}/consolidations/{run_id}`
+- `GET /groups/{group_id}/eliminations`
+- `POST /groups/{group_id}/eliminations`
+- `GET /groups/{group_id}/eliminations/{elimination_id}`
+- `GET /groups/{group_id}/reports/balance-sheet`
+- `GET /groups/{group_id}/reports/income-statement`
+- `GET /groups/{group_id}/reports/trial-balance`

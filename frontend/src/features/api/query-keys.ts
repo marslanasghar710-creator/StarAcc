@@ -54,13 +54,16 @@ export const queryKeys = {
     balanceSheet: (organizationId: string, filters: Record<string, unknown>) => ["reports", organizationId, "balance-sheet", filters] as const,
     generalLedger: (organizationId: string, filters: Record<string, unknown>) => ["reports", organizationId, "general-ledger", filters] as const,
   },
-  reportingBuilder: {
-    root: (organizationId: string) => ["reports", organizationId, "custom"] as const,
-    reports: (organizationId: string) => ["reports", organizationId, "custom", "definitions"] as const,
-    report: (organizationId: string, reportId: string) => ["reports", organizationId, "custom", "definitions", reportId] as const,
-    datasets: (organizationId: string) => ["reports", organizationId, "custom", "datasets"] as const,
-    dataset: (organizationId: string, datasetId: string) => ["reports", organizationId, "custom", "datasets", datasetId] as const,
-    results: (organizationId: string, reportId: string) => ["reports", organizationId, "custom", "results", reportId] as const,
+  consolidation: {
+    groups: (organizationId: string) => ["consolidation", organizationId, "groups"] as const,
+    group: (organizationId: string, groupId: string) => ["consolidation", organizationId, "groups", groupId] as const,
+    groupEntities: (groupId: string) => ["consolidation", groupId, "entities"] as const,
+    runs: (groupId: string) => ["consolidation", groupId, "runs"] as const,
+    run: (groupId: string, runId: string) => ["consolidation", groupId, "runs", runId] as const,
+    eliminations: (groupId: string) => ["consolidation", groupId, "eliminations"] as const,
+    balanceSheet: (groupId: string, runId?: string) => ["consolidation", groupId, "reports", "balance-sheet", runId ?? "latest"] as const,
+    incomeStatement: (groupId: string, runId?: string) => ["consolidation", groupId, "reports", "income-statement", runId ?? "latest"] as const,
+    trialBalance: (groupId: string, runId?: string) => ["consolidation", groupId, "reports", "trial-balance", runId ?? "latest"] as const,
   },
   settings: {
     root: (organizationId: string) => ["settings", organizationId] as const,

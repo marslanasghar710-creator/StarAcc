@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.routers import auth, organizations, invitations, roles, audit, accounting, ar, ap, banking, reporting, tax, settings, inventory, projects, payroll, ai
+from app.api.routers import auth, organizations, invitations, roles, audit, accounting, ar, ap, banking, reporting, tax, settings, inventory, projects, payroll, ai, consolidation
 
 app = FastAPI(title="StarAcc Foundation API")
 
@@ -41,3 +41,6 @@ app.include_router(payroll.router)
 
 
 app.include_router(ai.router)
+
+
+app.include_router(consolidation.router)
