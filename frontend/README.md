@@ -88,6 +88,10 @@ pnpm test
 - `/reports/profit-loss`
 - `/reports/balance-sheet`
 - `/reports/general-ledger`
+- `/consolidation`
+- `/consolidation/groups`
+- `/consolidation/groups/[groupId]`
+- `/consolidation/runs/[runId]`
 - `/settings`
 - `/settings/organization`
 - `/settings/fiscal-periods`
@@ -436,3 +440,13 @@ Used endpoints:
 - Asset and category adapters accept both snake_case and camelCase payloads where appropriate so the UI tolerates backend response-shape variations.
 - Depreciation schedules, accumulated depreciation, net book value, valuation totals, and disposal accounting remain fully backend-owned.
 - The frontend only triggers create/update/disposal/run actions and formats the backend responses for register, summary, and schedule screens.
+
+
+### Consolidation frontend
+
+The frontend now includes a consolidation workspace with:
+- group selection and group management
+- group entity membership management
+- run-consolidation controls with FX-rate inputs when currencies differ
+- persisted run detail views for consolidated statements
+- elimination review plus manual elimination entry creation

@@ -410,3 +410,33 @@ The AI and automation layer is backend-governed, audit-safe, and intentionally n
 - Document extraction currently supports uploaded text and CSV content best; PDFs and images are intentionally deferred to future provider integrations while the job/audit contract stays stable.
 - Rule conflict handling is priority-based per suggestion type: the highest-priority matching rule wins for a given target and suggestion type.
 - Rejected or expired suggestions cannot be silently reused; regeneration creates a fresh suggestion record with a new fingerprint and review cycle.
+
+
+## Consolidation foundation
+
+This milestone adds backend-driven multi-entity consolidation for Xero-class financial reporting:
+- consolidation groups that define reporting currency and entity scope
+- group memberships with org-boundary and permission checks
+- consolidation runs that produce persisted balance sheet, income statement, and trial balance snapshots
+- automatic intercompany elimination detection scaffolding plus manual elimination journals
+- basic FX conversion inputs for non-reporting-currency entities
+- group-level reporting endpoints under `/groups/{group_id}` for consolidated statements and eliminations
+
+### Consolidation endpoints
+
+- `POST /organizations/{organization_id}/groups`
+- `GET /organizations/{organization_id}/groups`
+- `GET /organizations/{organization_id}/groups/{group_id}`
+- `PATCH /organizations/{organization_id}/groups/{group_id}`
+- `POST /groups/{group_id}/entities`
+- `GET /groups/{group_id}/entities`
+- `DELETE /groups/{group_id}/entities/{entity_id}`
+- `POST /groups/{group_id}/consolidations/run`
+- `GET /groups/{group_id}/consolidations`
+- `GET /groups/{group_id}/consolidations/{run_id}`
+- `GET /groups/{group_id}/eliminations`
+- `POST /groups/{group_id}/eliminations`
+- `GET /groups/{group_id}/eliminations/{elimination_id}`
+- `GET /groups/{group_id}/reports/balance-sheet`
+- `GET /groups/{group_id}/reports/income-statement`
+- `GET /groups/{group_id}/reports/trial-balance`
