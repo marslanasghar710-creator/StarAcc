@@ -19,7 +19,7 @@ This frontend layer now includes the first real accounting workflows for:
 
 Detailed tax workflows remain out of scope for this milestone.
 
-Suppliers, bills, banking, core financial reporting, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, and configuration foundations where endpoints exist.
+Suppliers, bills, banking, core financial reporting, fixed assets, payroll workspace screens, AI/automation workflow screens, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, payroll period/run review workflows, automation rules, suggestion review, document intelligence job visibility, and configuration foundations where endpoints exist, plus a centralized Activity Center for organization-wide audit visibility where the backend exposes the richer query endpoint.
 
 ## Stack
 
@@ -99,6 +99,14 @@ pnpm test
 - `/assets`
 - `/assets/[assetId]`
 - `/assets/categories`
+- `/payroll`
+- `/payroll/employees`
+- `/payroll/runs/[runId]`
+- `/automation`
+- `/automation/suggestions`
+- `/automation/documents`
+- `/automation/jobs`
+- `/activity`
 
 ## Backend assumptions and adapters
 
@@ -133,6 +141,15 @@ Used endpoints:
 - `GET /organizations/{organization_id}/notifications/unread-count`
 - `POST /organizations/{organization_id}/notifications/{notification_id}/read`
 - `POST /organizations/{organization_id}/notifications/read-all`
+
+### Activity center
+
+Used endpoints:
+
+- `GET /organizations/{organization_id}/activity-center`
+- `GET /organizations/{organization_id}/audit-logs`
+
+The `/activity` route keeps filters in the client, but all search, grouping, and result-shaping authority stays in the backend response.
 
 ### Accounts
 
@@ -204,6 +221,57 @@ Used endpoints:
 - Cashbook data falls back to the existing `/banking/cash-position` endpoint when `/cashbook` is unavailable.
 - Journal reconciliation falls back to the existing `/bank-transactions/{transaction_id}/reconcile-journal` route when the richer `/reconcile/match-journal` route is unavailable.
 - Imports, rules, reconciliation history, suggestions, ignore, unreconcile, and several banking detail endpoints are treated as backend-driven optional enhancements: the UI is wired for them, but it does not invent results when the backend does not yet provide them.
+
+### AI / automation
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/automation-rules`
+- `GET /organizations/{organization_id}/automation-rules`
+- `GET /organizations/{organization_id}/automation-rules/{rule_id}`
+- `PATCH /organizations/{organization_id}/automation-rules/{rule_id}`
+- `DELETE /organizations/{organization_id}/automation-rules/{rule_id}`
+- `POST /organizations/{organization_id}/automation-rules/{rule_id}/test`
+- `GET /organizations/{organization_id}/suggestions`
+- `GET /organizations/{organization_id}/suggestions/{suggestion_id}`
+- `GET /organizations/{organization_id}/suggestions/for/{entity_type}/{entity_id}`
+- `POST /organizations/{organization_id}/suggestions/{suggestion_id}/accept`
+- `POST /organizations/{organization_id}/suggestions/{suggestion_id}/reject`
+- `POST /organizations/{organization_id}/document-intelligence/extract`
+- `GET /organizations/{organization_id}/document-intelligence/jobs`
+- `GET /organizations/{organization_id}/document-intelligence/jobs/{job_id}`
+- `GET /organizations/{organization_id}/document-intelligence/jobs/{job_id}/result`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/generate-suggestions`
+- `GET /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/suggestions`
+- `POST /organizations/{organization_id}/documents/{entity_type}/{entity_id}/generate-coding-suggestions`
+- `GET /organizations/{organization_id}/documents/{entity_type}/{entity_id}/coding-suggestions`
+- `GET /organizations/{organization_id}/ai-jobs`
+- `GET /organizations/{organization_id}/ai-jobs/{job_id}`
+
+AI features remain explainable and human-reviewed in the frontend. They never silently apply accounting truth, post books, or bypass explicit user review.
+
+### Payroll
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees/{employee_id}`
+- `PATCH /organizations/{organization_id}/employees/{employee_id}`
+- `DELETE /organizations/{organization_id}/employees/{employee_id}`
+- `POST /organizations/{organization_id}/payroll-periods`
+- `GET /organizations/{organization_id}/payroll-periods`
+- `POST /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/calculate`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/post`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}/entries`
+- `GET /organizations/{organization_id}/payroll-entries/{entry_id}`
+- `GET /organizations/{organization_id}/payroll-summary`
+- `GET /organizations/{organization_id}/payroll-liabilities`
+
+Payroll pages are permission-aware around `payroll.read`, `payroll.create`, `payroll.calculate`, `payroll.post`, and `employees.manage`. The UI only reviews and submits workflow actions; it never recalculates gross-to-net logic client-side.
 
 ### Reporting
 
