@@ -410,3 +410,8 @@ The AI and automation layer is backend-governed, audit-safe, and intentionally n
 - Document extraction currently supports uploaded text and CSV content best; PDFs and images are intentionally deferred to future provider integrations while the job/audit contract stays stable.
 - Rule conflict handling is priority-based per suggestion type: the highest-priority matching rule wins for a given target and suggestion type.
 - Rejected or expired suggestions cannot be silently reused; regeneration creates a fresh suggestion record with a new fingerprint and review cycle.
+
+
+## Payroll workspace assumptions
+
+The frontend payroll milestone expects organization-scoped payroll employee, period, run, entry, summary, and liability endpoints to be available. Backend payroll calculation, posting, deductions, liabilities, and journal truth remain server-owned; the UI only orchestrates review, calculate, and post actions.

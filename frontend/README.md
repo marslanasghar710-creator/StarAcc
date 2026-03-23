@@ -19,7 +19,7 @@ This frontend layer now includes the first real accounting workflows for:
 
 Detailed tax workflows remain out of scope for this milestone.
 
-Suppliers, bills, banking, core financial reporting, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, and configuration foundations where endpoints exist.
+Suppliers, bills, banking, core financial reporting, fixed assets, payroll workspace screens, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, payroll period/run review workflows, and configuration foundations where endpoints exist.
 
 ## Stack
 
@@ -99,6 +99,9 @@ pnpm test
 - `/assets`
 - `/assets/[assetId]`
 - `/assets/categories`
+- `/payroll`
+- `/payroll/employees`
+- `/payroll/runs/[runId]`
 
 ## Backend assumptions and adapters
 
@@ -204,6 +207,29 @@ Used endpoints:
 - Cashbook data falls back to the existing `/banking/cash-position` endpoint when `/cashbook` is unavailable.
 - Journal reconciliation falls back to the existing `/bank-transactions/{transaction_id}/reconcile-journal` route when the richer `/reconcile/match-journal` route is unavailable.
 - Imports, rules, reconciliation history, suggestions, ignore, unreconcile, and several banking detail endpoints are treated as backend-driven optional enhancements: the UI is wired for them, but it does not invent results when the backend does not yet provide them.
+
+### Payroll
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees/{employee_id}`
+- `PATCH /organizations/{organization_id}/employees/{employee_id}`
+- `DELETE /organizations/{organization_id}/employees/{employee_id}`
+- `POST /organizations/{organization_id}/payroll-periods`
+- `GET /organizations/{organization_id}/payroll-periods`
+- `POST /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/calculate`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/post`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}/entries`
+- `GET /organizations/{organization_id}/payroll-entries/{entry_id}`
+- `GET /organizations/{organization_id}/payroll-summary`
+- `GET /organizations/{organization_id}/payroll-liabilities`
+
+Payroll pages are permission-aware around `payroll.read`, `payroll.create`, `payroll.calculate`, `payroll.post`, and `employees.manage`. The UI only reviews and submits workflow actions; it never recalculates gross-to-net logic client-side.
 
 ### Reporting
 
