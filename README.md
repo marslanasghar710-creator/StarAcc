@@ -415,3 +415,8 @@ The AI and automation layer is backend-governed, audit-safe, and intentionally n
 ## Payroll workspace assumptions
 
 The frontend payroll milestone expects organization-scoped payroll employee, period, run, entry, summary, and liability endpoints to be available. Backend payroll calculation, posting, deductions, liabilities, and journal truth remain server-owned; the UI only orchestrates review, calculate, and post actions.
+
+
+## Frontend automation workspace assumptions
+
+The frontend automation milestone expects explainable automation-rule, suggestion, document-intelligence, and AI-job endpoints to be available per organization. Suggestion acceptance and rejection remain explicit user actions, and no frontend AI surface is authoritative for accounting state.
