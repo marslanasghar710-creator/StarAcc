@@ -19,7 +19,7 @@ This frontend layer now includes the first real accounting workflows for:
 
 Detailed tax workflows remain out of scope for this milestone.
 
-Suppliers, bills, banking, core financial reporting, fixed assets, payroll workspace screens, AI/automation workflow screens, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, payroll period/run review workflows, automation rules, suggestion review, document intelligence job visibility, and configuration foundations where endpoints exist, plus a centralized Activity Center for organization-wide audit visibility where the backend exposes the richer query endpoint.
+Suppliers, bills, banking, core financial reporting, custom reporting builder flows, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, saved report definitions, preview execution, export-ready custom reports, permission-aware report builder workflows, organization preferences, fiscal periods, and configuration foundations where endpoints exist.
 
 ## Stack
 
@@ -88,6 +88,9 @@ pnpm test
 - `/reports/profit-loss`
 - `/reports/balance-sheet`
 - `/reports/general-ledger`
+- `/reports/custom`
+- `/reports/custom/new`
+- `/reports/custom/[reportId]`
 - `/settings`
 - `/settings/organization`
 - `/settings/fiscal-periods`
@@ -287,14 +290,27 @@ Used endpoints:
 - `GET /organizations/{organization_id}/reports/profit-loss/export`
 - `GET /organizations/{organization_id}/reports/balance-sheet/export`
 - `GET /organizations/{organization_id}/reports/general-ledger/export`
+- `GET /organizations/{organization_id}/custom-reports`
+- `POST /organizations/{organization_id}/custom-reports`
+- `GET /organizations/{organization_id}/custom-reports/{report_id}`
+- `PATCH /organizations/{organization_id}/custom-reports/{report_id}`
+- `DELETE /organizations/{organization_id}/custom-reports/{report_id}`
+- `GET /organizations/{organization_id}/custom-reports/datasets`
+- `GET /organizations/{organization_id}/custom-reports/datasets/{dataset_id}`
+- `POST /organizations/{organization_id}/custom-reports/preview`
+- `POST /organizations/{organization_id}/custom-reports/preview/export`
+- `POST /organizations/{organization_id}/custom-reports/{report_id}/run`
+- `GET /organizations/{organization_id}/custom-reports/{report_id}/results`
+- `POST /organizations/{organization_id}/custom-reports/{report_id}/export`
 - `GET /organizations/{organization_id}/periods`
 - `GET /organizations/{organization_id}/accounts`
 
 ### Reporting adapter notes
 
 - Report metadata prefers `/reports/metadata` and falls back to `/reports` when the dedicated metadata endpoint is unavailable.
-- The frontend accepts either broad reporting permissions such as `reports.read` / `reporting.read` or the more specific permission names already present in this repository, such as `reports.profit_loss.read` and `reports.general_ledger.read`.
-- Financial statement structure, totals, comparisons, hierarchy, and export generation remain backend-owned; the frontend only adapts payload shapes for presentation and does not derive accounting truth.
+- The reports hub now includes `/reports/custom`, `/reports/custom/new`, and `/reports/custom/[reportId]` so users can browse saved definitions, build new reports, and edit/run saved ones without making the frontend authoritative for reporting truth.
+- Dataset, field, filter, grouping, sorting, totals, preview rows, saved definitions, and export payloads remain backend-owned; the frontend only adapts payload shapes and orchestrates safe builder workflows.
+- Dataset visibility is permission-aware in the UI: users without `reports.custom.read` never see the builder, and users without `reports.export` do not see export actions.
 
 ### Settings
 

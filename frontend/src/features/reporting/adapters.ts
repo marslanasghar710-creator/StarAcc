@@ -65,6 +65,11 @@ function toSlug(value: unknown): ReportSlug {
       return "balance-sheet";
     case "general-ledger":
     case "general_ledger":
+      return "general-ledger";
+    case "custom":
+    case "custom_report":
+    case "custom-reports":
+      return "custom";
     default:
       return "general-ledger";
   }
@@ -115,6 +120,17 @@ function createDefaultReports(): ReportsLandingItem[] {
       allowedFormats: ["csv", "pdf"],
       requiredPermissions: ["reports.read", "reporting.read", "general_ledger.read", "reports.general_ledger.read", "ledger.read"],
       recommended: false,
+    },
+    {
+      id: "custom",
+      slug: "custom",
+      name: "Custom Reports",
+      description: "Build, save, preview, and export backend-driven tabular reports.",
+      href: "/reports/custom",
+      isAvailable: true,
+      allowedFormats: ["csv", "pdf"],
+      requiredPermissions: ["reports.custom.read"],
+      recommended: true,
     },
   ];
 }

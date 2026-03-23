@@ -145,6 +145,64 @@ curl -G http://localhost:8000/organizations/$ORG_ID/reports/aged-payables/export
 ```
 
 
+## Advanced custom reporting
+
+The advanced reporting extension adds a backend-governed custom report builder foundation:
+- Organization-scoped saved report definitions live in `custom_report_definitions` and remain the system of record for datasets, columns, filters, grouping, sorting, and display options.
+- Executions are tracked in `custom_report_executions`, so saved report runs and exports stay attributable to a user, definition, and dataset.
+- Dataset metadata is explicit and permission-aware: the backend only exposes declared datasets, fields, filters, groupings, and aggregations, and it never accepts raw SQL or arbitrary query text from the client.
+- Current built-in custom-report datasets cover accounts, journal lines, invoices, bills, bank transactions, inventory items, projects, and payroll entries.
+- CSV export is implemented for preview and saved-report execution flows; PDF remains scaffolded through the existing export service and intentionally returns the backend's not-yet-implemented response where applicable.
+
+### Custom reporting permissions
+
+- `reports.custom.read`
+- `reports.custom.create`
+- `reports.custom.update`
+- `reports.custom.delete`
+- `reports.export`
+
+### Custom reporting endpoints
+
+#### Report definitions
+- `POST /organizations/{organization_id}/custom-reports`
+- `GET /organizations/{organization_id}/custom-reports`
+- `GET /organizations/{organization_id}/custom-reports/{report_id}`
+- `PATCH /organizations/{organization_id}/custom-reports/{report_id}`
+- `DELETE /organizations/{organization_id}/custom-reports/{report_id}`
+
+#### Dataset metadata
+- `GET /organizations/{organization_id}/custom-reports/datasets`
+- `GET /organizations/{organization_id}/custom-reports/datasets/{dataset_id}`
+- `GET /organizations/{organization_id}/custom-reports/datasets/{dataset_id}/fields`
+- `GET /organizations/{organization_id}/custom-reports/datasets/{dataset_id}/filters`
+- `GET /organizations/{organization_id}/custom-reports/datasets/{dataset_id}/groupings`
+
+#### Execution and exports
+- `POST /organizations/{organization_id}/custom-reports/preview`
+- `POST /organizations/{organization_id}/custom-reports/preview/export`
+- `POST /organizations/{organization_id}/custom-reports/{report_id}/run`
+- `GET /organizations/{organization_id}/custom-reports/{report_id}/results`
+- `POST /organizations/{organization_id}/custom-reports/{report_id}/export`
+
+### Custom reporting curl example
+
+```bash
+curl -X POST http://localhost:8000/organizations/$ORG_ID/custom-reports/preview \
+  -H "Authorization: Bearer $ACCESS" \
+  -H 'content-type: application/json' \
+  -d '{
+    "dataset_id": "journal_lines",
+    "columns": ["source_module", "net_amount"],
+    "filters": [{"field": "entry_date", "operator": "between", "value": "2026-01-01", "value_to": "2026-02-28"}],
+    "groupings": ["source_module"],
+    "sorting": [{"field": "source_module", "direction": "asc"}],
+    "page": 1,
+    "page_size": 50
+  }'
+```
+
+
 ## Tax engine foundation
 
 The tax module adds reusable VAT/GST-style master data, calculation, posting, and reporting groundwork:

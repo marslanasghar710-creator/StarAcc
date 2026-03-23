@@ -45,7 +45,7 @@ async function optionalReportRequest<T>(request: () => Promise<T>, fallback: T):
   try {
     return await request();
   } catch (error) {
-    if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+    if (error instanceof ApiError && (error.status === 403 || error.status === 404 || error.status === 405)) {
       return fallback;
     }
 
@@ -58,7 +58,7 @@ export async function getReportsMetadata(organizationId: string): Promise<Report
     const response = await apiClient<unknown>(`/organizations/${organizationId}/reports/metadata`);
     return adaptReportsMetadata(response);
   } catch (error) {
-    if (!(error instanceof ApiError) || (error.status !== 404 && error.status !== 405)) {
+    if (!(error instanceof ApiError) || (error.status !== 403 && error.status !== 404 && error.status !== 405)) {
       throw error;
     }
   }

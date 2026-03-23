@@ -21,7 +21,7 @@ from app.db.models.settings import (
     UserNotificationPreference,
 )
 from app.db.models.rbac import Permission, Role, RolePermission
-from app.db.models.reporting import ReportExport, ReportRun
+from app.db.models.reporting import CustomReportDefinition, CustomReportExecution, ReportExport, ReportRun
 from app.db.models.projects import Project, ProjectCostEntry, ProjectRevenueEntry, ProjectStatusHistory, ProjectTimeEntry
 from app.db.models.payroll import Employee, PayrollDeductionType, PayrollEarningType, PayrollEntry, PayrollLineItem, PayrollPeriod, PayrollRun
 from app.db.models.session import Session
@@ -81,6 +81,8 @@ __all__ = [
     "AccountPeriodBalance",
     "ReportRun",
     "ReportExport",
+    "CustomReportDefinition",
+    "CustomReportExecution",
     "TaxSettings",
     "TaxRate",
     "TaxCode",
