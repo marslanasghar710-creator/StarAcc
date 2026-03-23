@@ -99,6 +99,10 @@ REPORTING_PERMISSIONS = [
     "reports.account_statement.read",
     "reports.aged_receivables.read",
     "reports.aged_payables.read",
+    "reports.custom.read",
+    "reports.custom.create",
+    "reports.custom.update",
+    "reports.custom.delete",
     "reports.export",
 ]
 
@@ -202,7 +206,7 @@ ROLE_DEFAULTS = {
     "admin": [p for p in PERMISSIONS if p != "periods.reopen"],
     "accountant": sorted(set([p for p in PERMISSIONS if p not in {"org.delete", "periods.reopen", "files.delete", "files.unlink", "notification_settings.update"}] + ["branding.read", "branding.update", "numbering.read", "files.upload", "files.read", "files.link", "email_templates.read", "emails.send", "emails.read", "notifications.read", "notification_settings.read"])),
     "staff": ["org.read", "customers.read", "invoices.create", "invoices.read", "invoices.update", "invoices.send", "suppliers.read", "bills.create", "bills.read", "bills.update", "accounts.read", "journals.read", "ledger.read", "projects.read", "projects.time.create", "projects.time.update", "payroll.read", "inventory.read", "bank_accounts.read", "bank_transactions.create", "bank_transactions.read", "bank_reconciliation.read", "files.upload", "files.read", "notifications.read", "notifications.update", "suggestions.read", "document_intelligence.read"],
-    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "suppliers.read", "bills.read", "supplier_credits.read", "supplier_payments.read", "ar.read", "ar_aging.read", "ap.read", "ap_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read", "reports.profit_loss.read", "reports.balance_sheet.read", "reports.trial_balance.read", "reports.general_ledger.read", "reports.account_statement.read", "reports.aged_receivables.read", "reports.aged_payables.read", "tax.settings.read", "tax_rates.read", "tax_codes.read", "tax_reports.read", "projects.read", "projects.profitability.read", "payroll.read", "inventory.read", "inventory.valuation.read", "branding.read", "numbering.read", "notification_settings.read", "files.read", "notifications.read", "emails.read", "email_templates.read", "bank_accounts.read", "bank_transactions.read", "bank_reconciliation.read", "automation_rules.read", "suggestions.read", "document_intelligence.read", "ai_jobs.read"],
+    "viewer": ["org.read", "customers.read", "invoices.read", "credit_notes.read", "customer_payments.read", "suppliers.read", "bills.read", "supplier_credits.read", "supplier_payments.read", "ar.read", "ar_aging.read", "ap.read", "ap_aging.read", "accounts.read", "journals.read", "ledger.read", "trial_balance.read", "reports.profit_loss.read", "reports.balance_sheet.read", "reports.trial_balance.read", "reports.general_ledger.read", "reports.account_statement.read", "reports.aged_receivables.read", "reports.aged_payables.read", "reports.custom.read", "tax.settings.read", "tax_rates.read", "tax_codes.read", "tax_reports.read", "projects.read", "projects.profitability.read", "payroll.read", "inventory.read", "inventory.valuation.read", "branding.read", "numbering.read", "notification_settings.read", "files.read", "notifications.read", "emails.read", "email_templates.read", "bank_accounts.read", "bank_transactions.read", "bank_reconciliation.read", "automation_rules.read", "suggestions.read", "document_intelligence.read", "ai_jobs.read"],
 }
 
 
