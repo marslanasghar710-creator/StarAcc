@@ -106,6 +106,10 @@ REPORTING_PERMISSIONS = [
     "reports.account_statement.read",
     "reports.aged_receivables.read",
     "reports.aged_payables.read",
+    "reports.custom.read",
+    "reports.custom.create",
+    "reports.custom.update",
+    "reports.custom.delete",
     "reports.export",
 ]
 

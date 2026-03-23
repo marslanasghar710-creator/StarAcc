@@ -6,6 +6,18 @@ from sqlalchemy.orm import Session
 from app.api.deps.auth import get_current_user
 from app.api.deps.rbac import require_permission
 from app.db.session import get_db
+from app.schemas.custom_reporting import (
+    CustomReportDatasetResponse,
+    CustomReportDatasetSummaryResponse,
+    CustomReportDefinitionCreate,
+    CustomReportDefinitionListResponse,
+    CustomReportDefinitionResponse,
+    CustomReportExportRequest,
+    CustomReportPreviewRequest,
+    CustomReportResultResponse,
+    CustomReportDefinitionUpdate,
+    CustomReportFieldResponse,
+)
 from app.schemas.reporting import (
     AccountStatementQuery,
     AccountStatementResponse,
@@ -34,6 +46,7 @@ from app.services.reporting.general_ledger_service import GeneralLedgerService
 from app.services.reporting.profit_loss_service import ProfitLossService
 from app.services.reporting.report_context_service import ReportContextService
 from app.services.reporting.report_export_service import ReportExportService
+from app.services.reporting.custom_reporting_service import CustomReportingService
 from app.services.reporting.trial_balance_service import TrialBalanceService
 from app.core.enums import ReportType
 
@@ -265,6 +278,175 @@ def export_aged_payables(
     query = AgingReportQuery(as_of_date=as_of_date, detailed=detailed, accounting_basis=accounting_basis)
     report = AgedPayablesService(db).generate(organization_id, query, current_user.id)
     return ReportExportService(db).export(organization_id=organization_id, report_type=ReportType.AGED_PAYABLES, export_format=ExportQuery(export_format=export_format).export_format, file_stem="aged-payables", payload=report, generated_by_user_id=current_user.id)
+
+
+@router.get("/custom-reports/datasets", response_model=list[CustomReportDatasetSummaryResponse])
+def list_custom_report_datasets(
+    organization_id: str,
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).list_datasets(membership.role_id)
+
+
+@router.get("/custom-reports/datasets/{dataset_id}", response_model=CustomReportDatasetResponse)
+def get_custom_report_dataset(
+    organization_id: str,
+    dataset_id: str,
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+
+
+@router.get("/custom-reports/datasets/{dataset_id}/fields", response_model=list[CustomReportFieldResponse])
+def get_custom_report_dataset_fields(
+    organization_id: str,
+    dataset_id: str,
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    dataset = CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+    return dataset.fields
+
+
+@router.get("/custom-reports/datasets/{dataset_id}/filters", response_model=list[CustomReportFieldResponse])
+def get_custom_report_dataset_filters(
+    organization_id: str,
+    dataset_id: str,
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    dataset = CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+    return dataset.supported_filters
+
+
+@router.get("/custom-reports/datasets/{dataset_id}/groupings", response_model=list[CustomReportFieldResponse])
+def get_custom_report_dataset_groupings(
+    organization_id: str,
+    dataset_id: str,
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    dataset = CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+    return dataset.supported_groupings
+
+
+@router.get("/custom-reports", response_model=CustomReportDefinitionListResponse)
+def list_custom_reports(
+    organization_id: str,
+    _=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportDefinitionListResponse(items=CustomReportingService(db).list_definitions(organization_id))
+
+
+@router.post("/custom-reports", response_model=CustomReportDefinitionResponse)
+def create_custom_report(
+    organization_id: str,
+    payload: CustomReportDefinitionCreate,
+    current_user=Depends(get_current_user),
+    membership=Depends(require_permission("reports.custom.create")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).create_definition(organization_id, membership.role_id, current_user.id, payload)
+
+
+@router.get("/custom-reports/{report_id}", response_model=CustomReportDefinitionResponse)
+def get_custom_report(
+    organization_id: str,
+    report_id: str,
+    _=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).get_definition(organization_id, report_id)
+
+
+@router.patch("/custom-reports/{report_id}", response_model=CustomReportDefinitionResponse)
+def update_custom_report(
+    organization_id: str,
+    report_id: str,
+    payload: CustomReportDefinitionUpdate,
+    current_user=Depends(get_current_user),
+    membership=Depends(require_permission("reports.custom.update")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).update_definition(organization_id, membership.role_id, report_id, current_user.id, payload)
+
+
+@router.delete("/custom-reports/{report_id}", status_code=204)
+def delete_custom_report(
+    organization_id: str,
+    report_id: str,
+    current_user=Depends(get_current_user),
+    _=Depends(require_permission("reports.custom.delete")),
+    db: Session = Depends(get_db),
+):
+    CustomReportingService(db).delete_definition(organization_id, report_id, current_user.id)
+
+
+@router.post("/custom-reports/preview", response_model=CustomReportResultResponse)
+def preview_custom_report(
+    organization_id: str,
+    payload: CustomReportPreviewRequest,
+    current_user=Depends(get_current_user),
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).execute_preview(
+        organization_id=organization_id,
+        role_id=membership.role_id,
+        requested_by_user_id=current_user.id,
+        requested_by_email=current_user.email,
+        payload=payload,
+    )
+
+
+@router.post("/custom-reports/preview/export")
+def export_custom_report_preview(
+    organization_id: str,
+    payload: CustomReportExportRequest,
+    current_user=Depends(get_current_user),
+    membership=Depends(require_permission("reports.export")),
+    __=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).export_preview(organization_id, membership.role_id, current_user.id, current_user.email, payload)
+
+
+@router.post("/custom-reports/{report_id}/run", response_model=CustomReportResultResponse)
+def run_custom_report(
+    organization_id: str,
+    report_id: str,
+    current_user=Depends(get_current_user),
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).run_definition(organization_id, membership.role_id, report_id, current_user.id, current_user.email)
+
+
+@router.get("/custom-reports/{report_id}/results", response_model=CustomReportResultResponse)
+def latest_custom_report_results(
+    organization_id: str,
+    report_id: str,
+    current_user=Depends(get_current_user),
+    membership=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).latest_results(organization_id, membership.role_id, report_id, current_user.id, current_user.email)
+
+
+@router.post("/custom-reports/{report_id}/export")
+def export_custom_report(
+    organization_id: str,
+    report_id: str,
+    payload: CustomReportExportRequest,
+    current_user=Depends(get_current_user),
+    membership=Depends(require_permission("reports.export")),
+    __=Depends(require_permission("reports.custom.read")),
+    db: Session = Depends(get_db),
+):
+    return CustomReportingService(db).export_definition(organization_id, membership.role_id, report_id, current_user.id, current_user.email, payload)
 
 
 @router.get("/report-runs", response_model=ReportRunListResponse)

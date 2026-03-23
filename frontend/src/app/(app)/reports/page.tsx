@@ -23,6 +23,7 @@ const REPORT_ACCESS_PERMISSIONS = [
   "reports.general_ledger.read",
   "trial_balance.read",
   "general_ledger.read",
+  "reports.custom.read",
 ];
 
 export default function ReportsLandingPage() {
@@ -51,7 +52,7 @@ export default function ReportsLandingPage() {
     <div className="space-y-6">
       <ReportPageHeader
         title="Reports"
-        description="Launch backend-generated financial statements and dense accounting reports for the active organization."
+        description="Launch backend-generated financial statements and saved custom reports for the active organization."
         eyebrow={currentOrganization?.name || "Reporting"}
         reports={reports}
         activeHref="/reports"

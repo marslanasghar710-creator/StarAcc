@@ -19,7 +19,7 @@ This frontend layer now includes the first real accounting workflows for:
 
 Detailed tax workflows remain out of scope for this milestone.
 
-Suppliers, bills, banking, core financial reporting, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, and configuration foundations where endpoints exist.
+Suppliers, bills, banking, core financial reporting, custom reporting builder flows, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, saved report definitions, preview execution, export-ready custom reports, permission-aware report builder workflows, organization preferences, fiscal periods, and configuration foundations where endpoints exist.
 
 ## Stack
 
@@ -103,6 +103,14 @@ pnpm test
 - `/assets`
 - `/assets/[assetId]`
 - `/assets/categories`
+- `/payroll`
+- `/payroll/employees`
+- `/payroll/runs/[runId]`
+- `/automation`
+- `/automation/suggestions`
+- `/automation/documents`
+- `/automation/jobs`
+- `/activity`
 
 ## Backend assumptions and adapters
 
@@ -137,6 +145,15 @@ Used endpoints:
 - `GET /organizations/{organization_id}/notifications/unread-count`
 - `POST /organizations/{organization_id}/notifications/{notification_id}/read`
 - `POST /organizations/{organization_id}/notifications/read-all`
+
+### Activity center
+
+Used endpoints:
+
+- `GET /organizations/{organization_id}/activity-center`
+- `GET /organizations/{organization_id}/audit-logs`
+
+The `/activity` route keeps filters in the client, but all search, grouping, and result-shaping authority stays in the backend response.
 
 ### Accounts
 
@@ -209,6 +226,57 @@ Used endpoints:
 - Journal reconciliation falls back to the existing `/bank-transactions/{transaction_id}/reconcile-journal` route when the richer `/reconcile/match-journal` route is unavailable.
 - Imports, rules, reconciliation history, suggestions, ignore, unreconcile, and several banking detail endpoints are treated as backend-driven optional enhancements: the UI is wired for them, but it does not invent results when the backend does not yet provide them.
 
+### AI / automation
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/automation-rules`
+- `GET /organizations/{organization_id}/automation-rules`
+- `GET /organizations/{organization_id}/automation-rules/{rule_id}`
+- `PATCH /organizations/{organization_id}/automation-rules/{rule_id}`
+- `DELETE /organizations/{organization_id}/automation-rules/{rule_id}`
+- `POST /organizations/{organization_id}/automation-rules/{rule_id}/test`
+- `GET /organizations/{organization_id}/suggestions`
+- `GET /organizations/{organization_id}/suggestions/{suggestion_id}`
+- `GET /organizations/{organization_id}/suggestions/for/{entity_type}/{entity_id}`
+- `POST /organizations/{organization_id}/suggestions/{suggestion_id}/accept`
+- `POST /organizations/{organization_id}/suggestions/{suggestion_id}/reject`
+- `POST /organizations/{organization_id}/document-intelligence/extract`
+- `GET /organizations/{organization_id}/document-intelligence/jobs`
+- `GET /organizations/{organization_id}/document-intelligence/jobs/{job_id}`
+- `GET /organizations/{organization_id}/document-intelligence/jobs/{job_id}/result`
+- `POST /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/generate-suggestions`
+- `GET /organizations/{organization_id}/bank-transactions/{bank_transaction_id}/suggestions`
+- `POST /organizations/{organization_id}/documents/{entity_type}/{entity_id}/generate-coding-suggestions`
+- `GET /organizations/{organization_id}/documents/{entity_type}/{entity_id}/coding-suggestions`
+- `GET /organizations/{organization_id}/ai-jobs`
+- `GET /organizations/{organization_id}/ai-jobs/{job_id}`
+
+AI features remain explainable and human-reviewed in the frontend. They never silently apply accounting truth, post books, or bypass explicit user review.
+
+### Payroll
+
+Used endpoints:
+
+- `POST /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees`
+- `GET /organizations/{organization_id}/employees/{employee_id}`
+- `PATCH /organizations/{organization_id}/employees/{employee_id}`
+- `DELETE /organizations/{organization_id}/employees/{employee_id}`
+- `POST /organizations/{organization_id}/payroll-periods`
+- `GET /organizations/{organization_id}/payroll-periods`
+- `POST /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/calculate`
+- `POST /organizations/{organization_id}/payroll-runs/{run_id}/post`
+- `GET /organizations/{organization_id}/payroll-runs/{run_id}/entries`
+- `GET /organizations/{organization_id}/payroll-entries/{entry_id}`
+- `GET /organizations/{organization_id}/payroll-summary`
+- `GET /organizations/{organization_id}/payroll-liabilities`
+
+Payroll pages are permission-aware around `payroll.read`, `payroll.create`, `payroll.calculate`, `payroll.post`, and `employees.manage`. The UI only reviews and submits workflow actions; it never recalculates gross-to-net logic client-side.
+
 ### Reporting
 
 Used endpoints:
@@ -223,14 +291,27 @@ Used endpoints:
 - `GET /organizations/{organization_id}/reports/profit-loss/export`
 - `GET /organizations/{organization_id}/reports/balance-sheet/export`
 - `GET /organizations/{organization_id}/reports/general-ledger/export`
+- `GET /organizations/{organization_id}/custom-reports`
+- `POST /organizations/{organization_id}/custom-reports`
+- `GET /organizations/{organization_id}/custom-reports/{report_id}`
+- `PATCH /organizations/{organization_id}/custom-reports/{report_id}`
+- `DELETE /organizations/{organization_id}/custom-reports/{report_id}`
+- `GET /organizations/{organization_id}/custom-reports/datasets`
+- `GET /organizations/{organization_id}/custom-reports/datasets/{dataset_id}`
+- `POST /organizations/{organization_id}/custom-reports/preview`
+- `POST /organizations/{organization_id}/custom-reports/preview/export`
+- `POST /organizations/{organization_id}/custom-reports/{report_id}/run`
+- `GET /organizations/{organization_id}/custom-reports/{report_id}/results`
+- `POST /organizations/{organization_id}/custom-reports/{report_id}/export`
 - `GET /organizations/{organization_id}/periods`
 - `GET /organizations/{organization_id}/accounts`
 
 ### Reporting adapter notes
 
 - Report metadata prefers `/reports/metadata` and falls back to `/reports` when the dedicated metadata endpoint is unavailable.
-- The frontend accepts either broad reporting permissions such as `reports.read` / `reporting.read` or the more specific permission names already present in this repository, such as `reports.profit_loss.read` and `reports.general_ledger.read`.
-- Financial statement structure, totals, comparisons, hierarchy, and export generation remain backend-owned; the frontend only adapts payload shapes for presentation and does not derive accounting truth.
+- The reports hub now includes `/reports/custom`, `/reports/custom/new`, and `/reports/custom/[reportId]` so users can browse saved definitions, build new reports, and edit/run saved ones without making the frontend authoritative for reporting truth.
+- Dataset, field, filter, grouping, sorting, totals, preview rows, saved definitions, and export payloads remain backend-owned; the frontend only adapts payload shapes and orchestrates safe builder workflows.
+- Dataset visibility is permission-aware in the UI: users without `reports.custom.read` never see the builder, and users without `reports.export` do not see export actions.
 
 ### Settings
 

@@ -133,6 +133,7 @@ class ReportType(StrEnum):
     ACCOUNT_STATEMENT = "account_statement"
     AGED_RECEIVABLES = "aged_receivables"
     AGED_PAYABLES = "aged_payables"
+    CUSTOM_REPORT = "custom_report"
 
 
 class ReportExportFormat(StrEnum):
