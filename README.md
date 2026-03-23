@@ -19,6 +19,25 @@ python scripts/seed_rbac.py
 uvicorn app.main:app --reload
 ```
 
+## Audit / activity center
+
+The backend now exposes a richer organization-scoped activity query surface on top of the append-only audit log table:
+- `GET /organizations/{organization_id}/audit-logs` returns the legacy flat audit log list ordered newest-first.
+- `GET /organizations/{organization_id}/activity-center` returns filtered audit rows plus summary metadata for centralized activity-center UIs.
+- Supported `activity-center` filters include `q`, `action`, `entity_type`, `entity_id`, `actor_user_id`, `actor_email`, `created_from`, `created_to`, and `limit`.
+- The response includes `total_count`, distinct actor/action/entity-type counts, `top_actions`, `top_entity_types`, `has_more`, and the applied limit so the frontend can stay read-only and backend-driven.
+
+### Activity center curl example
+
+```bash
+curl -G http://localhost:8000/organizations/$ORG_ID/activity-center \
+  -H "Authorization: Bearer $ACCESS" \
+  --data-urlencode q=invoice \
+  --data-urlencode entity_type=invoice \
+  --data-urlencode actor_email=owner@example.com \
+  --data-urlencode limit=50
+```
+
 ## AP endpoints
 
 - `POST /organizations/{organization_id}/suppliers`

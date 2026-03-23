@@ -15,6 +15,10 @@ export const queryKeys = {
     list: (organizationId: string) => ["notifications", organizationId, "list"] as const,
     unreadCount: (organizationId: string) => ["notifications", organizationId, "unread-count"] as const,
   },
+  audit: {
+    root: (organizationId: string) => ["audit", organizationId] as const,
+    activityCenter: (organizationId: string, filters: Record<string, unknown>) => ["audit", organizationId, "activity-center", filters] as const,
+  },
   accounts: {
     root: (organizationId: string) => ["accounts", organizationId] as const,
     list: (organizationId: string, search = "") => ["accounts", organizationId, "list", search] as const,

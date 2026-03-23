@@ -19,7 +19,7 @@ This frontend layer now includes the first real accounting workflows for:
 
 Detailed tax workflows remain out of scope for this milestone.
 
-Suppliers, bills, banking, core financial reporting, fixed assets, payroll workspace screens, AI/automation workflow screens, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, payroll period/run review workflows, automation rules, suggestion review, document intelligence job visibility, and configuration foundations where endpoints exist.
+Suppliers, bills, banking, core financial reporting, fixed assets, payroll workspace screens, AI/automation workflow screens, and admin settings are now live with backend-backed list/detail/create/edit flows, statement imports, reconciliation workspace scaffolding, financial statements, general ledger detail, payment/status visibility, organization preferences, fiscal periods, payroll period/run review workflows, automation rules, suggestion review, document intelligence job visibility, and configuration foundations where endpoints exist, plus a centralized Activity Center for organization-wide audit visibility where the backend exposes the richer query endpoint.
 
 ## Stack
 
@@ -106,6 +106,7 @@ pnpm test
 - `/automation/suggestions`
 - `/automation/documents`
 - `/automation/jobs`
+- `/activity`
 
 ## Backend assumptions and adapters
 
@@ -140,6 +141,15 @@ Used endpoints:
 - `GET /organizations/{organization_id}/notifications/unread-count`
 - `POST /organizations/{organization_id}/notifications/{notification_id}/read`
 - `POST /organizations/{organization_id}/notifications/read-all`
+
+### Activity center
+
+Used endpoints:
+
+- `GET /organizations/{organization_id}/activity-center`
+- `GET /organizations/{organization_id}/audit-logs`
+
+The `/activity` route keeps filters in the client, but all search, grouping, and result-shaping authority stays in the backend response.
 
 ### Accounts
 
