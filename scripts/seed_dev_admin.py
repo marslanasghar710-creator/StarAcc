@@ -18,7 +18,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.enums import MembershipStatus
+from app.core.enums import MembershipStatus, UserStatus
 from app.core.security import hash_password
 from app.db.models import OrganizationUser
 from app.repositories.membership import MembershipRepository
@@ -45,6 +45,10 @@ def seed_dev_admin() -> tuple[str, str, str]:
         user = users.get_by_email(email)
         if not user:
             user = users.create(email=email, password_hash=hash_password(password))
+        else:
+            # Keep dev login deterministic: always reset to seeded password.
+            user.password_hash = hash_password(password)
+            user.status = UserStatus.ACTIVE
 
         admin_role = rbac.get_role_by_name("admin")
         if not admin_role:
