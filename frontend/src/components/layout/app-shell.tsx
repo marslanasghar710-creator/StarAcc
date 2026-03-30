@@ -12,7 +12,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="border-b border-border/60 px-6 py-5">
             <AppLogo />
           </div>
-          <div className="flex-1 overflow-y-auto px-4 py-5">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5">
             <SidebarNav />
           </div>
         </aside>
