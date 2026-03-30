@@ -54,11 +54,14 @@ FRONTEND_LOG="$SCRIPT_DIR/frontend/frontend.dev.log"
 FRONTEND_PID_FILE="$SCRIPT_DIR/frontend/.frontend-dev.pid"
 
 if [ -f "$FRONTEND_PID_FILE" ] && kill -0 "$(cat "$FRONTEND_PID_FILE")" 2>/dev/null; then
-  echo "ℹ️ Frontend is already running (PID $(cat "$FRONTEND_PID_FILE"))."
-else
-  (cd frontend && nohup "${DEV_CMD[@]}" > "$FRONTEND_LOG" 2>&1 & echo $! > "$FRONTEND_PID_FILE")
-  echo "ℹ️ Frontend started in background with $FRONTEND_PM. Logs: $FRONTEND_LOG"
+  echo "ℹ️ Restarting existing frontend process (PID $(cat "$FRONTEND_PID_FILE")) to apply latest config..."
+  kill "$(cat "$FRONTEND_PID_FILE")" || true
+  rm -f "$FRONTEND_PID_FILE"
+  sleep 1
 fi
+
+(cd frontend && nohup "${DEV_CMD[@]}" > "$FRONTEND_LOG" 2>&1 & echo $! > "$FRONTEND_PID_FILE")
+echo "ℹ️ Frontend started in background with $FRONTEND_PM. Logs: $FRONTEND_LOG"
 
 echo
 echo "✅ StarAcc full stack is starting in the background."

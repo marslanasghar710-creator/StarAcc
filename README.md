@@ -34,7 +34,7 @@ You can also double-click `run_staracc_mac.command` in Finder. It will:
 - seed RBAC roles/permissions (`scripts/seed_rbac.py`)
 - seed a local dev admin login (`scripts/seed_dev_admin.py`)
 - install frontend dependencies on first run (`pnpm install` or `npm install`)
-- start the frontend (`pnpm dev` or `npm run dev`) in the background
+- restart/start the frontend (`pnpm dev` or `npm run dev`) in the background
 
 After startup:
 - Frontend: `http://localhost:3000`
