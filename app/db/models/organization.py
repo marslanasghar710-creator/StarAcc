@@ -21,7 +21,13 @@ class Organization(Base, UUIDPKMixin, TimestampMixin):
     fiscal_year_start_day: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
     status: Mapped[OrganizationStatus] = mapped_column(
-        Enum(OrganizationStatus, name="organization_status"), nullable=False, default=OrganizationStatus.ACTIVE
+        Enum(
+            OrganizationStatus,
+            name="organization_status",
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
+        nullable=False,
+        default=OrganizationStatus.ACTIVE,
     )
 
 
