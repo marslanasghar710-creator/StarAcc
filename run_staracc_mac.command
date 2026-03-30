@@ -9,19 +9,43 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "❌ pnpm is required for the frontend but was not found. Install Node.js + pnpm and try again."
+  exit 1
+fi
+
 if [ ! -f .env ] && [ -f .env.example ]; then
   cp .env.example .env
   echo "ℹ️ Created .env from .env.example"
 fi
 
-echo "🚀 Starting StarAcc services (db + api) with Docker Compose..."
+echo "🚀 Starting StarAcc backend + database (Docker Compose)..."
 docker compose up --build -d db api
 
+echo "🚀 Starting StarAcc frontend (Next.js)..."
+if [ ! -d frontend/node_modules ]; then
+  echo "ℹ️ Installing frontend dependencies with pnpm..."
+  (cd frontend && pnpm install)
+fi
+
+FRONTEND_LOG="$SCRIPT_DIR/frontend/frontend.dev.log"
+FRONTEND_PID_FILE="$SCRIPT_DIR/frontend/.frontend-dev.pid"
+
+if [ -f "$FRONTEND_PID_FILE" ] && kill -0 "$(cat "$FRONTEND_PID_FILE")" 2>/dev/null; then
+  echo "ℹ️ Frontend is already running (PID $(cat "$FRONTEND_PID_FILE"))."
+else
+  (cd frontend && nohup pnpm dev > "$FRONTEND_LOG" 2>&1 & echo $! > "$FRONTEND_PID_FILE")
+  echo "ℹ️ Frontend started in background. Logs: $FRONTEND_LOG"
+fi
+
 echo
-echo "✅ StarAcc is starting in the background."
-echo "   API: http://localhost:8000"
+echo "✅ StarAcc full stack is starting in the background."
+echo "   Frontend: http://localhost:3000"
+echo "   API:      http://localhost:8000"
 echo "   API docs: http://localhost:8000/docs"
 echo
 echo "Useful commands:"
-echo "  Stop services: docker compose down"
-echo "  View logs:     docker compose logs -f api"
+echo "  Stop backend+db: docker compose down"
+echo "  Stop frontend:   kill \"\$(cat frontend/.frontend-dev.pid)\" && rm -f frontend/.frontend-dev.pid"
+echo "  API logs:        docker compose logs -f api"
+echo "  Frontend logs:   tail -f frontend/frontend.dev.log"
