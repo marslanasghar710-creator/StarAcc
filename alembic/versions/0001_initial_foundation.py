@@ -16,10 +16,10 @@ branch_labels = None
 depends_on = None
 
 
-user_status = sa.Enum("active", "invited", "disabled", "locked", name="user_status")
-organization_status = sa.Enum("active", "disabled", name="organization_status")
-membership_status = sa.Enum("invited", "active", "suspended", name="membership_status")
-invitation_status = sa.Enum("pending", "accepted", "declined", "expired", name="invitation_status")
+user_status = sa.Enum("active", "invited", "disabled", "locked", name="user_status", create_type=False)
+organization_status = sa.Enum("active", "disabled", name="organization_status", create_type=False)
+membership_status = sa.Enum("invited", "active", "suspended", name="membership_status", create_type=False)
+invitation_status = sa.Enum("pending", "accepted", "declined", "expired", name="invitation_status", create_type=False)
 
 
 def upgrade() -> None:
