@@ -35,6 +35,21 @@ fi
 echo "🚀 Starting StarAcc backend + database (Docker Compose)..."
 docker compose up --build -d db api
 
+
+echo "🔐 Seeding local admin login (dev only)..."
+SEED_OK=0
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  if docker compose exec -T api python scripts/seed_dev_admin.py; then
+    SEED_OK=1
+    break
+  fi
+  sleep 2
+done
+
+if [ "$SEED_OK" -ne 1 ]; then
+  echo "⚠️ Could not seed admin user automatically yet."
+  echo "   You can retry manually with: docker compose exec -T api python scripts/seed_dev_admin.py"
+fi
 echo "🚀 Starting StarAcc frontend (Next.js) using $FRONTEND_PM..."
 if [ ! -d frontend/node_modules ]; then
   echo "ℹ️ Installing frontend dependencies with $FRONTEND_PM..."

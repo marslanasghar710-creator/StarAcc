@@ -30,6 +30,7 @@ You can start the project without retyping terminal commands by running the bund
 You can also double-click `run_staracc_mac.command` in Finder. It will:
 - create `.env` from `.env.example` if needed
 - build and start `db` + `api` with Docker Compose in the background
+- seed a local dev admin login via `scripts/seed_dev_admin.py`
 - install frontend dependencies on first run (`pnpm install` or `npm install`)
 - start the frontend (`pnpm dev` or `npm run dev`) in the background
 
@@ -37,6 +38,12 @@ After startup:
 - Frontend: `http://localhost:3000`
 - API: `http://localhost:8000`
 - API docs: `http://localhost:8000/docs`
+- Default dev admin login: `admin@staracc.local` / `StrongPass123`
+
+You can override seeded admin credentials before running the script:
+- `STARACC_DEV_ADMIN_EMAIL`
+- `STARACC_DEV_ADMIN_PASSWORD`
+- `STARACC_DEV_ADMIN_ORG`
 
 ## Audit / activity center
 
