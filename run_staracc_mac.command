@@ -36,13 +36,13 @@ echo "🚀 Starting StarAcc backend + database (Docker Compose)..."
 docker compose up --build -d db api
 
 echo "🗃️ Applying database migrations..."
-docker compose run --rm api alembic upgrade head
+docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app alembic upgrade head"
 
 echo "🔑 Seeding RBAC roles/permissions..."
-docker compose run --rm api python scripts/seed_rbac.py
+docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/seed_rbac.py"
 
 echo "🔐 Seeding local admin login (dev only)..."
-docker compose run --rm api python scripts/seed_dev_admin.py
+docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/seed_dev_admin.py"
 
 echo "🚀 Starting StarAcc frontend (Next.js) using $FRONTEND_PM..."
 if [ ! -d frontend/node_modules ]; then
