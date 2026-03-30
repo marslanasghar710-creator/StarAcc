@@ -19,6 +19,25 @@ python scripts/seed_rbac.py
 uvicorn app.main:app --reload
 ```
 
+## One-click startup on macOS
+
+You can start the project without retyping terminal commands by running the bundled macOS command file:
+
+```bash
+./run_staracc_mac.command
+```
+
+You can also double-click `run_staracc_mac.command` in Finder. It will:
+- create `.env` from `.env.example` if needed
+- build and start `db` + `api` with Docker Compose in the background
+- install frontend dependencies on first run (`pnpm install`)
+- start the frontend (`pnpm dev`) in the background
+
+After startup:
+- Frontend: `http://localhost:3000`
+- API: `http://localhost:8000`
+- API docs: `http://localhost:8000/docs`
+
 ## Audit / activity center
 
 The backend now exposes a richer organization-scoped activity query surface on top of the append-only audit log table:
