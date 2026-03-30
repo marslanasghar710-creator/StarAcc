@@ -16,16 +16,16 @@ branch_labels = None
 depends_on = None
 
 
-tax_basis = sa.Enum("accrual", "cash_scaffold", name="tax_basis")
-prices_entered_are = sa.Enum("exclusive", "inclusive", "either", name="prices_entered_are")
-tax_rounding_method = sa.Enum("line", "document", name="tax_rounding_method")
-tax_periodicity = sa.Enum("monthly", "quarterly", "annually", "none", name="tax_periodicity")
-tax_type = sa.Enum("standard", "reduced", "zero", "exempt", "out_of_scope", "reverse_charge_scaffold", name="tax_type")
-tax_scope = sa.Enum("sales", "purchases", "both", name="tax_scope")
-tax_code_applies_to = sa.Enum("sales", "purchases", "both", name="tax_code_applies_to")
-tax_calculation_method = sa.Enum("percentage", "exempt", "out_of_scope", "reverse_charge_scaffold", name="tax_calculation_method")
-tax_price_inclusive_behavior = sa.Enum("exclusive", "inclusive", "inherit_organization_default", name="tax_price_inclusive_behavior")
-tax_transaction_direction = sa.Enum("output", "input", "neutral", name="tax_transaction_direction")
+tax_basis = postgresql.ENUM("accrual", "cash_scaffold", name="tax_basis", create_type=False)
+prices_entered_are = postgresql.ENUM("exclusive", "inclusive", "either", name="prices_entered_are", create_type=False)
+tax_rounding_method = postgresql.ENUM("line", "document", name="tax_rounding_method", create_type=False)
+tax_periodicity = postgresql.ENUM("monthly", "quarterly", "annually", "none", name="tax_periodicity", create_type=False)
+tax_type = postgresql.ENUM("standard", "reduced", "zero", "exempt", "out_of_scope", "reverse_charge_scaffold", name="tax_type", create_type=False)
+tax_scope = postgresql.ENUM("sales", "purchases", "both", name="tax_scope", create_type=False)
+tax_code_applies_to = postgresql.ENUM("sales", "purchases", "both", name="tax_code_applies_to", create_type=False)
+tax_calculation_method = postgresql.ENUM("percentage", "exempt", "out_of_scope", "reverse_charge_scaffold", name="tax_calculation_method", create_type=False)
+tax_price_inclusive_behavior = postgresql.ENUM("exclusive", "inclusive", "inherit_organization_default", name="tax_price_inclusive_behavior", create_type=False)
+tax_transaction_direction = postgresql.ENUM("output", "input", "neutral", name="tax_transaction_direction", create_type=False)
 
 
 def upgrade() -> None:

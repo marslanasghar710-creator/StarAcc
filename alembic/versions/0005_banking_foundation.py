@@ -15,8 +15,8 @@ down_revision = "0004_ap_foundation"
 branch_labels = None
 depends_on = None
 
-bank_transaction_type = sa.Enum("deposit", "withdrawal", "fee", "transfer", "adjustment", name="bank_transaction_type")
-bank_transaction_status = sa.Enum("unreconciled", "reconciled", name="bank_transaction_status")
+bank_transaction_type = postgresql.ENUM("deposit", "withdrawal", "fee", "transfer", "adjustment", name="bank_transaction_type", create_type=False)
+bank_transaction_status = postgresql.ENUM("unreconciled", "reconciled", name="bank_transaction_status", create_type=False)
 
 
 def upgrade() -> None:
