@@ -41,7 +41,7 @@ After startup:
 - Frontend: `http://localhost:3000`
 - API: `http://localhost:8000`
 - API docs: `http://localhost:8000/docs`
-- Default dev admin login: `admin@staracc.local` / `StrongPass123`
+- Default dev admin login: `admin@staracc.dev` / `StrongPass123`
 - The seed step resets that dev admin password on each run to keep login deterministic
 
 You can override seeded admin credentials before running the script:

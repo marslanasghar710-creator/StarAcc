@@ -30,7 +30,7 @@ UTC = timezone.utc
 
 
 def seed_dev_admin() -> tuple[str, str, str]:
-    email = os.getenv("STARACC_DEV_ADMIN_EMAIL", "admin@staracc.local").strip().lower()
+    email = os.getenv("STARACC_DEV_ADMIN_EMAIL", "admin@staracc.dev").strip().lower()
     password = os.getenv("STARACC_DEV_ADMIN_PASSWORD", "StrongPass123")
     organization_name = os.getenv("STARACC_DEV_ADMIN_ORG", "StarAcc Demo Org").strip()
 
