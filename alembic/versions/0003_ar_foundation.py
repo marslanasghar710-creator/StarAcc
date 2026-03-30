@@ -15,10 +15,10 @@ down_revision = "0002_accounting_core"
 branch_labels = None
 depends_on = None
 
-invoice_status = sa.Enum("draft", "approved", "sent", "partially_paid", "paid", "overdue", "voided", "cancelled", name="invoice_status")
-invoice_type = sa.Enum("standard", "recurring_template", name="invoice_type")
-credit_note_status = sa.Enum("draft", "approved", "posted", "applied", "voided", name="credit_note_status")
-payment_status = sa.Enum("draft", "posted", "voided", name="payment_status")
+invoice_status = postgresql.ENUM("draft", "approved", "sent", "partially_paid", "paid", "overdue", "voided", "cancelled", name="invoice_status", create_type=False)
+invoice_type = postgresql.ENUM("standard", "recurring_template", name="invoice_type", create_type=False)
+credit_note_status = postgresql.ENUM("draft", "approved", "posted", "applied", "voided", name="credit_note_status", create_type=False)
+payment_status = postgresql.ENUM("draft", "posted", "voided", name="payment_status", create_type=False)
 
 
 def upgrade() -> None:

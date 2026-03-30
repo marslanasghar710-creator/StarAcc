@@ -16,7 +16,7 @@ branch_labels = None
 depends_on = None
 
 
-project_status = sa.Enum("draft", "active", "on_hold", "completed", "cancelled", name="project_status")
+project_status = postgresql.ENUM("draft", "active", "on_hold", "completed", "cancelled", name="project_status", create_type=False)
 
 
 def upgrade() -> None:
