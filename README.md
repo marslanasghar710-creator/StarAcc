@@ -30,7 +30,9 @@ You can start the project without retyping terminal commands by running the bund
 You can also double-click `run_staracc_mac.command` in Finder. It will:
 - create `.env` from `.env.example` if needed
 - build and start `db` + `api` with Docker Compose in the background
-- seed a local dev admin login via `scripts/seed_dev_admin.py`
+- run database migrations (`alembic upgrade head`)
+- seed RBAC roles/permissions (`scripts/seed_rbac.py`)
+- seed a local dev admin login (`scripts/seed_dev_admin.py`)
 - install frontend dependencies on first run (`pnpm install` or `npm install`)
 - start the frontend (`pnpm dev` or `npm run dev`) in the background
 
