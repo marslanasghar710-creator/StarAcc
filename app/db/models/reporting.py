@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Index, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -109,3 +109,47 @@ class EliminationEntry(Base, UUIDPKMixin, TimestampMixin):
     is_manual: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     metadata_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+
+
+class CustomReportDefinition(Base, UUIDPKMixin, TimestampMixin):
+    __tablename__ = "custom_report_definitions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "name", name="uq_custom_report_definition_org_name"),
+        Index("ix_custom_report_definitions_org_updated", "organization_id", "updated_at"),
+    )
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    dataset_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    columns_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    filters_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    groupings_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    sorting_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    display_options_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    is_system_template: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class CustomReportExecution(Base, UUIDPKMixin, TimestampMixin):
+    __tablename__ = "custom_report_executions"
+    __table_args__ = (
+        Index("ix_custom_report_executions_org_created", "organization_id", "created_at"),
+        Index("ix_custom_report_executions_org_report_created", "organization_id", "report_definition_id", "created_at"),
+    )
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
+    report_definition_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("custom_report_definitions.id"), nullable=True, index=True)
+    dataset_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    requested_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    filters_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    groupings_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    sorting_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    columns_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    execution_status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="report_run_status"), nullable=False, default=ReportRunStatus.PENDING)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    row_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    totals_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
