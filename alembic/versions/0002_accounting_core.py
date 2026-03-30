@@ -16,10 +16,10 @@ branch_labels = None
 depends_on = None
 
 
-account_type = sa.Enum("asset", "liability", "equity", "revenue", "expense", name="account_type")
-normal_balance = sa.Enum("debit", "credit", name="normal_balance")
-journal_status = sa.Enum("draft", "posted", "reversed", "voided", name="journal_status")
-period_status = sa.Enum("open", "closed", "locked", name="period_status")
+account_type = postgresql.ENUM("asset", "liability", "equity", "revenue", "expense", name="account_type", create_type=False)
+normal_balance = postgresql.ENUM("debit", "credit", name="normal_balance", create_type=False)
+journal_status = postgresql.ENUM("draft", "posted", "reversed", "voided", name="journal_status", create_type=False)
+period_status = postgresql.ENUM("open", "closed", "locked", name="period_status", create_type=False)
 
 
 def upgrade() -> None:

@@ -15,9 +15,9 @@ down_revision = "0003_ar_foundation"
 branch_labels = None
 depends_on = None
 
-bill_status = sa.Enum("draft", "approved", "posted", "partially_paid", "paid", "overdue", "voided", "cancelled", name="bill_status")
-bill_type = sa.Enum("standard", "recurring_template", name="bill_type")
-supplier_credit_status = sa.Enum("draft", "approved", "posted", "applied", "voided", name="supplier_credit_status")
+bill_status = postgresql.ENUM("draft", "approved", "posted", "partially_paid", "paid", "overdue", "voided", "cancelled", name="bill_status", create_type=False)
+bill_type = postgresql.ENUM("standard", "recurring_template", name="bill_type", create_type=False)
+supplier_credit_status = postgresql.ENUM("draft", "approved", "posted", "applied", "voided", name="supplier_credit_status", create_type=False)
 
 
 def upgrade() -> None:
@@ -176,7 +176,7 @@ def upgrade() -> None:
         sa.Column("organization_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("organizations.id"), nullable=False),
         sa.Column("supplier_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("suppliers.id"), nullable=False),
         sa.Column("payment_number", sa.String(50), nullable=False),
-        sa.Column("status", sa.Enum("draft", "posted", "voided", name="payment_status"), nullable=False),
+        sa.Column("status", postgresql.ENUM("draft", "posted", "voided", name="payment_status", create_type=False), nullable=False),
         sa.Column("payment_date", sa.Date(), nullable=False),
         sa.Column("currency_code", sa.String(3), nullable=False),
         sa.Column("exchange_rate", sa.Numeric(20, 8)),

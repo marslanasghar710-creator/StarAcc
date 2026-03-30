@@ -20,5 +20,11 @@ class Invitation(Base, UUIDPKMixin, TimestampMixin):
     token: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
     status: Mapped[InvitationStatus] = mapped_column(
-        Enum(InvitationStatus, name="invitation_status"), nullable=False, default=InvitationStatus.PENDING
+        Enum(
+            InvitationStatus,
+            name="invitation_status",
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
+        nullable=False,
+        default=InvitationStatus.PENDING,
     )
