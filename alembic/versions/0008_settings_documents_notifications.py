@@ -1,6 +1,6 @@
 """settings documents notifications foundation
 
-Revision ID: 0008_settings_documents_notifications
+Revision ID: 0008_settings_docs_notifications
 Revises: 0007_tax_engine_foundation
 Create Date: 2026-03-19
 """
@@ -10,17 +10,17 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 
-revision = "0008_settings_documents_notifications"
+revision = "0008_settings_docs_notifications"
 down_revision = "0007_tax_engine_foundation"
 branch_labels = None
 depends_on = None
 
 
-file_storage_provider = sa.Enum("local", "s3_scaffold", "gcs_scaffold", name="file_storage_provider")
-file_status = sa.Enum("active", "deleted", "quarantined_scaffold", name="file_status")
-email_template_type = sa.Enum("invoice_send", "invoice_reminder", "payment_receipt", "report_export", "generic_notification", name="email_template_type")
-email_status = sa.Enum("queued", "sent", "failed", "cancelled", name="email_status")
-notification_type = sa.Enum(
+file_storage_provider = postgresql.ENUM("local", "s3_scaffold", "gcs_scaffold", name="file_storage_provider", create_type=False)
+file_status = postgresql.ENUM("active", "deleted", "quarantined_scaffold", name="file_status", create_type=False)
+email_template_type = postgresql.ENUM("invoice_send", "invoice_reminder", "payment_receipt", "report_export", "generic_notification", name="email_template_type", create_type=False)
+email_status = postgresql.ENUM("queued", "sent", "failed", "cancelled", name="email_status", create_type=False)
+notification_type = postgresql.ENUM(
     "invoice_sent",
     "payment_received",
     "bank_import_completed",
@@ -28,6 +28,7 @@ notification_type = sa.Enum(
     "report_export_ready",
     "generic",
     name="notification_type",
+    create_type=False,
 )
 
 

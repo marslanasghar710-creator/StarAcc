@@ -15,7 +15,7 @@ down_revision = "0005_banking_foundation"
 branch_labels = None
 depends_on = None
 
-report_type = sa.Enum(
+report_type = postgresql.ENUM(
     "profit_loss",
     "balance_sheet",
     "trial_balance",
@@ -24,9 +24,10 @@ report_type = sa.Enum(
     "aged_receivables",
     "aged_payables",
     name="report_type",
+    create_type=False,
 )
-report_export_format = sa.Enum("json", "csv", "pdf", name="report_export_format")
-report_run_status = sa.Enum("pending", "completed", "failed", name="report_run_status")
+report_export_format = postgresql.ENUM("json", "csv", "pdf", name="report_export_format", create_type=False)
+report_run_status = postgresql.ENUM("pending", "completed", "failed", name="report_run_status", create_type=False)
 
 
 def upgrade() -> None:
