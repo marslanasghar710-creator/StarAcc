@@ -1,15 +1,24 @@
 import logging
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api.routers import auth, organizations, invitations, roles, audit, accounting, ar, ap, banking, reporting, tax, settings, inventory, projects, payroll, ai, consolidation
+from app.core.config import settings
 from app.db.session import engine
 from app.middleware.request_context import RequestContextMiddleware
 
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="StarAcc Foundation API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(RequestContextMiddleware)
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
