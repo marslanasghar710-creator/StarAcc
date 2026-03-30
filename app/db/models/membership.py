@@ -21,5 +21,11 @@ class OrganizationUser(Base, UUIDPKMixin, TimestampMixin):
     joined_at: Mapped[datetime | None] = mapped_column(nullable=True)
     invited_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     status: Mapped[MembershipStatus] = mapped_column(
-        Enum(MembershipStatus, name="membership_status"), nullable=False, default=MembershipStatus.INVITED
+        Enum(
+            MembershipStatus,
+            name="membership_status",
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
+        nullable=False,
+        default=MembershipStatus.INVITED,
     )
