@@ -33,7 +33,7 @@ if [ ! -f .env ] && [ -f .env.example ]; then
 fi
 
 echo "🚀 Starting StarAcc backend + database (Docker Compose)..."
-docker compose up --build -d db api
+docker compose up --build -d --force-recreate db api
 
 echo "🗃️ Applying database migrations..."
 docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app alembic upgrade head"
@@ -44,6 +44,25 @@ docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/se
 echo "🔐 Seeding local admin login (dev only)..."
 docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/seed_dev_admin.py"
 
+
+echo "⏳ Waiting for API to become reachable on http://localhost:8000/health ..."
+API_READY=0
+for _ in {1..30}; do
+  if curl -fsS http://localhost:8000/health >/dev/null 2>&1; then
+    API_READY=1
+    break
+  fi
+  sleep 1
+done
+
+if [ "$API_READY" -ne 1 ]; then
+  echo "❌ API is not reachable at http://localhost:8000"
+  echo "--- docker compose ps ---"
+  docker compose ps
+  echo "--- recent api logs ---"
+  docker compose logs --tail=120 api
+  exit 1
+fi
 echo "🚀 Starting StarAcc frontend (Next.js) using $FRONTEND_PM..."
 if [ ! -d frontend/node_modules ]; then
   echo "ℹ️ Installing frontend dependencies with $FRONTEND_PM..."
