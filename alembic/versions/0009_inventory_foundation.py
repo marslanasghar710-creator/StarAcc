@@ -1,7 +1,7 @@
 """inventory foundation
 
 Revision ID: 0009_inventory_foundation
-Revises: 0008_settings_documents_notifications
+Revises: 0008_settings_docs_notifications
 Create Date: 2026-03-22
 """
 
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 
 revision = "0009_inventory_foundation"
-down_revision = "0008_settings_documents_notifications"
+down_revision = "0008_settings_docs_notifications"
 branch_labels = None
 depends_on = None
 

@@ -1,6 +1,6 @@
 """settings documents notifications foundation
 
-Revision ID: 0008_settings_documents_notifications
+Revision ID: 0008_settings_docs_notifications
 Revises: 0007_tax_engine_foundation
 Create Date: 2026-03-19
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 
-revision = "0008_settings_documents_notifications"
+revision = "0008_settings_docs_notifications"
 down_revision = "0007_tax_engine_foundation"
 branch_labels = None
 depends_on = None
