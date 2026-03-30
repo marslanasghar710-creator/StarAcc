@@ -1,7 +1,7 @@
 """inventory foundation
 
 Revision ID: 0009_inventory_foundation
-Revises: 0008_settings_documents_notifications
+Revises: 0008_settings_docs_notifications
 Create Date: 2026-03-22
 """
 
@@ -11,14 +11,14 @@ from sqlalchemy.dialects import postgresql
 
 
 revision = "0009_inventory_foundation"
-down_revision = "0008_settings_documents_notifications"
+down_revision = "0008_settings_docs_notifications"
 branch_labels = None
 depends_on = None
 
 
-inventory_costing_method = sa.Enum("weighted_average", name="inventory_costing_method")
-inventory_valuation_method = sa.Enum("weighted_average", name="inventory_valuation_method")
-inventory_movement_type = sa.Enum(
+inventory_costing_method = postgresql.ENUM("weighted_average", name="inventory_costing_method", create_type=False)
+inventory_valuation_method = postgresql.ENUM("weighted_average", name="inventory_valuation_method", create_type=False)
+inventory_movement_type = postgresql.ENUM(
     "opening",
     "purchase",
     "sale",
@@ -28,8 +28,9 @@ inventory_movement_type = sa.Enum(
     "transfer_out",
     "reversal",
     name="inventory_movement_type",
+    create_type=False,
 )
-inventory_source_entity_type = sa.Enum(
+inventory_source_entity_type = postgresql.ENUM(
     "opening_stock",
     "bill",
     "invoice",
@@ -37,12 +38,14 @@ inventory_source_entity_type = sa.Enum(
     "transfer",
     "manual",
     name="inventory_source_entity_type",
+    create_type=False,
 )
-inventory_adjustment_type = sa.Enum(
+inventory_adjustment_type = postgresql.ENUM(
     "opening_stock",
     "quantity_write_up",
     "quantity_write_down",
     name="inventory_adjustment_type",
+    create_type=False,
 )
 
 

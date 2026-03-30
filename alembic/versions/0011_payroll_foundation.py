@@ -16,12 +16,12 @@ branch_labels = None
 depends_on = None
 
 
-employee_status = sa.Enum("active", "inactive", "terminated", name="employee_status")
-employment_type = sa.Enum("salaried", "hourly", "contractor_scaffold", name="employment_type")
-payroll_period_status = sa.Enum("draft", "processed", "posted", name="payroll_period_status")
-payroll_run_status = sa.Enum("draft", "calculated", "posted", name="payroll_run_status")
-payroll_line_item_type = sa.Enum("earning", "deduction", "employer_cost", name="payroll_line_item_type")
-payroll_earning_amount_type = sa.Enum("fixed", "hourly", "manual", name="payroll_earning_amount_type")
+employee_status = postgresql.ENUM("active", "inactive", "terminated", name="employee_status", create_type=False)
+employment_type = postgresql.ENUM("salaried", "hourly", "contractor_scaffold", name="employment_type", create_type=False)
+payroll_period_status = postgresql.ENUM("draft", "processed", "posted", name="payroll_period_status", create_type=False)
+payroll_run_status = postgresql.ENUM("draft", "calculated", "posted", name="payroll_run_status", create_type=False)
+payroll_line_item_type = postgresql.ENUM("earning", "deduction", "employer_cost", name="payroll_line_item_type", create_type=False)
+payroll_earning_amount_type = postgresql.ENUM("fixed", "hourly", "manual", name="payroll_earning_amount_type", create_type=False)
 
 
 def upgrade() -> None:
