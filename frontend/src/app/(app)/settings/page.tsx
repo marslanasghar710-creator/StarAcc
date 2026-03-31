@@ -1,11 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageActionBar } from "@/components/shared/page-action-bar";
 import { usePermissions } from "@/features/permissions/hooks";
+import { useCommandActions, useShortcuts } from "@/features/productivity/shortcuts/use-shortcuts";
 import { SETTINGS_NAV_SECTIONS, SETTINGS_PERMISSION_GROUPS } from "@/features/settings/constants";
 import { SettingsAvailabilityCard } from "@/features/settings/components/settings-availability-card";
 import { SettingsErrorState } from "@/features/settings/components/settings-error-state";
@@ -16,6 +19,7 @@ import type { SettingsSectionStatus } from "@/features/settings/types";
 import { useOrganization } from "@/providers/organization-provider";
 
 export default function SettingsLandingPage() {
+  const router = useRouter();
   const { currentOrganizationId, currentOrganization, isLoadingOrganizations } = useOrganization();
   const { hasAnyPermission } = usePermissions();
   const canReadSettings = hasAnyPermission(SETTINGS_PERMISSION_GROUPS.landing);
@@ -24,6 +28,10 @@ export default function SettingsLandingPage() {
   const taxQuery = useTaxCodes(currentOrganizationId ?? undefined, canReadSettings);
   const documentQuery = useDocumentSettings(currentOrganizationId ?? undefined, canReadSettings);
   const accountingQuery = useAccountingSettings(currentOrganizationId ?? undefined, canReadSettings);
+
+  useShortcuts([{ id: "settings.refresh", combo: "r", description: "Refresh settings", route: "/settings", handler: () => { void orgQuery.refetch(); void periodsQuery.refetch(); void taxQuery.refetch(); void documentQuery.refetch(); void accountingQuery.refetch(); } }]);
+
+  useCommandActions(SETTINGS_NAV_SECTIONS.map((section) => ({ id: `settings.${section.id}`, title: `Open ${section.title}`, description: section.description, group: "Settings", perform: () => router.push(section.href) })));
 
   if (isLoadingOrganizations) return <LoadingScreen label="Loading settings" />;
   if (!currentOrganizationId) return <EmptyState title="No organization selected" description="Choose an organization before opening settings." />;
