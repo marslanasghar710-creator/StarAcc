@@ -22,6 +22,7 @@ import { PayrollStatusBadge } from "@/features/payroll/components/payroll-status
 import { PayrollWorkflowActions } from "@/features/payroll/components/payroll-workflow-actions";
 import type { PayrollEntry } from "@/features/payroll/types";
 import { usePermissions } from "@/features/permissions/hooks";
+import { NextActionBar } from "@/features/productivity/workflow/next-action-bar";
 import { useOrganization } from "@/providers/organization-provider";
 
 export default function PayrollRunDetailPage() {
@@ -88,6 +89,7 @@ export default function PayrollRunDetailPage() {
 
   return (
     <div className="space-y-6">
+      <NextActionBar title="Payroll workflow" actions={[{ label: "Back to payroll", href: "/payroll" }, { label: "Payroll employees", href: "/payroll/employees", variant: "outline" }, { label: "Open activity center", href: "/activity", variant: "outline" }]} />
       <PageHeader
         eyebrow={currentOrganization?.name || "Payroll"}
         title={run.name}

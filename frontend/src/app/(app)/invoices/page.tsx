@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
@@ -17,6 +18,8 @@ import { InvoiceListTable } from "@/features/invoices/components/invoice-list-ta
 import { getInvoiceDisplayStatus } from "@/features/invoices/schemas";
 import { useInvoices } from "@/features/invoices/hooks";
 import { usePermissions } from "@/features/permissions/hooks";
+import { useCommandActions, useShortcuts } from "@/features/productivity/shortcuts/use-shortcuts";
+import { useListNavigation } from "@/features/productivity/workflow/list-navigation";
 import { useOrganization } from "@/providers/organization-provider";
 
 function matchesDateRange(date: string, from?: string, to?: string) {
@@ -25,7 +28,10 @@ function matchesDateRange(date: string, from?: string, to?: string) {
   return true;
 }
 
+const SEARCH_INPUT_ID = "invoices-filter-search";
+
 export default function InvoicesPage() {
+  const router = useRouter();
   const { currentOrganizationId, currentOrganization, isLoadingOrganizations } = useOrganization();
   const { can } = usePermissions();
   const canRead = can("invoices.read");
@@ -33,6 +39,7 @@ export default function InvoicesPage() {
   const invoicesQuery = useInvoices(currentOrganizationId ?? undefined, "", canRead);
   const customersQuery = useCustomers(currentOrganizationId ?? undefined, "", can("customers.read"));
   const [filters, setFilters] = React.useState<InvoiceFiltersValue>({ search: "", status: "all", scope: "all", dateFrom: "", dateTo: "" });
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
   const customerMap = React.useMemo(() => new Map((customersQuery.data ?? []).map((customer) => [customer.id, customer.displayName])), [customersQuery.data]);
 
@@ -49,6 +56,44 @@ export default function InvoicesPage() {
     }).map((invoice) => ({ ...invoice, customerName: invoice.customerName ?? customerMap.get(invoice.customerId) ?? null }));
   }, [customerMap, filters.dateFrom, filters.dateTo, filters.scope, filters.search, filters.status, invoicesQuery.data]);
 
+  const { selectedId, setSelectedId } = useListNavigation({
+    rows: filteredInvoices,
+    route: "/invoices",
+    onOpen: (invoice) => router.push(`/invoices/${invoice.id}`),
+  });
+
+  useShortcuts([
+    {
+      id: "invoices.focus-search",
+      combo: "/",
+      description: "Focus invoice search",
+      route: "/invoices",
+      allowInInput: false,
+      handler: () => document.getElementById(SEARCH_INPUT_ID)?.focus(),
+    },
+    {
+      id: "invoices.new",
+      combo: "c",
+      description: "Create invoice",
+      route: "/invoices",
+      handler: () => {
+        if (canCreate) router.push("/invoices/new");
+      },
+    },
+    {
+      id: "invoices.refresh",
+      combo: "r",
+      description: "Refresh invoices",
+      route: "/invoices",
+      handler: () => void invoicesQuery.refetch(),
+    },
+  ]);
+
+  useCommandActions([
+    { id: "invoices.new", title: "Create invoice", description: "Open new invoice form", group: "Invoices", perform: () => canCreate ? router.push("/invoices/new") : undefined },
+    { id: "invoices.open-selected", title: "Open selected invoice", description: "Open highlighted row", group: "Invoices", perform: () => selectedId ? router.push(`/invoices/${selectedId}`) : undefined },
+  ]);
+
   if (isLoadingOrganizations) return <LoadingScreen label="Loading invoices" />;
   if (!currentOrganizationId) return <EmptyState title="No organization selected" description="Choose an organization before opening invoices." />;
   if (!canRead) return <AccessDeniedState description="You need invoices.read to view invoices." />;
@@ -61,11 +106,11 @@ export default function InvoicesPage() {
         description="Track draft, approved, sent, posted, and paid sales invoices for the active organization."
         actions={canCreate ? <Button asChild><Link href="/invoices/new"><Plus className="size-4" />New invoice</Link></Button> : null}
       />
-      <PageActionBar left={<InvoiceFilters filters={filters} onChange={setFilters} />} />
+      <PageActionBar left={<InvoiceFilters filters={filters} onChange={setFilters} searchInputId={SEARCH_INPUT_ID} />} />
       {invoicesQuery.isLoading ? <LoadingScreen label="Loading invoices" /> : null}
       {invoicesQuery.isError ? <ErrorState description="We couldn't load invoices for this organization." onRetry={() => void invoicesQuery.refetch()} /> : null}
       {!invoicesQuery.isLoading && !invoicesQuery.isError && filteredInvoices.length === 0 ? <EmptyState title={filters.search ? "No matching invoices" : "No invoices yet"} description={filters.search ? "Try a different search or filter." : "Create the first invoice to begin sales workflows."} action={canCreate ? <Button asChild><Link href="/invoices/new">Create invoice</Link></Button> : undefined} /> : null}
-      {!invoicesQuery.isLoading && !invoicesQuery.isError && filteredInvoices.length > 0 ? <InvoiceListTable invoices={filteredInvoices} /> : null}
+      {!invoicesQuery.isLoading && !invoicesQuery.isError && filteredInvoices.length > 0 ? <InvoiceListTable invoices={filteredInvoices} selectedId={selectedId} onSelect={setSelectedId} selectedIds={selectedIds} onSelectionChange={setSelectedIds} /> : null}
     </div>
   );
 }
