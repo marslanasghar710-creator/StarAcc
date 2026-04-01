@@ -41,6 +41,13 @@ class OrganizationResponse(ORMModel):
     fiscal_year_start_day: int
     timezone: str
     status: OrganizationStatus
+    is_demo: bool = False
+    demo_scenario_key: str | None = None
+    seed_version: str | None = None
+    seeded_at: datetime | None = None
+    seeded_by_system: bool = False
+    resettable_in_non_prod: bool = False
+    demo_expires_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -67,3 +74,22 @@ class OrganizationSettingsUpdateRequest(BaseModel):
     journal_prefix: str | None = None
     tax_enabled: bool | None = None
     multi_currency_enabled: bool | None = None
+
+
+class DemoScenarioInfo(BaseModel):
+    key: str
+    name: str
+    description: str
+
+
+class DemoSeedRequest(BaseModel):
+    scenario_key: str = "demo_company_us"
+    reset: bool = False
+
+
+class DemoSeedResponse(BaseModel):
+    scenario_key: str
+    organization_id: UUID
+    organization_name: str
+    counters: dict[str, int] = Field(default_factory=dict)
+    diagnostics: dict[str, str | int | float | list[str] | None] = Field(default_factory=dict)
