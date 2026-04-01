@@ -1,9 +1,10 @@
-import { Bell, BookOpenText, Boxes, Building2, ChartColumnBig, CreditCard, FileText, GitBranchPlus, HandCoins, Landmark, LayoutGrid, Package, Receipt, Settings, ShieldCheck, Users } from "lucide-react";
+import { Bell, BookOpenText, Boxes, Building2, ChartColumnBig, CreditCard, FileText, GitBranchPlus, HandCoins, Landmark, LayoutGrid, Package, Receipt, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
 
 import type { NavItem } from "@/types";
 
 export const navigationItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", description: "Workspace overview", group: "Overview", icon: LayoutGrid },
+  { title: "Setup Center", href: "/setup", description: "Onboarding and readiness", group: "Overview", icon: Sparkles, requiredPermissions: ["org.read"] },
   { title: "Chart of Accounts", href: "/accounts", description: "General ledger structure", group: "Accounting", icon: Landmark, requiredPermissions: ["accounts.read"] },
   { title: "Journals", href: "/journals", description: "Manual journal entries", group: "Accounting", icon: BookOpenText, requiredPermissions: ["journals.read"] },
   { title: "Customers", href: "/customers", description: "Receivables contacts", group: "Sales", icon: Users, requiredPermissions: ["customers.read"] },
