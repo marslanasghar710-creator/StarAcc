@@ -16,11 +16,11 @@ branch_labels = None
 depends_on = None
 
 
-onboarding_path = sa.Enum("explore_demo", "setup_real", "expert_skip", name="onboarding_path")
-onboarding_persona = sa.Enum(
-    "business_owner", "accountant", "finance_manager", "operator_admin", "exploring", name="onboarding_persona"
+onboarding_path = postgresql.ENUM("explore_demo", "setup_real", "expert_skip", name="onboarding_path", create_type=False)
+onboarding_persona = postgresql.ENUM(
+    "business_owner", "accountant", "finance_manager", "operator_admin", "exploring", name="onboarding_persona", create_type=False
 )
-onboarding_task_status = sa.Enum("pending", "completed", "skipped", name="onboarding_task_status")
+onboarding_task_status = postgresql.ENUM("pending", "completed", "skipped", name="onboarding_task_status", create_type=False)
 
 
 def upgrade() -> None:
