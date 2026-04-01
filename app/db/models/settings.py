@@ -94,7 +94,7 @@ class StoredFile(Base, UUIDPKMixin, TimestampMixin):
     __tablename__ = "stored_files"
 
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
-    storage_provider: Mapped[FileStorageProvider] = mapped_column(Enum(FileStorageProvider, name="file_storage_provider"), nullable=False)
+    storage_provider: Mapped[FileStorageProvider] = mapped_column(Enum(FileStorageProvider, name="file_storage_provider", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False)
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)
     original_file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_extension: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -104,7 +104,7 @@ class StoredFile(Base, UUIDPKMixin, TimestampMixin):
     uploaded_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    status: Mapped[FileStatus] = mapped_column(Enum(FileStatus, name="file_status"), nullable=False, default=FileStatus.ACTIVE)
+    status: Mapped[FileStatus] = mapped_column(Enum(FileStatus, name="file_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=FileStatus.ACTIVE)
     metadata_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -125,7 +125,7 @@ class EmailTemplate(Base, UUIDPKMixin, TimestampMixin):
     __tablename__ = "email_templates"
 
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
-    template_type: Mapped[EmailTemplateType] = mapped_column(Enum(EmailTemplateType, name="email_template_type"), nullable=False, index=True)
+    template_type: Mapped[EmailTemplateType] = mapped_column(Enum(EmailTemplateType, name="email_template_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, index=True)
     subject_template: Mapped[str] = mapped_column(String(500), nullable=False)
     body_template: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -143,7 +143,7 @@ class EmailLog(Base, UUIDPKMixin, TimestampMixin):
     bcc_emails: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     subject: Mapped[str] = mapped_column(String(500), nullable=False)
     rendered_body: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[EmailStatus] = mapped_column(Enum(EmailStatus, name="email_status"), nullable=False, default=EmailStatus.QUEUED, index=True)
+    status: Mapped[EmailStatus] = mapped_column(Enum(EmailStatus, name="email_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=EmailStatus.QUEUED, index=True)
     provider_message_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     sent_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -155,7 +155,7 @@ class InAppNotification(Base, UUIDPKMixin):
 
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    notification_type: Mapped[NotificationType] = mapped_column(Enum(NotificationType, name="notification_type"), nullable=False, index=True)
+    notification_type: Mapped[NotificationType] = mapped_column(Enum(NotificationType, name="notification_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     entity_type: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
