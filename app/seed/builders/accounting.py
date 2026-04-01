@@ -280,6 +280,8 @@ def seed_transactions(
                     "income_account_id": accounts.sales,
                     "expense_account_id": accounts.cogs,
                     "inventory_asset_account_id": accounts.inventory_asset,
+                    "costing_method": "weighted_average",
+                    "valuation_method": "weighted_average",
                 },
             )
             inventory_service.create_adjustment(
