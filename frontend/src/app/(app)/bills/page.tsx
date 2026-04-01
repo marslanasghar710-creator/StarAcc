@@ -79,7 +79,7 @@ export default function BillsPage() {
       <PageActionBar left={<BillFilters filters={filters} onChange={setFilters} searchInputId={SEARCH_INPUT_ID} />} />
       {billsQuery.isLoading ? <LoadingScreen label="Loading bills" /> : null}
       {billsQuery.isError ? <ErrorState description="We couldn't load bills for this organization." onRetry={() => void billsQuery.refetch()} /> : null}
-      {!billsQuery.isLoading && !billsQuery.isError && filteredBills.length === 0 ? <EmptyState title={filters.search ? "No matching bills" : "No bills yet"} description={filters.search ? "Try a different search or filter." : "Create the first bill to begin AP workflows."} action={canCreate ? <Button asChild><Link href="/bills/new">Create bill</Link></Button> : undefined} /> : null}
+      {!billsQuery.isLoading && !billsQuery.isError && filteredBills.length === 0 ? <EmptyState title={filters.search ? "No matching bills" : "No bills yet"} description={filters.search ? "Try a different search or filter." : "Create the first bill to begin AP workflows."} action={<div className="flex gap-2">{canCreate ? <Button asChild><Link href="/bills/new">Create bill</Link></Button> : null}<Button asChild variant="secondary"><Link href="/setup">Open setup center</Link></Button></div>} /> : null}
       {!billsQuery.isLoading && !billsQuery.isError && filteredBills.length > 0 ? <BillListTable bills={filteredBills} selectedId={selectedId} onSelect={setSelectedId} selectedIds={selectedIds} onSelectionChange={setSelectedIds} /> : null}
     </div>
   );

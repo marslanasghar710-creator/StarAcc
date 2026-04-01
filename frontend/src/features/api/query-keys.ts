@@ -5,6 +5,9 @@ export const queryKeys = {
     roles: ["auth", "roles"] as const,
     permissions: ["auth", "permissions"] as const,
   },
+  onboarding: {
+    status: (organizationId: string) => ["onboarding", organizationId, "status"] as const,
+  },
   organizations: {
     list: ["organizations", "list"] as const,
     detail: (organizationId: string) => ["organizations", organizationId] as const,

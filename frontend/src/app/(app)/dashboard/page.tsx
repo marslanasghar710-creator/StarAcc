@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
+import Link from "next/link";
 import { BellRing, Building2, ShieldCheck, Sparkles } from "lucide-react";
 
 import { ErrorState } from "@/components/feedback/error-state";
@@ -8,8 +9,10 @@ import { NotificationList } from "@/components/notifications/notification-list";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useNotificationsQuery, useUnreadNotificationsQuery } from "@/features/notifications/hooks";
 import { usePermissions } from "@/features/permissions/hooks";
+import { useOnboardingStatus } from "@/features/onboarding/hooks";
 import { useOrganizationSettingsQuery } from "@/features/organizations/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { useOrganization } from "@/providers/organization-provider";
@@ -35,6 +38,7 @@ export default function DashboardPage() {
   const unreadQuery = useUnreadNotificationsQuery(currentOrganizationId, canReadNotifications);
   const notificationsQuery = useNotificationsQuery(currentOrganizationId, canReadNotifications);
   const settingsQuery = useOrganizationSettingsQuery(currentOrganizationId, Boolean(currentOrganizationId));
+  const onboardingQuery = useOnboardingStatus(currentOrganizationId ?? undefined, Boolean(currentOrganizationId));
 
   if (!currentOrganization) {
     return <ErrorState title="No organization selected" description="Sign in again or switch to an organization to initialize the workspace." />;
@@ -63,6 +67,15 @@ export default function DashboardPage() {
           ) : (
             <NotificationList items={notificationsQuery.data?.items.slice(0, 5) ?? []} canMarkRead={false} emptyDescription="Your next operational alerts will surface here." />
           )}
+        </SectionCard>
+
+
+        <SectionCard title="Setup center" description="Progressive onboarding for this organization.">
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>Progress: {onboardingQuery.data?.progress_percent ?? 0}% • Tier {onboardingQuery.data?.completion_tier ?? 0}</p>
+            <p>{onboardingQuery.data?.next_recommended_action?.title ?? "Open Setup Center to continue onboarding."}</p>
+            <Button asChild size="sm"><Link href="/setup">Continue setup</Link></Button>
+          </div>
         </SectionCard>
 
         <SectionCard title="Quick actions" description="The first feature prompts will replace these shortcuts with live accounting workflows.">

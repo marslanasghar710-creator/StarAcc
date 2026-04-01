@@ -109,7 +109,7 @@ export default function InvoicesPage() {
       <PageActionBar left={<InvoiceFilters filters={filters} onChange={setFilters} searchInputId={SEARCH_INPUT_ID} />} />
       {invoicesQuery.isLoading ? <LoadingScreen label="Loading invoices" /> : null}
       {invoicesQuery.isError ? <ErrorState description="We couldn't load invoices for this organization." onRetry={() => void invoicesQuery.refetch()} /> : null}
-      {!invoicesQuery.isLoading && !invoicesQuery.isError && filteredInvoices.length === 0 ? <EmptyState title={filters.search ? "No matching invoices" : "No invoices yet"} description={filters.search ? "Try a different search or filter." : "Create the first invoice to begin sales workflows."} action={canCreate ? <Button asChild><Link href="/invoices/new">Create invoice</Link></Button> : undefined} /> : null}
+      {!invoicesQuery.isLoading && !invoicesQuery.isError && filteredInvoices.length === 0 ? <EmptyState title={filters.search ? "No matching invoices" : "No invoices yet"} description={filters.search ? "Try a different search or filter." : "Create the first invoice to begin sales workflows."} action={<div className="flex gap-2">{canCreate ? <Button asChild><Link href="/invoices/new">Create invoice</Link></Button> : null}<Button asChild variant="secondary"><Link href="/setup">Open setup center</Link></Button></div>} /> : null}
       {!invoicesQuery.isLoading && !invoicesQuery.isError && filteredInvoices.length > 0 ? <InvoiceListTable invoices={filteredInvoices} selectedId={selectedId} onSelect={setSelectedId} selectedIds={selectedIds} onSelectionChange={setSelectedIds} /> : null}
     </div>
   );
