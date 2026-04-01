@@ -9,6 +9,13 @@ export type OrganizationSummary = {
   fiscal_year_start_day: number;
   timezone: string;
   status: string;
+  is_demo?: boolean;
+  demo_scenario_key?: string | null;
+  seed_version?: string | null;
+  seeded_at?: string | null;
+  seeded_by_system?: boolean;
+  resettable_in_non_prod?: boolean;
+  demo_expires_at?: string | null;
   created_at: string;
   updated_at: string;
 };

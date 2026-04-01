@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Activity, RefreshCcw, X } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
@@ -17,11 +18,13 @@ import { ActivityLogTable } from "@/features/activity/components/activity-log-ta
 import { ActivitySummaryCards } from "@/features/activity/components/activity-summary-cards";
 import { useActivityCenter } from "@/features/activity/hooks";
 import { usePermissions } from "@/features/permissions/hooks";
+import { useCommandActions, useShortcuts } from "@/features/productivity/shortcuts/use-shortcuts";
 import { useOrganization } from "@/providers/organization-provider";
 
 const DEFAULT_LIMIT = 100;
 
 export default function ActivityPage() {
+  const router = useRouter();
   const { currentOrganizationId, currentOrganization, isLoadingOrganizations } = useOrganization();
   const { can } = usePermissions();
   const canReadAudit = can("org.read");
@@ -30,6 +33,10 @@ export default function ActivityPage() {
   const [entityType, setEntityType] = React.useState("all");
   const [actorEmail, setActorEmail] = React.useState("");
   const [entityId, setEntityId] = React.useState("");
+
+  useShortcuts([{ id: "activity.focus-search", combo: "/", description: "Focus activity search", route: "/activity", allowInInput: false, handler: () => document.getElementById("activity-search")?.focus() }, { id: "activity.refresh", combo: "r", description: "Refresh activity", route: "/activity", handler: () => void activityQuery.refetch() }]);
+
+  useCommandActions([{ id: "activity.open", title: "Open activity center", group: "Audit", perform: () => router.push("/activity") }]);
 
   const filters = React.useMemo(() => ({
     q: search || undefined,
@@ -85,7 +92,7 @@ export default function ActivityPage() {
       <PageActionBar
         left={
           <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search action, entity, metadata, or actor" />
+            <Input id="activity-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search action, entity, metadata, or actor" />
             <Select value={action} onValueChange={setAction}>
               <SelectTrigger><SelectValue placeholder="All actions" /></SelectTrigger>
               <SelectContent>
