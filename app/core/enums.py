@@ -383,3 +383,23 @@ class AIJobType(StrEnum):
     RECONCILIATION_SUGGESTIONS = "reconciliation_suggestions"
     CODING_SUGGESTIONS = "coding_suggestions"
     ANOMALY_SCAN = "anomaly_scan"
+
+
+class OnboardingPath(StrEnum):
+    EXPLORE_DEMO = "explore_demo"
+    SETUP_REAL = "setup_real"
+    EXPERT_SKIP = "expert_skip"
+
+
+class OnboardingPersona(StrEnum):
+    BUSINESS_OWNER = "business_owner"
+    ACCOUNTANT = "accountant"
+    FINANCE_MANAGER = "finance_manager"
+    OPERATOR_ADMIN = "operator_admin"
+    EXPLORING = "exploring"
+
+
+class OnboardingTaskStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
