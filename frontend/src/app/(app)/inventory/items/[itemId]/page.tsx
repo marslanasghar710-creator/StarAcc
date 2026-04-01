@@ -22,6 +22,7 @@ import { useItem, useInventoryItemBalance, useInventoryItemMovements, useUpdateI
 import { type InventoryItemFormValues } from "@/features/inventory/schemas";
 import type { InventoryItemMutationPayload } from "@/features/inventory/types";
 import { usePermissions } from "@/features/permissions/hooks";
+import { NextActionBar } from "@/features/productivity/workflow/next-action-bar";
 import { useTaxCodes } from "@/features/settings/hooks";
 import { useOrganization } from "@/providers/organization-provider";
 
@@ -113,6 +114,7 @@ export default function InventoryItemDetailPage() {
 
   return (
     <div className="space-y-6">
+      <NextActionBar title="Inventory workflow" actions={[{ label: "Back to inventory", href: "/inventory" }, { label: "Open adjustments", href: "/inventory/adjustments" }, { label: "Open activity center", href: "/activity", variant: "outline" }]} />
       <PageHeader
         eyebrow="Inventory"
         title={`${item.sku || item.name}${item.sku ? ` · ${item.name}` : ""}`}

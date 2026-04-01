@@ -30,6 +30,7 @@ import type { BillFormValues } from "@/features/bills/schemas";
 import type { BillItem } from "@/features/bills/types";
 import { useAccounts } from "@/features/accounts/hooks";
 import { usePermissions } from "@/features/permissions/hooks";
+import { NextActionBar } from "@/features/productivity/workflow/next-action-bar";
 import { useSuppliers } from "@/features/suppliers/hooks";
 import { useOrganization } from "@/providers/organization-provider";
 
@@ -86,6 +87,8 @@ export default function BillDetailPage() {
   const isEditMode = mode === "edit" && isDraft && canUpdate;
 
   async function handleUpdate(values: BillFormValues) {
+    if (!bill) return;
+
     const updated = await updateMutation.mutateAsync(toUpdatePayload(values));
 
     const existingItems = new Map<string, BillItem>((bill.items ?? []).filter((item): item is BillItem & { id: string } => Boolean(item.id)).map((item) => [item.id, item]));
@@ -197,6 +200,11 @@ export default function BillDetailPage() {
 
   return (
     <div className="space-y-6">
+      <NextActionBar title="Bill workflow" actions={[
+        { label: "Back to bills", href: "/bills", variant: "outline" as const },
+        ...(bill.supplierId ? [{ label: "View supplier", href: `/suppliers/${bill.supplierId}` }] : []),
+        { label: "Open activity center", href: "/activity", variant: "outline" as const },
+      ]} />
       <PageHeader
         eyebrow="Bills"
         title={`${bill.billNumber} · ${bill.supplierName || bill.supplierId}`}
