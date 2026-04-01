@@ -99,7 +99,8 @@ def ensure_chart_of_accounts(context: SeedContext, organization_id, actor_user_i
                 {
                     "code": code,
                     "name": name,
-                    "account_type": account_type,
+                    "account_type": account_type.value,
+                    "normal_balance": "debit" if account_type in {AccountType.ASSET, AccountType.EXPENSE} else "credit",
                     "is_postable": True,
                     "is_active": True,
                     "is_system": False,
