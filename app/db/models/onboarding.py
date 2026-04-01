@@ -18,10 +18,10 @@ class UserOnboardingProfile(Base, UUIDPKMixin, TimestampMixin):
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     selected_path: Mapped[OnboardingPath | None] = mapped_column(
-        Enum(OnboardingPath, name="onboarding_path"), nullable=True
+        Enum(OnboardingPath, name="onboarding_path", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=True
     )
     selected_persona: Mapped[OnboardingPersona | None] = mapped_column(
-        Enum(OnboardingPersona, name="onboarding_persona"), nullable=True
+        Enum(OnboardingPersona, name="onboarding_persona", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=True
     )
     current_step_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -39,7 +39,7 @@ class OnboardingTaskProgress(Base, UUIDPKMixin, TimestampMixin):
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     task_key: Mapped[str] = mapped_column(String(120), nullable=False)
     status: Mapped[OnboardingTaskStatus] = mapped_column(
-        Enum(OnboardingTaskStatus, name="onboarding_task_status"), nullable=False, default=OnboardingTaskStatus.PENDING
+        Enum(OnboardingTaskStatus, name="onboarding_task_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=OnboardingTaskStatus.PENDING
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     skipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
