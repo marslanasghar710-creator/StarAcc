@@ -103,6 +103,8 @@ class InventoryService:
 
     def create_item(self, organization_id, actor_user_id, payload):
         normalized = self._validate_item_payload(organization_id, payload)
+        normalized.setdefault("costing_method", "weighted_average")
+        normalized.setdefault("valuation_method", "weighted_average")
         item = self.inventory.create_item(organization_id=organization_id, **normalized)
         self.audit.create(organization_id=organization_id, actor_user_id=actor_user_id, action="item.created", entity_type="item", entity_id=str(item.id))
         self.db.commit()

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api.routers import auth, organizations, invitations, roles, audit, accounting, ar, ap, banking, reporting, tax, settings as settings_router, inventory, projects, payroll, ai, consolidation
+from app.api.routers import auth, organizations, invitations, roles, audit, accounting, ar, ap, banking, reporting, tax, settings as settings_router, inventory, projects, payroll, ai, consolidation, onboarding
 from app.core.config import settings
 from app.db.session import engine
 from app.middleware.request_context import RequestContextMiddleware
@@ -52,3 +52,5 @@ app.include_router(projects.router)
 app.include_router(payroll.router)
 app.include_router(ai.router)
 app.include_router(consolidation.router)
+
+app.include_router(onboarding.router)

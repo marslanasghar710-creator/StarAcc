@@ -1,0 +1,47 @@
+"use client";
+
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { useOnboardingMutations } from "@/features/onboarding/hooks";
+import type { OnboardingStatus } from "@/features/onboarding/types";
+
+type Props = {
+  organizationId: string;
+  status: OnboardingStatus;
+};
+
+export function OnboardingHub({ organizationId, status }: Props) {
+  const { taskMutation } = useOnboardingMutations(organizationId);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Setup progress: {status.progress_percent}%</CardTitle>
+          <CardDescription>
+            Completion tier {status.completion_tier}. {status.is_demo_org ? "Demo context active." : "Real company setup context."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2">
+          {status.tasks.map((task) => (
+            <div key={task.key} className={cn("rounded-lg border p-3", task.required ? "border-primary/40" : "border-border") }>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium">{task.title}</p>
+                <span className="text-xs text-muted-foreground uppercase">{task.status}</span>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{task.description}</p>
+              <div className="mt-3 flex gap-2">
+                {task.route ? <Button asChild size="sm" variant="secondary"><Link href={task.route}>Open</Link></Button> : null}
+                <Button size="sm" onClick={() => taskMutation.mutate({ taskKey: task.key, status: "completed" })} disabled={task.blocked || task.status === "completed"}>Mark done</Button>
+                <Button size="sm" variant="ghost" onClick={() => taskMutation.mutate({ taskKey: task.key, status: "skipped" })} disabled={task.status !== "pending"}>Skip</Button>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

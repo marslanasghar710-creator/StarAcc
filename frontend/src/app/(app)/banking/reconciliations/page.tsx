@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DateDisplay } from "@/components/shared/date-display";
 import { useReconciliations } from "@/features/banking/hooks";
+import { useShortcuts } from "@/features/productivity/shortcuts/use-shortcuts";
 import { usePermissions } from "@/features/permissions/hooks";
 import { useOrganization } from "@/providers/organization-provider";
 
@@ -16,6 +17,8 @@ export default function ReconciliationsPage() {
   const { hasAnyPermission } = usePermissions();
   const canRead = hasAnyPermission(["reconciliation.read", "bank_reconciliation.read"]);
   const reconciliationsQuery = useReconciliations(currentOrganizationId ?? undefined, canRead);
+
+  useShortcuts([{ id: "reconciliations.refresh", combo: "r", description: "Refresh reconciliations", route: "/banking/reconciliations", handler: () => void reconciliationsQuery.refetch() }]);
 
   if (isLoadingOrganizations) return <LoadingScreen label="Loading reconciliations" />;
   if (!currentOrganizationId) return <EmptyState title="No organization selected" description="Choose an organization before opening reconciliations." />;

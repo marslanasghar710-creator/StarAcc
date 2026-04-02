@@ -39,6 +39,11 @@ class AIRepository:
         return list(self.db.scalars(query.order_by(AutomationRule.priority.asc(), AutomationRule.created_at.asc())).all())
 
     def create_suggestion(self, **kwargs):
+        status_value = kwargs.get("status", SuggestionStatus.PENDING)
+        kwargs["status"] = status_value.name if isinstance(status_value, SuggestionStatus) else str(status_value).upper()
+        source_value = kwargs.get("source_type")
+        if source_value is not None:
+            kwargs["source_type"] = source_value.name if isinstance(source_value, SuggestionSourceType) else str(source_value).upper()
         row = Suggestion(**kwargs)
         self.db.add(row)
         self.db.flush()

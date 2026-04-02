@@ -18,13 +18,13 @@ class ReportRun(Base, UUIDPKMixin, TimestampMixin):
     )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
-    report_type: Mapped[ReportType] = mapped_column(Enum(ReportType, name="report_type"), nullable=False)
+    report_type: Mapped[ReportType] = mapped_column(Enum(ReportType, name="report_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False)
     parameters_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
     generated_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="report_run_status"), nullable=False, default=ReportRunStatus.COMPLETED)
+    status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="report_run_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=ReportRunStatus.COMPLETED)
     row_count: Mapped[int | None] = mapped_column(nullable=True)
-    export_format: Mapped[ReportExportFormat | None] = mapped_column(Enum(ReportExportFormat, name="report_export_format"), nullable=True)
+    export_format: Mapped[ReportExportFormat | None] = mapped_column(Enum(ReportExportFormat, name="report_export_format", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=True)
 
 
 class ReportExport(Base, UUIDPKMixin, TimestampMixin):
@@ -35,8 +35,8 @@ class ReportExport(Base, UUIDPKMixin, TimestampMixin):
 
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     report_run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("report_runs.id"), nullable=True, index=True)
-    report_type: Mapped[ReportType] = mapped_column(Enum(ReportType, name="report_type"), nullable=False)
-    export_format: Mapped[ReportExportFormat] = mapped_column(Enum(ReportExportFormat, name="report_export_format"), nullable=False)
+    report_type: Mapped[ReportType] = mapped_column(Enum(ReportType, name="report_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False)
+    export_format: Mapped[ReportExportFormat] = mapped_column(Enum(ReportExportFormat, name="report_export_format", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False)
     file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     storage_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     generated_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
@@ -81,7 +81,7 @@ class ConsolidationRun(Base, UUIDPKMixin, TimestampMixin):
     group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("consolidation_groups.id"), nullable=False, index=True)
     period_start: Mapped[date] = mapped_column(Date, nullable=False)
     period_end: Mapped[date] = mapped_column(Date, nullable=False)
-    status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="consolidation_run_status"), nullable=False, default=ReportRunStatus.PENDING)
+    status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="consolidation_run_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=ReportRunStatus.PENDING)
     created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     request_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -148,7 +148,7 @@ class CustomReportExecution(Base, UUIDPKMixin, TimestampMixin):
     groupings_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     sorting_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     columns_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
-    execution_status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="report_run_status"), nullable=False, default=ReportRunStatus.PENDING)
+    execution_status: Mapped[ReportRunStatus] = mapped_column(Enum(ReportRunStatus, name="report_run_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=ReportRunStatus.PENDING)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     row_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
