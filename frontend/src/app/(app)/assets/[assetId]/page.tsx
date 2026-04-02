@@ -21,6 +21,7 @@ import { useAssetCategories, useAsset, useDepreciationSchedule, useDisposeAsset,
 import { type AssetDisposalFormValues, type AssetFormValues } from "@/features/assets/schemas";
 import type { AssetDisposalPayload, AssetMutationPayload } from "@/features/assets/types";
 import { usePermissions } from "@/features/permissions/hooks";
+import { NextActionBar } from "@/features/productivity/workflow/next-action-bar";
 import { useOrganization } from "@/providers/organization-provider";
 
 function toAssetPayload(values: AssetFormValues): Partial<AssetMutationPayload> {
@@ -112,6 +113,7 @@ export default function AssetDetailPage() {
 
   return (
     <div className="space-y-6">
+      <NextActionBar title="Asset workflow" actions={[{ label: "Back to assets", href: "/assets" }, { label: "Open depreciation runs", href: "/assets" }, { label: "Open activity center", href: "/activity", variant: "outline" }]} />
       <PageHeader
         eyebrow="Fixed assets"
         title={asset.name}

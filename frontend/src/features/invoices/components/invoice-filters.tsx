@@ -13,12 +13,12 @@ export type InvoiceFiltersValue = {
   dateTo: string;
 };
 
-export function InvoiceFilters({ filters, onChange }: { filters: InvoiceFiltersValue; onChange: (value: InvoiceFiltersValue) => void }) {
+export function InvoiceFilters({ filters, onChange, searchInputId }: { filters: InvoiceFiltersValue; onChange: (value: InvoiceFiltersValue) => void; searchInputId?: string }) {
   return (
     <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_180px_180px_180px_180px]">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input className="pl-9" value={filters.search} onChange={(event) => onChange({ ...filters, search: event.target.value })} placeholder="Search invoice number, customer, or reference" />
+        <Input id={searchInputId} className="pl-9" value={filters.search} onChange={(event) => onChange({ ...filters, search: event.target.value })} placeholder="Search invoice number, customer, or reference" />
       </div>
       <Select value={filters.status} onValueChange={(value) => onChange({ ...filters, status: value as InvoiceFiltersValue["status"] })}>
         <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>

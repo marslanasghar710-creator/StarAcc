@@ -42,10 +42,10 @@ class Item(Base, UUIDPKMixin, TimestampMixin):
     sales_tax_code_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("tax_codes.id"), nullable=True)
     purchase_tax_code_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("tax_codes.id"), nullable=True)
     costing_method: Mapped[InventoryCostingMethod] = mapped_column(
-        Enum(InventoryCostingMethod, name="inventory_costing_method"), nullable=False, default=InventoryCostingMethod.WEIGHTED_AVERAGE
+        Enum(InventoryCostingMethod, name="inventory_costing_method", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=InventoryCostingMethod.WEIGHTED_AVERAGE
     )
     valuation_method: Mapped[InventoryValuationMethod] = mapped_column(
-        Enum(InventoryValuationMethod, name="inventory_valuation_method"), nullable=False, default=InventoryValuationMethod.WEIGHTED_AVERAGE
+        Enum(InventoryValuationMethod, name="inventory_valuation_method", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=InventoryValuationMethod.WEIGHTED_AVERAGE
     )
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -86,9 +86,9 @@ class InventoryMovement(Base, UUIDPKMixin, TimestampMixin):
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     item_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("items.id"), nullable=False, index=True)
     location_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("inventory_locations.id"), nullable=True, index=True)
-    movement_type: Mapped[InventoryMovementType] = mapped_column(Enum(InventoryMovementType, name="inventory_movement_type"), nullable=False)
+    movement_type: Mapped[InventoryMovementType] = mapped_column(Enum(InventoryMovementType, name="inventory_movement_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False)
     source_entity_type: Mapped[InventorySourceEntityType] = mapped_column(
-        Enum(InventorySourceEntityType, name="inventory_source_entity_type"), nullable=False
+        Enum(InventorySourceEntityType, name="inventory_source_entity_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False
     )
     source_entity_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     quantity: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
@@ -115,7 +115,7 @@ class InventoryAdjustment(Base, UUIDPKMixin, TimestampMixin):
     item_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("items.id"), nullable=False, index=True)
     location_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("inventory_locations.id"), nullable=True, index=True)
     adjustment_type: Mapped[InventoryAdjustmentType] = mapped_column(
-        Enum(InventoryAdjustmentType, name="inventory_adjustment_type"), nullable=False
+        Enum(InventoryAdjustmentType, name="inventory_adjustment_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False
     )
     quantity: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
     unit_cost: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False, default=Decimal("0"))
