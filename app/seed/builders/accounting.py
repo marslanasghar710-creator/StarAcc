@@ -485,7 +485,7 @@ def seed_transactions(
                     target_entity_id=str(tx.id),
                     suggestion_type="bank_transaction_categorization",
                     reason_summary="Recurring pattern suggests office expense category.",
-                    suggested_payload_json={"target_account_id": accounts.rent},
+                    suggested_payload_json={"target_account_id": str(accounts.rent)},
                     explanation_json={"confidence": "high", "pattern": "monthly"},
                     source_type="rule",
                     confidence_score=Decimal("0.83"),
