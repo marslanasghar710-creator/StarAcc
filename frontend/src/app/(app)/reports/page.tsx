@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -9,6 +10,7 @@ import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { DateDisplay } from "@/components/shared/date-display";
 import { PageActionBar } from "@/components/shared/page-action-bar";
 import { usePermissions } from "@/features/permissions/hooks";
+import { useCommandActions, useShortcuts } from "@/features/productivity/shortcuts/use-shortcuts";
 import { ReportPageHeader } from "@/features/reporting/components/report-page-header";
 import { ReportsNav } from "@/features/reporting/components/reports-nav";
 import { useReportsMetadata } from "@/features/reporting/hooks";
@@ -27,10 +29,15 @@ const REPORT_ACCESS_PERMISSIONS = [
 ];
 
 export default function ReportsLandingPage() {
+  const router = useRouter();
   const { currentOrganizationId, currentOrganization, isLoadingOrganizations } = useOrganization();
   const { hasAnyPermission, can } = usePermissions();
   const canReadReports = hasAnyPermission(REPORT_ACCESS_PERMISSIONS);
   const metadataQuery = useReportsMetadata(currentOrganizationId ?? undefined, canReadReports);
+
+  useShortcuts([{ id: "reports.refresh", combo: "r", description: "Refresh reports metadata", route: "/reports", handler: () => void metadataQuery.refetch() }]);
+
+  useCommandActions([{ id: "reports.custom", title: "Open custom reports", description: "Go to saved custom reports", group: "Reports", perform: () => router.push("/reports/custom") }]);
 
   if (isLoadingOrganizations) return <LoadingScreen label="Loading reports" />;
   if (!currentOrganizationId) return <EmptyState title="No organization selected" description="Choose an organization before opening reports." />;

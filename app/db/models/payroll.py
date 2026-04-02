@@ -30,8 +30,8 @@ class Employee(Base, UUIDPKMixin, TimestampMixin):
     first_name: Mapped[str] = mapped_column(String(120), nullable=False)
     last_name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(320), nullable=False)
-    employment_type: Mapped[EmploymentType] = mapped_column(Enum(EmploymentType, name="employment_type"), nullable=False)
-    status: Mapped[EmployeeStatus] = mapped_column(Enum(EmployeeStatus, name="employee_status"), nullable=False, default=EmployeeStatus.ACTIVE)
+    employment_type: Mapped[EmploymentType] = mapped_column(Enum(EmploymentType, name="employment_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False)
+    status: Mapped[EmployeeStatus] = mapped_column(Enum(EmployeeStatus, name="employee_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=EmployeeStatus.ACTIVE)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     default_salary_amount: Mapped[Decimal | None] = mapped_column(Numeric(20, 8), nullable=True)
@@ -47,7 +47,7 @@ class PayrollEarningType(Base, UUIDPKMixin, TimestampMixin):
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     code: Mapped[str] = mapped_column(String(50), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    amount_type: Mapped[PayrollEarningAmountType] = mapped_column(Enum(PayrollEarningAmountType, name="payroll_earning_amount_type"), nullable=False, default=PayrollEarningAmountType.MANUAL)
+    amount_type: Mapped[PayrollEarningAmountType] = mapped_column(Enum(PayrollEarningAmountType, name="payroll_earning_amount_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=PayrollEarningAmountType.MANUAL)
     expense_account_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
 
@@ -76,7 +76,7 @@ class PayrollPeriod(Base, UUIDPKMixin, TimestampMixin):
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date] = mapped_column(Date, nullable=False)
     pay_date: Mapped[date] = mapped_column(Date, nullable=False)
-    status: Mapped[PayrollPeriodStatus] = mapped_column(Enum(PayrollPeriodStatus, name="payroll_period_status"), nullable=False, default=PayrollPeriodStatus.DRAFT)
+    status: Mapped[PayrollPeriodStatus] = mapped_column(Enum(PayrollPeriodStatus, name="payroll_period_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=PayrollPeriodStatus.DRAFT)
 
 
 class PayrollRun(Base, UUIDPKMixin, TimestampMixin):
@@ -91,7 +91,7 @@ class PayrollRun(Base, UUIDPKMixin, TimestampMixin):
 
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     payroll_period_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("payroll_periods.id"), nullable=False, index=True)
-    status: Mapped[PayrollRunStatus] = mapped_column(Enum(PayrollRunStatus, name="payroll_run_status"), nullable=False, default=PayrollRunStatus.DRAFT)
+    status: Mapped[PayrollRunStatus] = mapped_column(Enum(PayrollRunStatus, name="payroll_run_status", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False, default=PayrollRunStatus.DRAFT)
     funding_account_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
     default_expense_account_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True)
     reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -135,7 +135,7 @@ class PayrollLineItem(Base, UUIDPKMixin):
 
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     payroll_entry_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("payroll_entries.id"), nullable=False, index=True)
-    type: Mapped[PayrollLineItemType] = mapped_column(Enum(PayrollLineItemType, name="payroll_line_item_type"), nullable=False)
+    type: Mapped[PayrollLineItemType] = mapped_column(Enum(PayrollLineItemType, name="payroll_line_item_type", values_callable=lambda enum_cls: [item.value for item in enum_cls]), nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
     quantity: Mapped[Decimal | None] = mapped_column(Numeric(20, 8), nullable=True)
