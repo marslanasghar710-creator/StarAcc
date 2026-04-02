@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from sqlalchemy import select
 
 from app.core.enums import AccountType, BankTransactionType
-from app.db.models import Customer, Supplier
+from app.db.models import AccountingSettings, Customer, Supplier
 from app.repositories.account_repository import AccountRepository
 from app.repositories.ai_repository import AIRepository
 from app.repositories.audit import AuditRepository
@@ -125,6 +125,24 @@ def ensure_chart_of_accounts(context: SeedContext, organization_id, actor_user_i
     )
 
 
+def ensure_accounting_settings(context: SeedContext, organization_id: str, accounts: SeededAccounts) -> None:
+    settings = context.db.scalar(select(AccountingSettings).where(AccountingSettings.organization_id == organization_id))
+    if settings:
+        return
+    context.db.add(
+        AccountingSettings(
+            organization_id=organization_id,
+            accounts_receivable_control_account_id=accounts.ar,
+            accounts_payable_control_account_id=accounts.ap,
+            default_sales_revenue_account_id=accounts.sales,
+            default_customer_receipts_account_id=accounts.cash_main,
+            default_expense_account_id=accounts.cogs,
+            default_supplier_payments_account_id=accounts.cash_main,
+        )
+    )
+    context.db.flush()
+
+
 def seed_parties(context: SeedContext, organization_id: str, summary: SeedSummary) -> tuple[list[Customer], list[Supplier]]:
     customers = CustomerRepository(context.db)
     suppliers = SupplierRepository(context.db)
@@ -184,6 +202,7 @@ def seed_transactions(
     summary: SeedSummary,
 ) -> None:
     ensure_periods(context, organization_id)
+    ensure_accounting_settings(context, organization_id, accounts)
 
     journal_service = JournalService(context.db)
     invoice_service = InvoiceService(context.db)
