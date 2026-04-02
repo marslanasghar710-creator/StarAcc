@@ -12,12 +12,12 @@ export type BillFiltersValue = {
   dateTo: string;
 };
 
-export function BillFilters({ filters, onChange }: { filters: BillFiltersValue; onChange: (value: BillFiltersValue) => void }) {
+export function BillFilters({ filters, onChange, searchInputId }: { filters: BillFiltersValue; onChange: (value: BillFiltersValue) => void; searchInputId?: string }) {
   return (
     <div className="flex w-full flex-wrap items-center gap-3">
       <div className="relative min-w-[280px] flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={filters.search} onChange={(event) => onChange({ ...filters, search: event.target.value })} placeholder="Search by bill number, supplier, or reference" className="pl-9" />
+        <Input id={searchInputId} value={filters.search} onChange={(event) => onChange({ ...filters, search: event.target.value })} placeholder="Search by bill number, supplier, or reference" className="pl-9" />
       </div>
       <Select value={filters.status} onValueChange={(value) => onChange({ ...filters, status: value as BillFiltersValue["status"] })}>
         <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>

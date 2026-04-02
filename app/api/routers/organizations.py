@@ -13,6 +13,9 @@ from app.repositories.membership import MembershipRepository
 from app.repositories.orgs import OrganizationRepository
 from app.schemas.membership import InvitationCreateRequest, MembershipResponse, MembershipUpdateRequest
 from app.schemas.organization import (
+    DemoScenarioInfo,
+    DemoSeedRequest,
+    DemoSeedResponse,
     OrganizationCreateRequest,
     OrganizationResponse,
     OrganizationSettingsResponse,
@@ -20,10 +23,28 @@ from app.schemas.organization import (
     OrganizationUpdateRequest,
 )
 from app.services.membership_service import MembershipService
+from app.services.demo_seed_service import DemoSeedService
 from app.services.organization_service import OrganizationService
 
 router = APIRouter()
 
+
+
+@router.get("/demo/scenarios", response_model=list[DemoScenarioInfo])
+def list_demo_scenarios(
+    _=Depends(require_permission("org.read")),
+    db: Session = Depends(get_db),
+):
+    return DemoSeedService(db).list_scenarios()
+
+
+@router.post("/demo/provision", response_model=DemoSeedResponse)
+def provision_demo_scenario(
+    payload: DemoSeedRequest,
+    _=Depends(require_permission("org.update")),
+    db: Session = Depends(get_db),
+):
+    return DemoSeedService(db).provision(payload.scenario_key, reset=payload.reset)
 
 @router.post("", response_model=OrganizationResponse)
 def create_org(payload: OrganizationCreateRequest, current_user=Depends(get_current_user), db: Session = Depends(get_db)):

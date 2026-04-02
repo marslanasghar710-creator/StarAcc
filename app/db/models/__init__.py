@@ -8,6 +8,7 @@ from app.db.models.invitation import Invitation
 from app.db.models.inventory import InventoryAdjustment, InventoryBalance, InventoryLocation, InventoryMovement, Item
 from app.db.models.membership import OrganizationUser
 from app.db.models.organization import Organization, OrganizationSettings
+from app.db.models.onboarding import OnboardingTaskProgress, OrgOnboardingStatus, UserOnboardingProfile
 from app.db.models.settings import (
     BrandingSettings,
     DocumentLink,
@@ -48,6 +49,9 @@ __all__ = [
     "UserProfile",
     "Organization",
     "OrganizationSettings",
+    "UserOnboardingProfile",
+    "OnboardingTaskProgress",
+    "OrgOnboardingStatus",
     "OrganizationPreferences",
     "BrandingSettings",
     "NumberingSettings",
