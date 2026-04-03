@@ -46,6 +46,63 @@ type OverdueRow = {
   amountDue: string | number;
 };
 
+type MonthlySeriesPoint = {
+  label: string;
+  receivables: number;
+  payables: number;
+};
+
+function monthlyLabel(date: Date): string {
+  return date.toLocaleDateString(undefined, { month: "short" });
+}
+
+function toMonthKey(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function buildExposureSeries(
+  receivableItems: Array<{ dueDate: string; amountDue: string | number }>,
+  payableItems: Array<{ dueDate: string; amountDue: string | number }>,
+): MonthlySeriesPoint[] {
+  const monthStarts = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date();
+    date.setUTCDate(1);
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCMonth(date.getUTCMonth() - (5 - index));
+    return date;
+  });
+  const seed = new Map(monthStarts.map((month) => [toMonthKey(month), { label: monthlyLabel(month), receivables: 0, payables: 0 }]));
+
+  for (const item of receivableItems) {
+    const due = new Date(item.dueDate);
+    if (Number.isNaN(due.getTime())) continue;
+    const key = toMonthKey(new Date(Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), 1)));
+    const current = seed.get(key);
+    if (!current) continue;
+    current.receivables += Number(item.amountDue ?? 0);
+  }
+  for (const item of payableItems) {
+    const due = new Date(item.dueDate);
+    if (Number.isNaN(due.getTime())) continue;
+    const key = toMonthKey(new Date(Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), 1)));
+    const current = seed.get(key);
+    if (!current) continue;
+    current.payables += Number(item.amountDue ?? 0);
+  }
+
+  return Array.from(seed.values());
+}
+
+function mergeUniqueById<T extends { id: string }>(...lists: T[][]): T[] {
+  const merged = new Map<string, T>();
+  for (const list of lists) {
+    for (const item of list) {
+      merged.set(item.id, item);
+    }
+  }
+  return Array.from(merged.values());
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { roleName, can } = usePermissions();
@@ -75,6 +132,13 @@ export default function DashboardPage() {
   const totalExposure = receivablesExposure + payablesExposure;
   const receivablesRatio = totalExposure > 0 ? (receivablesExposure / totalExposure) * 100 : 0;
   const payablesRatio = totalExposure > 0 ? (payablesExposure / totalExposure) * 100 : 0;
+  const receivablesUniverse = mergeUniqueById(openInvoices, overdueInvoices);
+  const payablesUniverse = mergeUniqueById(openBills, overdueBills);
+  const exposureSeries = buildExposureSeries(receivablesUniverse, payablesUniverse);
+  const exposureSeriesMax = Math.max(
+    1,
+    ...exposureSeries.flatMap((point) => [point.receivables, point.payables]),
+  );
   const financialLoading = openInvoicesQuery.isLoading || overdueInvoicesQuery.isLoading || openBillsQuery.isLoading || overdueBillsQuery.isLoading;
   const overdueRows: OverdueRow[] = [
     ...overdueInvoices.map((invoice) => ({
@@ -170,6 +234,34 @@ export default function DashboardPage() {
             )
           ) : (
             <p className="text-sm text-muted-foreground">Your current role does not include invoice or bill read access.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="AR vs AP trend (6 months)" description="Outstanding exposure by due month.">
+          {financialLoading ? (
+            <div className="space-y-2">
+              <div className="h-28 animate-pulse rounded-xl bg-muted/40" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {exposureSeries.map((point) => (
+                <div key={point.label} className="grid grid-cols-[2.5rem,1fr,auto] items-center gap-3 text-xs">
+                  <span className="text-muted-foreground">{point.label}</span>
+                  <div className="space-y-1">
+                    <div className="h-2 rounded-full bg-muted">
+                      <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${(point.receivables / exposureSeriesMax) * 100}%` }} />
+                    </div>
+                    <div className="h-2 rounded-full bg-muted">
+                      <div className="h-2 rounded-full bg-amber-500" style={{ width: `${(point.payables / exposureSeriesMax) * 100}%` }} />
+                    </div>
+                  </div>
+                  <div className="text-right text-muted-foreground">
+                    <div>AR <MoneyDisplay value={point.receivables} currencyCode={currentOrganization.base_currency} /></div>
+                    <div>AP <MoneyDisplay value={point.payables} currencyCode={currentOrganization.base_currency} /></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </SectionCard>
 
