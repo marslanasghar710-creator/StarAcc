@@ -14,6 +14,15 @@ export const queryKeys = {
     settings: (organizationId: string) => ["organizations", organizationId, "settings"] as const,
     members: (organizationId: string) => ["organizations", organizationId, "members"] as const,
   },
+  billing: {
+    publicPlans: ["billing", "public-plans"] as const,
+    state: (organizationId: string) => ["billing", organizationId, "state"] as const,
+  },
+  integrations: {
+    providers: (organizationId: string) => ["integrations", organizationId, "providers"] as const,
+    connections: (organizationId: string) => ["integrations", organizationId, "connections"] as const,
+    syncRuns: (organizationId: string, connectionId: string) => ["integrations", organizationId, "connections", connectionId, "sync-runs"] as const,
+  },
   notifications: {
     list: (organizationId: string) => ["notifications", organizationId, "list"] as const,
     unreadCount: (organizationId: string) => ["notifications", organizationId, "unread-count"] as const,
