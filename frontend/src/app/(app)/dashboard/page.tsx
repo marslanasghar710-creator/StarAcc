@@ -204,12 +204,11 @@ export default function DashboardPage() {
               <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
             </div>
           ) : overdueRows.length > 0 ? (
-            <div className="space-y-2 text-sm">
+            <div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-sm">
               {overdueRows.map((row) => (
-                <Link
+                <div
                   key={`${row.type}-${row.id}`}
-                  href={row.type === "invoice" ? `/invoices/${row.id}` : `/bills/${row.id}`}
-                  className="grid grid-cols-[auto,1fr,auto,auto] items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 hover:bg-muted/40"
+                  className="grid grid-cols-[auto,1fr,auto,auto] items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2"
                 >
                   <Badge variant={row.type === "invoice" ? "default" : "secondary"} className="capitalize">
                     {row.type}
@@ -219,8 +218,15 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted-foreground">Due {row.dueDate}</p>
                   </div>
                   <MoneyDisplay value={row.amountDue} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
-                  <span className="text-xs text-muted-foreground">View</span>
-                </Link>
+                  <div className="flex items-center gap-1">
+                    <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                      <Link href={row.type === "invoice" ? "/invoices" : `/bills/${row.id}`}>Review</Link>
+                    </Button>
+                    <Button asChild variant="secondary" size="sm" className="h-7 px-2 text-xs">
+                      <Link href={row.type === "invoice" ? "/customer-payments" : "/supplier-payments"}>Record payment</Link>
+                    </Button>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
