@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BellRing, Building2, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -63,12 +64,13 @@ function toMonthKey(date: Date): string {
 function buildExposureSeries(
   receivableItems: Array<{ dueDate: string; amountDue: string | number }>,
   payableItems: Array<{ dueDate: string; amountDue: string | number }>,
+  months: number,
 ): MonthlySeriesPoint[] {
-  const monthStarts = Array.from({ length: 6 }, (_, index) => {
+  const monthStarts = Array.from({ length: months }, (_, index) => {
     const date = new Date();
     date.setUTCDate(1);
     date.setUTCHours(0, 0, 0, 0);
-    date.setUTCMonth(date.getUTCMonth() - (5 - index));
+    date.setUTCMonth(date.getUTCMonth() - (months - 1 - index));
     return date;
   });
   const seed = new Map(monthStarts.map((month) => [toMonthKey(month), { label: monthlyLabel(month), receivables: 0, payables: 0 }]));
@@ -103,7 +105,17 @@ function mergeUniqueById<T extends { id: string }>(...lists: T[][]): T[] {
   return Array.from(merged.values());
 }
 
-function TrendChart({ series, maxValue }: { series: MonthlySeriesPoint[]; maxValue: number }) {
+function TrendChart({
+  series,
+  maxValue,
+  activeIndex,
+  onHoverIndex,
+}: {
+  series: MonthlySeriesPoint[];
+  maxValue: number;
+  activeIndex: number | null;
+  onHoverIndex: (index: number | null) => void;
+}) {
   if (series.length === 0) {
     return <div className="h-40 rounded-xl border border-dashed border-border/80 bg-muted/20" />;
   }
@@ -123,6 +135,26 @@ function TrendChart({ series, maxValue }: { series: MonthlySeriesPoint[]; maxVal
         <line x1="0" y1={chartHeight - 6} x2={chartWidth} y2={chartHeight - 6} stroke="currentColor" className="text-border/80" strokeWidth="0.5" />
         <polyline points={receivablesPoints} fill="none" stroke="rgb(16 185 129)" strokeWidth="1.8" strokeLinecap="round" />
         <polyline points={payablesPoints} fill="none" stroke="rgb(245 158 11)" strokeWidth="1.8" strokeLinecap="round" />
+        {series.map((point, index) => (
+          <g key={point.label}>
+            <circle
+              cx={index * step}
+              cy={toY(point.receivables)}
+              r={activeIndex === index ? 1.6 : 1.1}
+              fill="rgb(16 185 129)"
+              onMouseEnter={() => onHoverIndex(index)}
+              onMouseLeave={() => onHoverIndex(null)}
+            />
+            <circle
+              cx={index * step}
+              cy={toY(point.payables)}
+              r={activeIndex === index ? 1.6 : 1.1}
+              fill="rgb(245 158 11)"
+              onMouseEnter={() => onHoverIndex(index)}
+              onMouseLeave={() => onHoverIndex(null)}
+            />
+          </g>
+        ))}
       </svg>
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-500" />Receivables</span>
@@ -136,6 +168,8 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { roleName, can } = usePermissions();
   const { currentOrganization, currentOrganizationId } = useOrganization();
+  const [trendWindow, setTrendWindow] = useState<3 | 6 | 12>(6);
+  const [activeTrendIndex, setActiveTrendIndex] = useState<number | null>(null);
   const organizationId = currentOrganizationId ?? undefined;
   const canReadNotifications = can("notifications.read");
   const canReadInvoices = can("invoices.read");
@@ -163,11 +197,15 @@ export default function DashboardPage() {
   const payablesRatio = totalExposure > 0 ? (payablesExposure / totalExposure) * 100 : 0;
   const receivablesUniverse = mergeUniqueById(openInvoices, overdueInvoices);
   const payablesUniverse = mergeUniqueById(openBills, overdueBills);
-  const exposureSeries = buildExposureSeries(receivablesUniverse, payablesUniverse);
+  const exposureSeries = useMemo(
+    () => buildExposureSeries(receivablesUniverse, payablesUniverse, trendWindow),
+    [payablesUniverse, receivablesUniverse, trendWindow],
+  );
   const exposureSeriesMax = Math.max(
     1,
     ...exposureSeries.flatMap((point) => [point.receivables, point.payables]),
   );
+  const focusedTrendPoint = exposureSeries[activeTrendIndex ?? exposureSeries.length - 1];
   const financialLoading = openInvoicesQuery.isLoading || overdueInvoicesQuery.isLoading || openBillsQuery.isLoading || overdueBillsQuery.isLoading;
   const overdueRows: OverdueRow[] = [
     ...overdueInvoices.map((invoice) => ({
@@ -266,14 +304,47 @@ export default function DashboardPage() {
           )}
         </SectionCard>
 
-        <SectionCard title="AR vs AP trend (6 months)" description="Outstanding exposure by due month.">
+        <SectionCard title="AR vs AP trend" description="Outstanding exposure by due month (interactive).">
           {financialLoading ? (
             <div className="space-y-2">
               <div className="h-28 animate-pulse rounded-xl bg-muted/40" />
             </div>
           ) : (
             <div className="space-y-4">
-              <TrendChart series={exposureSeries} maxValue={exposureSeriesMax} />
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">
+                  {focusedTrendPoint ? `Focused month: ${focusedTrendPoint.label}` : "Hover points for details"}
+                </div>
+                <div className="flex items-center gap-1">
+                  {[3, 6, 12].map((months) => (
+                    <Button
+                      key={months}
+                      type="button"
+                      variant={trendWindow === months ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        setTrendWindow(months as 3 | 6 | 12);
+                        setActiveTrendIndex(null);
+                      }}
+                    >
+                      {months}m
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <TrendChart
+                series={exposureSeries}
+                maxValue={exposureSeriesMax}
+                activeIndex={activeTrendIndex}
+                onHoverIndex={setActiveTrendIndex}
+              />
+              {focusedTrendPoint ? (
+                <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/70 bg-muted/20 p-2 text-xs">
+                  <div className="text-muted-foreground">Receivables <MoneyDisplay value={focusedTrendPoint.receivables} currencyCode={currentOrganization.base_currency} /></div>
+                  <div className="text-muted-foreground">Payables <MoneyDisplay value={focusedTrendPoint.payables} currencyCode={currentOrganization.base_currency} /></div>
+                </div>
+              ) : null}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 {exposureSeries.map((point) => (
                   <div key={point.label} className="rounded-lg border border-border/70 bg-muted/20 px-2 py-1.5 text-muted-foreground">
