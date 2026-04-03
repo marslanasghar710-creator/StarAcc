@@ -10,7 +10,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6">
-          <Link href="/" aria-label="StarAcc home"><AppLogo /></Link>
+          <AppLogo href="/" />
           <nav className="hidden items-center gap-4 md:flex">
             {navigationLinks.map((link) => (
               <Link key={link.href} href={link.href} className="text-sm text-muted-foreground transition hover:text-foreground">{link.label}</Link>
