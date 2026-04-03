@@ -4,6 +4,7 @@ from app.db.models.accounting import Account, AccountBalance, AccountPeriodBalan
 from app.db.models.audit import AuditLog
 from app.db.models.ai import AIProcessingJob, AutomationRule, DocumentExtractionJob, ReconciliationSuggestionSet, Suggestion, SuggestionFeedback
 from app.db.models.banking import BankAccount, BankTransaction
+from app.db.models.billing import BillingAccount, PlanPrice, Subscription, SubscriptionEntitlementOverride, UsageSnapshot
 from app.db.models.invitation import Invitation
 from app.db.models.inventory import InventoryAdjustment, InventoryBalance, InventoryLocation, InventoryMovement, Item
 from app.db.models.membership import OrganizationUser
@@ -113,4 +114,9 @@ __all__ = [
     "InventoryBalance",
     "InventoryMovement",
     "InventoryAdjustment",
+    "BillingAccount",
+    "Subscription",
+    "SubscriptionEntitlementOverride",
+    "UsageSnapshot",
+    "PlanPrice",
 ]
