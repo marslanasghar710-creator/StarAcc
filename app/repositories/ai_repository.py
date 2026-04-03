@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.core.enums import AIJobStatus, DocumentExtractionStatus, SuggestionStatus
+from app.core.enums import AIJobStatus, DocumentExtractionStatus, SuggestionSourceType, SuggestionStatus
 from app.db.models import AIProcessingJob, AutomationRule, DocumentExtractionJob, ReconciliationSuggestionSet, Suggestion, SuggestionFeedback
 
 UTC = timezone.utc
