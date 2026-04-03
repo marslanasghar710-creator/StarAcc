@@ -1,4 +1,4 @@
-import { Bell, BookOpenText, Boxes, Building2, ChartColumnBig, CreditCard, FileText, GitBranchPlus, HandCoins, Landmark, LayoutGrid, Package, Receipt, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { Bell, BookOpenText, Boxes, Building2, ChartColumnBig, CreditCard, FileText, GitBranchPlus, HandCoins, Landmark, LayoutGrid, Package, PlugZap, Receipt, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
 
 import type { NavItem } from "@/types";
 
@@ -20,5 +20,6 @@ export const navigationItems: NavItem[] = [
   { title: "Consolidation", href: "/consolidation", description: "Multi-entity reporting and eliminations", group: "Insights", icon: GitBranchPlus, requiredPermissions: ["consolidation.read"] },
   { title: "Tax", href: "/tax", description: "Tax center and filings", group: "Insights", icon: ShieldCheck, requiredPermissions: ["tax.settings.read", "tax_reports.read"] },
   { title: "Settings", href: "/settings", description: "Operational controls", group: "Administration", icon: Settings, requiredPermissions: ["settings.read", "organization.read", "org.read", "periods.read", "fiscal_periods.read", "tax_codes.read", "tax.settings.read", "branding.read", "numbering.read"] },
+  { title: "Integrations", href: "/integrations", description: "Provider connections and sync health", group: "Administration", icon: PlugZap, requiredPermissions: ["settings.read"] },
   { title: "Notifications", href: "/notifications", description: "Alerts and inbox", group: "Administration", icon: Bell, requiredPermissions: ["notifications.read"] },
 ];
