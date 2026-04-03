@@ -1,15 +1,19 @@
 "use client";
 
 import type { ComponentType } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BellRing, Building2, ShieldCheck, Sparkles } from "lucide-react";
 
 import { ErrorState } from "@/components/feedback/error-state";
 import { NotificationList } from "@/components/notifications/notification-list";
+import { MoneyDisplay } from "@/components/shared/money-display";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useOpenBills, useOverdueBills } from "@/features/bills/hooks";
+import { useOpenInvoices, useOverdueInvoices } from "@/features/invoices/hooks";
 import { useNotificationsQuery, useUnreadNotificationsQuery } from "@/features/notifications/hooks";
 import { usePermissions } from "@/features/permissions/hooks";
 import { useOnboardingStatus } from "@/features/onboarding/hooks";
@@ -30,15 +34,199 @@ function KpiCard({ label, value, hint, icon: Icon }: { label: string; value: str
   );
 }
 
+function sumAmountDue(items: Array<{ amountDue?: string | number | null }>): number {
+  return items.reduce((total, item) => total + Number(item.amountDue ?? 0), 0);
+}
+
+type OverdueRow = {
+  id: string;
+  type: "invoice" | "bill";
+  documentNumber: string;
+  counterpartyName: string;
+  dueDate: string;
+  amountDue: string | number;
+};
+
+type MonthlySeriesPoint = {
+  label: string;
+  receivables: number;
+  payables: number;
+};
+
+function monthlyLabel(date: Date): string {
+  return date.toLocaleDateString(undefined, { month: "short" });
+}
+
+function toMonthKey(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function buildExposureSeries(
+  receivableItems: Array<{ dueDate: string; amountDue: string | number }>,
+  payableItems: Array<{ dueDate: string; amountDue: string | number }>,
+  months: number,
+): MonthlySeriesPoint[] {
+  const monthStarts = Array.from({ length: months }, (_, index) => {
+    const date = new Date();
+    date.setUTCDate(1);
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCMonth(date.getUTCMonth() - (months - 1 - index));
+    return date;
+  });
+  const seed = new Map(monthStarts.map((month) => [toMonthKey(month), { label: monthlyLabel(month), receivables: 0, payables: 0 }]));
+
+  for (const item of receivableItems) {
+    const due = new Date(item.dueDate);
+    if (Number.isNaN(due.getTime())) continue;
+    const key = toMonthKey(new Date(Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), 1)));
+    const current = seed.get(key);
+    if (!current) continue;
+    current.receivables += Number(item.amountDue ?? 0);
+  }
+  for (const item of payableItems) {
+    const due = new Date(item.dueDate);
+    if (Number.isNaN(due.getTime())) continue;
+    const key = toMonthKey(new Date(Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), 1)));
+    const current = seed.get(key);
+    if (!current) continue;
+    current.payables += Number(item.amountDue ?? 0);
+  }
+
+  return Array.from(seed.values());
+}
+
+function mergeUniqueById<T extends { id: string }>(...lists: T[][]): T[] {
+  const merged = new Map<string, T>();
+  for (const list of lists) {
+    for (const item of list) {
+      merged.set(item.id, item);
+    }
+  }
+  return Array.from(merged.values());
+}
+
+function TrendChart({
+  series,
+  maxValue,
+  activeIndex,
+  onHoverIndex,
+}: {
+  series: MonthlySeriesPoint[];
+  maxValue: number;
+  activeIndex: number | null;
+  onHoverIndex: (index: number | null) => void;
+}) {
+  if (series.length === 0) {
+    return <div className="h-40 rounded-xl border border-dashed border-border/80 bg-muted/20" />;
+  }
+  const chartWidth = 100;
+  const chartHeight = 48;
+  const step = series.length > 1 ? chartWidth / (series.length - 1) : chartWidth;
+  const toY = (value: number) => {
+    const normalized = Math.max(0, Math.min(1, value / Math.max(maxValue, 1)));
+    return chartHeight - normalized * 34 - 6;
+  };
+  const receivablesPoints = series.map((point, index) => `${index * step},${toY(point.receivables)}`).join(" ");
+  const payablesPoints = series.map((point, index) => `${index * step},${toY(point.payables)}`).join(" ");
+
+  return (
+    <div className="space-y-2">
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-40 w-full rounded-xl border border-border/70 bg-gradient-to-b from-muted/10 to-muted/30 p-2">
+        <line x1="0" y1={chartHeight - 6} x2={chartWidth} y2={chartHeight - 6} stroke="currentColor" className="text-border/80" strokeWidth="0.5" />
+        <polyline points={receivablesPoints} fill="none" stroke="rgb(16 185 129)" strokeWidth="1.8" strokeLinecap="round" />
+        <polyline points={payablesPoints} fill="none" stroke="rgb(245 158 11)" strokeWidth="1.8" strokeLinecap="round" />
+        {series.map((point, index) => (
+          <g key={point.label}>
+            <circle
+              cx={index * step}
+              cy={toY(point.receivables)}
+              r={activeIndex === index ? 1.6 : 1.1}
+              fill="rgb(16 185 129)"
+              onMouseEnter={() => onHoverIndex(index)}
+              onMouseLeave={() => onHoverIndex(null)}
+            />
+            <circle
+              cx={index * step}
+              cy={toY(point.payables)}
+              r={activeIndex === index ? 1.6 : 1.1}
+              fill="rgb(245 158 11)"
+              onMouseEnter={() => onHoverIndex(index)}
+              onMouseLeave={() => onHoverIndex(null)}
+            />
+          </g>
+        ))}
+      </svg>
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-500" />Receivables</span>
+        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-amber-500" />Payables</span>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { roleName, can } = usePermissions();
   const { currentOrganization, currentOrganizationId } = useOrganization();
+  const [trendWindow, setTrendWindow] = useState<3 | 6 | 12>(6);
+  const [activeTrendIndex, setActiveTrendIndex] = useState<number | null>(null);
+  const organizationId = currentOrganizationId ?? undefined;
   const canReadNotifications = can("notifications.read");
-  const unreadQuery = useUnreadNotificationsQuery(currentOrganizationId, canReadNotifications);
-  const notificationsQuery = useNotificationsQuery(currentOrganizationId, canReadNotifications);
-  const settingsQuery = useOrganizationSettingsQuery(currentOrganizationId, Boolean(currentOrganizationId));
-  const onboardingQuery = useOnboardingStatus(currentOrganizationId ?? undefined, Boolean(currentOrganizationId));
+  const canReadInvoices = can("invoices.read");
+  const canReadBills = can("bills.read");
+  const unreadQuery = useUnreadNotificationsQuery(organizationId, canReadNotifications);
+  const notificationsQuery = useNotificationsQuery(organizationId, canReadNotifications);
+  const openInvoicesQuery = useOpenInvoices(organizationId, canReadInvoices);
+  const overdueInvoicesQuery = useOverdueInvoices(organizationId, canReadInvoices);
+  const openBillsQuery = useOpenBills(organizationId, canReadBills);
+  const overdueBillsQuery = useOverdueBills(organizationId, canReadBills);
+  const settingsQuery = useOrganizationSettingsQuery(organizationId, Boolean(organizationId));
+  const onboardingQuery = useOnboardingStatus(organizationId, Boolean(organizationId));
+  const openInvoices = openInvoicesQuery.data ?? [];
+  const overdueInvoices = overdueInvoicesQuery.data ?? [];
+  const openBills = openBillsQuery.data ?? [];
+  const overdueBills = overdueBillsQuery.data ?? [];
+  const receivablesOpenAmount = sumAmountDue(openInvoices);
+  const receivablesOverdueAmount = sumAmountDue(overdueInvoices);
+  const payablesOpenAmount = sumAmountDue(openBills);
+  const payablesOverdueAmount = sumAmountDue(overdueBills);
+  const receivablesExposure = receivablesOpenAmount + receivablesOverdueAmount;
+  const payablesExposure = payablesOpenAmount + payablesOverdueAmount;
+  const totalExposure = receivablesExposure + payablesExposure;
+  const receivablesRatio = totalExposure > 0 ? (receivablesExposure / totalExposure) * 100 : 0;
+  const payablesRatio = totalExposure > 0 ? (payablesExposure / totalExposure) * 100 : 0;
+  const receivablesUniverse = mergeUniqueById(openInvoices, overdueInvoices);
+  const payablesUniverse = mergeUniqueById(openBills, overdueBills);
+  const exposureSeries = useMemo(
+    () => buildExposureSeries(receivablesUniverse, payablesUniverse, trendWindow),
+    [payablesUniverse, receivablesUniverse, trendWindow],
+  );
+  const exposureSeriesMax = Math.max(
+    1,
+    ...exposureSeries.flatMap((point) => [point.receivables, point.payables]),
+  );
+  const focusedTrendPoint = exposureSeries[activeTrendIndex ?? exposureSeries.length - 1];
+  const financialLoading = openInvoicesQuery.isLoading || overdueInvoicesQuery.isLoading || openBillsQuery.isLoading || overdueBillsQuery.isLoading;
+  const overdueRows: OverdueRow[] = [
+    ...overdueInvoices.map((invoice) => ({
+      id: invoice.id,
+      type: "invoice" as const,
+      documentNumber: invoice.invoiceNumber,
+      counterpartyName: invoice.customerName ?? "Unknown customer",
+      dueDate: invoice.dueDate,
+      amountDue: invoice.amountDue,
+    })),
+    ...overdueBills.map((bill) => ({
+      id: bill.id,
+      type: "bill" as const,
+      documentNumber: bill.billNumber,
+      counterpartyName: bill.supplierName ?? "Unknown supplier",
+      dueDate: bill.dueDate,
+      amountDue: bill.amountDue,
+    })),
+  ]
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 6);
 
   if (!currentOrganization) {
     return <ErrorState title="No organization selected" description="Sign in again or switch to an organization to initialize the workspace." />;
@@ -76,6 +264,159 @@ export default function DashboardPage() {
             <p>{onboardingQuery.data?.next_recommended_action?.title ?? "Open Setup Center to continue onboarding."}</p>
             <Button asChild size="sm"><Link href="/setup">Continue setup</Link></Button>
           </div>
+        </SectionCard>
+
+        <SectionCard title="Receivables vs payables" description="Open and overdue invoice/bill exposure by amount due.">
+          {canReadInvoices || canReadBills ? (
+            financialLoading ? (
+              <div className="space-y-3">
+                <div className="h-14 animate-pulse rounded-xl bg-muted/40" />
+                <div className="h-14 animate-pulse rounded-xl bg-muted/40" />
+              </div>
+            ) : (
+              <div className="space-y-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Receivables exposure</span>
+                    <MoneyDisplay value={receivablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${receivablesRatio}%` }} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Payables exposure</span>
+                    <MoneyDisplay value={payablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div className="h-2 rounded-full bg-amber-500" style={{ width: `${payablesRatio}%` }} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+                  <span>Total open exposure</span>
+                  <MoneyDisplay value={totalExposure} currencyCode={currentOrganization.base_currency} />
+                </div>
+              </div>
+            )
+          ) : (
+            <p className="text-sm text-muted-foreground">Your current role does not include invoice or bill read access.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="AR vs AP trend" description="Outstanding exposure by due month (interactive).">
+          {financialLoading ? (
+            <div className="space-y-2">
+              <div className="h-28 animate-pulse rounded-xl bg-muted/40" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">
+                  {focusedTrendPoint ? `Focused month: ${focusedTrendPoint.label}` : "Hover points for details"}
+                </div>
+                <div className="flex items-center gap-1">
+                  {[3, 6, 12].map((months) => (
+                    <Button
+                      key={months}
+                      type="button"
+                      variant={trendWindow === months ? "default" : "ghost"}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        setTrendWindow(months as 3 | 6 | 12);
+                        setActiveTrendIndex(null);
+                      }}
+                    >
+                      {months}m
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <TrendChart
+                series={exposureSeries}
+                maxValue={exposureSeriesMax}
+                activeIndex={activeTrendIndex}
+                onHoverIndex={setActiveTrendIndex}
+              />
+              {focusedTrendPoint ? (
+                <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/70 bg-muted/20 p-2 text-xs">
+                  <div className="text-muted-foreground">Receivables <MoneyDisplay value={focusedTrendPoint.receivables} currencyCode={currentOrganization.base_currency} /></div>
+                  <div className="text-muted-foreground">Payables <MoneyDisplay value={focusedTrendPoint.payables} currencyCode={currentOrganization.base_currency} /></div>
+                </div>
+              ) : null}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {exposureSeries.map((point) => (
+                  <div key={point.label} className="rounded-lg border border-border/70 bg-muted/20 px-2 py-1.5 text-muted-foreground">
+                    <div className="mb-1 font-medium text-foreground">{point.label}</div>
+                    <div>AR <MoneyDisplay value={point.receivables} currencyCode={currentOrganization.base_currency} /></div>
+                    <div>AP <MoneyDisplay value={point.payables} currencyCode={currentOrganization.base_currency} /></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Attention queue" description="High-signal operational items that need follow-up.">
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+              <span className="text-muted-foreground">Overdue invoices</span>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
+                <Link href="/invoices">{overdueInvoices.length}</Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+              <span className="text-muted-foreground">Overdue bills</span>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
+                <Link href="/bills">{overdueBills.length}</Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+              <span className="text-muted-foreground">Unread notifications</span>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
+                <Link href="/notifications">{String(unreadQuery.data?.unread_count ?? 0)}</Link>
+              </Button>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Top overdue documents" description="Oldest outstanding invoices and bills by due date.">
+          {financialLoading ? (
+            <div className="space-y-2">
+              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
+              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
+              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
+            </div>
+          ) : overdueRows.length > 0 ? (
+            <div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-sm">
+              {overdueRows.map((row) => (
+                <div
+                  key={`${row.type}-${row.id}`}
+                  className="grid grid-cols-[auto,1fr,auto,auto] items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2"
+                >
+                  <Badge variant={row.type === "invoice" ? "default" : "secondary"} className="capitalize">
+                    {row.type}
+                  </Badge>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">{row.documentNumber} · {row.counterpartyName}</p>
+                    <p className="text-xs text-muted-foreground">Due {row.dueDate}</p>
+                  </div>
+                  <MoneyDisplay value={row.amountDue} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                  <div className="flex items-center gap-1">
+                    <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                      <Link href={row.type === "invoice" ? "/invoices" : `/bills/${row.id}`}>Review</Link>
+                    </Button>
+                    <Button asChild variant="secondary" size="sm" className="h-7 px-2 text-xs">
+                      <Link href={row.type === "invoice" ? "/customer-payments" : "/supplier-payments"}>Record payment</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No overdue invoices or bills. You are fully up to date.</p>
+          )}
         </SectionCard>
 
         <SectionCard title="Quick actions" description="The first feature prompts will replace these shortcuts with live accounting workflows.">
