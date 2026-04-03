@@ -47,7 +47,22 @@ if lsof -nP -iTCP:"$DB_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
 fi
 
 echo "🚀 Starting StarAcc backend + database (Docker Compose)..."
-docker compose up --build -d --force-recreate db api
+COMPOSE_UP_LOG="$(mktemp -t staracc_compose_up.XXXXXX.log)"
+if ! docker compose up --build -d --force-recreate db api >"$COMPOSE_UP_LOG" 2>&1; then
+  if [ "$DB_PORT" = "5432" ] && grep -qi "ports are not available" "$COMPOSE_UP_LOG"; then
+    echo "⚠️ Docker failed to bind host port 5432 even though no local listener was detected."
+    echo "   Retrying automatically with STARACC_DB_PORT=5433..."
+    export STARACC_DB_PORT=5433
+    DB_PORT=5433
+    docker compose up --build -d --force-recreate db api
+  else
+    cat "$COMPOSE_UP_LOG"
+    echo "❌ docker compose up failed. See output above."
+    rm -f "$COMPOSE_UP_LOG"
+    exit 1
+  fi
+fi
+rm -f "$COMPOSE_UP_LOG"
 
 echo "🗃️ Applying database migrations..."
 docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app alembic upgrade head"
