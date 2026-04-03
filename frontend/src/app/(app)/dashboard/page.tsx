@@ -6,10 +6,13 @@ import { BellRing, Building2, ShieldCheck, Sparkles } from "lucide-react";
 
 import { ErrorState } from "@/components/feedback/error-state";
 import { NotificationList } from "@/components/notifications/notification-list";
+import { MoneyDisplay } from "@/components/shared/money-display";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useOpenBills, useOverdueBills } from "@/features/bills/hooks";
+import { useOpenInvoices, useOverdueInvoices } from "@/features/invoices/hooks";
 import { useNotificationsQuery, useUnreadNotificationsQuery } from "@/features/notifications/hooks";
 import { usePermissions } from "@/features/permissions/hooks";
 import { useOnboardingStatus } from "@/features/onboarding/hooks";
@@ -30,15 +33,39 @@ function KpiCard({ label, value, hint, icon: Icon }: { label: string; value: str
   );
 }
 
+function sumAmountDue(items: Array<{ amountDue?: string | number | null }>): number {
+  return items.reduce((total, item) => total + Number(item.amountDue ?? 0), 0);
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { roleName, can } = usePermissions();
   const { currentOrganization, currentOrganizationId } = useOrganization();
+  const organizationId = currentOrganizationId ?? undefined;
   const canReadNotifications = can("notifications.read");
-  const unreadQuery = useUnreadNotificationsQuery(currentOrganizationId, canReadNotifications);
-  const notificationsQuery = useNotificationsQuery(currentOrganizationId, canReadNotifications);
-  const settingsQuery = useOrganizationSettingsQuery(currentOrganizationId, Boolean(currentOrganizationId));
-  const onboardingQuery = useOnboardingStatus(currentOrganizationId ?? undefined, Boolean(currentOrganizationId));
+  const canReadInvoices = can("invoices.read");
+  const canReadBills = can("bills.read");
+  const unreadQuery = useUnreadNotificationsQuery(organizationId, canReadNotifications);
+  const notificationsQuery = useNotificationsQuery(organizationId, canReadNotifications);
+  const openInvoicesQuery = useOpenInvoices(organizationId, canReadInvoices);
+  const overdueInvoicesQuery = useOverdueInvoices(organizationId, canReadInvoices);
+  const openBillsQuery = useOpenBills(organizationId, canReadBills);
+  const overdueBillsQuery = useOverdueBills(organizationId, canReadBills);
+  const settingsQuery = useOrganizationSettingsQuery(organizationId, Boolean(organizationId));
+  const onboardingQuery = useOnboardingStatus(organizationId, Boolean(organizationId));
+  const openInvoices = openInvoicesQuery.data ?? [];
+  const overdueInvoices = overdueInvoicesQuery.data ?? [];
+  const openBills = openBillsQuery.data ?? [];
+  const overdueBills = overdueBillsQuery.data ?? [];
+  const receivablesOpenAmount = sumAmountDue(openInvoices);
+  const receivablesOverdueAmount = sumAmountDue(overdueInvoices);
+  const payablesOpenAmount = sumAmountDue(openBills);
+  const payablesOverdueAmount = sumAmountDue(overdueBills);
+  const receivablesExposure = receivablesOpenAmount + receivablesOverdueAmount;
+  const payablesExposure = payablesOpenAmount + payablesOverdueAmount;
+  const totalExposure = receivablesExposure + payablesExposure;
+  const receivablesRatio = totalExposure > 0 ? (receivablesExposure / totalExposure) * 100 : 0;
+  const payablesRatio = totalExposure > 0 ? (payablesExposure / totalExposure) * 100 : 0;
 
   if (!currentOrganization) {
     return <ErrorState title="No organization selected" description="Sign in again or switch to an organization to initialize the workspace." />;
@@ -75,6 +102,50 @@ export default function DashboardPage() {
             <p>Progress: {onboardingQuery.data?.progress_percent ?? 0}% • Tier {onboardingQuery.data?.completion_tier ?? 0}</p>
             <p>{onboardingQuery.data?.next_recommended_action?.title ?? "Open Setup Center to continue onboarding."}</p>
             <Button asChild size="sm"><Link href="/setup">Continue setup</Link></Button>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Receivables vs payables" description="Open and overdue invoice/bill exposure by amount due.">
+          {canReadInvoices || canReadBills ? (
+            <div className="space-y-4 text-sm">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Receivables exposure</span>
+                  <MoneyDisplay value={receivablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                </div>
+                <div className="h-2 rounded-full bg-muted">
+                  <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${receivablesRatio}%` }} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Payables exposure</span>
+                  <MoneyDisplay value={payablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                </div>
+                <div className="h-2 rounded-full bg-muted">
+                  <div className="h-2 rounded-full bg-amber-500" style={{ width: `${payablesRatio}%` }} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Your current role does not include invoice or bill read access.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Attention queue" description="High-signal operational items that need follow-up.">
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+              <span className="text-muted-foreground">Overdue invoices</span>
+              <span className="font-medium text-foreground">{overdueInvoices.length}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+              <span className="text-muted-foreground">Overdue bills</span>
+              <span className="font-medium text-foreground">{overdueBills.length}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+              <span className="text-muted-foreground">Unread notifications</span>
+              <span className="font-medium text-foreground">{String(unreadQuery.data?.unread_count ?? 0)}</span>
+            </div>
           </div>
         </SectionCard>
 
