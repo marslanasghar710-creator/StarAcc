@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from enum import Enum
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -40,14 +41,20 @@ class AIRepository:
 
     def create_suggestion(self, **kwargs):
         status_value = kwargs.get("status", SuggestionStatus.PENDING)
-        kwargs["status"] = status_value.name if isinstance(status_value, SuggestionStatus) else str(status_value).upper()
+        kwargs["status"] = self._normalize_enum_value(status_value)
         source_value = kwargs.get("source_type")
         if source_value is not None:
-            kwargs["source_type"] = source_value.name if isinstance(source_value, SuggestionSourceType) else str(source_value).upper()
+            kwargs["source_type"] = self._normalize_enum_value(source_value)
         row = Suggestion(**kwargs)
         self.db.add(row)
         self.db.flush()
         return row
+
+    @staticmethod
+    def _normalize_enum_value(value):
+        if isinstance(value, Enum):
+            return value.name
+        return str(value).upper()
 
     def get_suggestion(self, organization_id, suggestion_id):
         return self.db.scalar(
