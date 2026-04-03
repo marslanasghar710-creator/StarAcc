@@ -403,3 +403,36 @@ class OnboardingTaskStatus(StrEnum):
     PENDING = "pending"
     COMPLETED = "completed"
     SKIPPED = "skipped"
+
+
+class BillingAccountStatus(StrEnum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    CLOSED = "closed"
+
+
+class BillingInterval(StrEnum):
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+
+
+class SubscriptionStatus(StrEnum):
+    TRIALING = "trialing"
+    ACTIVE = "active"
+    PAST_DUE = "past_due"
+    UNPAID = "unpaid"
+    CANCELED = "canceled"
+    INCOMPLETE = "incomplete"
+    INCOMPLETE_EXPIRED = "incomplete_expired"
+    EXPIRED = "expired"
+
+
+class BillingScopeType(StrEnum):
+    ORGANIZATION = "organization"
+    GROUP = "group"
+    ENTERPRISE = "enterprise"
+
+
+class EntitlementValueType(StrEnum):
+    BOOLEAN = "boolean"
+    LIMIT = "limit"
