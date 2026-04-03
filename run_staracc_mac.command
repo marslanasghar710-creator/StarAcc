@@ -32,6 +32,20 @@ if [ ! -f .env ] && [ -f .env.example ]; then
   echo "ℹ️ Created .env from .env.example"
 fi
 
+DB_PORT="${STARACC_DB_PORT:-5432}"
+if lsof -nP -iTCP:"$DB_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  if [ "$DB_PORT" = "5432" ]; then
+    echo "⚠️ Port 5432 is already in use on this machine."
+    echo "   Falling back to host port 5433 for the StarAcc database container."
+    export STARACC_DB_PORT=5433
+    DB_PORT=5433
+  else
+    echo "❌ Requested STARACC_DB_PORT=$DB_PORT is already in use."
+    echo "   Free that port or set a different STARACC_DB_PORT value before rerunning."
+    exit 1
+  fi
+fi
+
 echo "🚀 Starting StarAcc backend + database (Docker Compose)..."
 docker compose up --build -d --force-recreate db api
 
@@ -108,6 +122,7 @@ echo "✅ StarAcc full stack is starting in the background."
 echo "   Frontend: http://localhost:3000"
 echo "   API:      http://localhost:8000"
 echo "   API docs: http://localhost:8000/docs"
+echo "   DB host:  localhost:${DB_PORT}"
 echo
 echo "Useful commands:"
 echo "  Stop backend+db: docker compose down"
