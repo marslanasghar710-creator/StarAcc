@@ -500,15 +500,13 @@ def seed_transactions(
                 organization_id,
                 actor_user_id,
                 {
-                    "employee_number": f"EMP-{idx:03d}",
                     "first_name": f"Demo{idx}",
                     "last_name": "Employee",
                     "email": f"employee{idx:02d}@demo.staracc.local",
                     "status": "active",
                     "employment_type": "salaried",
                     "start_date": opening_date,
-                    "salary_amount": Decimal("5200") + idx * 220,
-                    "currency_code": "USD",
+                    "default_salary_amount": Decimal("5200") + idx * 220,
                     "payroll_expense_account_id": accounts.payroll,
                 },
             )
@@ -522,7 +520,6 @@ def seed_transactions(
                 organization_id,
                 actor_user_id,
                 {
-                    "name": f"Q{q + 1} Payroll",
                     "start_date": start,
                     "end_date": end,
                     "pay_date": end,
@@ -533,12 +530,16 @@ def seed_transactions(
 
     runs = payroll_service.list_runs(organization_id)
     if not runs:
-        for period in payroll_service.list_periods(organization_id)[:2]:
+        candidate_periods = [
+            period
+            for period in payroll_service.list_periods(organization_id)
+            if period.pay_date <= context.now.date()
+        ]
+        for period in candidate_periods[:2]:
             run = payroll_service.create_run(
                 organization_id,
                 actor_user_id,
                 {
-                    "name": f"{period.name} Run",
                     "payroll_period_id": period.id,
                     "funding_account_id": accounts.cash_main,
                     "default_expense_account_id": accounts.payroll,
