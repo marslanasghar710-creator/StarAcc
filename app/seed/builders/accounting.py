@@ -530,7 +530,12 @@ def seed_transactions(
 
     runs = payroll_service.list_runs(organization_id)
     if not runs:
-        for period in payroll_service.list_periods(organization_id)[:2]:
+        candidate_periods = [
+            period
+            for period in payroll_service.list_periods(organization_id)
+            if period.pay_date <= context.now.date()
+        ]
+        for period in candidate_periods[:2]:
             run = payroll_service.create_run(
                 organization_id,
                 actor_user_id,
