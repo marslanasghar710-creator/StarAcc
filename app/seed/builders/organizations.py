@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import timedelta
 
 from sqlalchemy import select
@@ -81,6 +82,31 @@ def ensure_demo_users(context: SeedContext, organization_id, scenario_key: str) 
             )
             context.db.add(membership)
         users[key] = user
+
+    # In local/dev environments, attach the seeded admin login (if present) so
+    # the UI user from scripts/seed_dev_admin.py can immediately see demo data.
+    dev_admin_email = os.getenv("STARACC_DEV_ADMIN_EMAIL", "admin@staracc.dev").strip().lower()
+    dev_admin = context.db.scalar(select(User).where(User.email == dev_admin_email))
+    if dev_admin:
+        membership = context.db.scalar(
+            select(OrganizationUser).where(
+                OrganizationUser.organization_id == organization_id,
+                OrganizationUser.user_id == dev_admin.id,
+                OrganizationUser.deleted_at.is_(None),
+            )
+        )
+        if not membership:
+            context.db.add(
+                OrganizationUser(
+                    organization_id=organization_id,
+                    user_id=dev_admin.id,
+                    role_id=role_map["admin"].id,
+                    is_default=False,
+                    status=MembershipStatus.ACTIVE,
+                    joined_at=context.now,
+                )
+            )
+        users["dev_admin"] = dev_admin
 
     context.db.flush()
     return users
