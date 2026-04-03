@@ -37,6 +37,15 @@ function sumAmountDue(items: Array<{ amountDue?: string | number | null }>): num
   return items.reduce((total, item) => total + Number(item.amountDue ?? 0), 0);
 }
 
+type OverdueRow = {
+  id: string;
+  type: "invoice" | "bill";
+  documentNumber: string;
+  counterpartyName: string;
+  dueDate: string;
+  amountDue: string | number;
+};
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { roleName, can } = usePermissions();
@@ -66,6 +75,27 @@ export default function DashboardPage() {
   const totalExposure = receivablesExposure + payablesExposure;
   const receivablesRatio = totalExposure > 0 ? (receivablesExposure / totalExposure) * 100 : 0;
   const payablesRatio = totalExposure > 0 ? (payablesExposure / totalExposure) * 100 : 0;
+  const financialLoading = openInvoicesQuery.isLoading || overdueInvoicesQuery.isLoading || openBillsQuery.isLoading || overdueBillsQuery.isLoading;
+  const overdueRows: OverdueRow[] = [
+    ...overdueInvoices.map((invoice) => ({
+      id: invoice.id,
+      type: "invoice" as const,
+      documentNumber: invoice.invoiceNumber,
+      counterpartyName: invoice.customerName ?? "Unknown customer",
+      dueDate: invoice.dueDate,
+      amountDue: invoice.amountDue,
+    })),
+    ...overdueBills.map((bill) => ({
+      id: bill.id,
+      type: "bill" as const,
+      documentNumber: bill.billNumber,
+      counterpartyName: bill.supplierName ?? "Unknown supplier",
+      dueDate: bill.dueDate,
+      amountDue: bill.amountDue,
+    })),
+  ]
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 6);
 
   if (!currentOrganization) {
     return <ErrorState title="No organization selected" description="Sign in again or switch to an organization to initialize the workspace." />;
@@ -107,26 +137,37 @@ export default function DashboardPage() {
 
         <SectionCard title="Receivables vs payables" description="Open and overdue invoice/bill exposure by amount due.">
           {canReadInvoices || canReadBills ? (
-            <div className="space-y-4 text-sm">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Receivables exposure</span>
-                  <MoneyDisplay value={receivablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+            financialLoading ? (
+              <div className="space-y-3">
+                <div className="h-14 animate-pulse rounded-xl bg-muted/40" />
+                <div className="h-14 animate-pulse rounded-xl bg-muted/40" />
+              </div>
+            ) : (
+              <div className="space-y-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Receivables exposure</span>
+                    <MoneyDisplay value={receivablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${receivablesRatio}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 rounded-full bg-muted">
-                  <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${receivablesRatio}%` }} />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Payables exposure</span>
+                    <MoneyDisplay value={payablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div className="h-2 rounded-full bg-amber-500" style={{ width: `${payablesRatio}%` }} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+                  <span>Total open exposure</span>
+                  <MoneyDisplay value={totalExposure} currencyCode={currentOrganization.base_currency} />
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Payables exposure</span>
-                  <MoneyDisplay value={payablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
-                </div>
-                <div className="h-2 rounded-full bg-muted">
-                  <div className="h-2 rounded-full bg-amber-500" style={{ width: `${payablesRatio}%` }} />
-                </div>
-              </div>
-            </div>
+            )
           ) : (
             <p className="text-sm text-muted-foreground">Your current role does not include invoice or bill read access.</p>
           )}
@@ -136,17 +177,55 @@ export default function DashboardPage() {
           <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
               <span className="text-muted-foreground">Overdue invoices</span>
-              <span className="font-medium text-foreground">{overdueInvoices.length}</span>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
+                <Link href="/invoices">{overdueInvoices.length}</Link>
+              </Button>
             </div>
             <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
               <span className="text-muted-foreground">Overdue bills</span>
-              <span className="font-medium text-foreground">{overdueBills.length}</span>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
+                <Link href="/bills">{overdueBills.length}</Link>
+              </Button>
             </div>
             <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
               <span className="text-muted-foreground">Unread notifications</span>
-              <span className="font-medium text-foreground">{String(unreadQuery.data?.unread_count ?? 0)}</span>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
+                <Link href="/notifications">{String(unreadQuery.data?.unread_count ?? 0)}</Link>
+              </Button>
             </div>
           </div>
+        </SectionCard>
+
+        <SectionCard title="Top overdue documents" description="Oldest outstanding invoices and bills by due date.">
+          {financialLoading ? (
+            <div className="space-y-2">
+              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
+              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
+              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
+            </div>
+          ) : overdueRows.length > 0 ? (
+            <div className="space-y-2 text-sm">
+              {overdueRows.map((row) => (
+                <Link
+                  key={`${row.type}-${row.id}`}
+                  href={row.type === "invoice" ? `/invoices/${row.id}` : `/bills/${row.id}`}
+                  className="grid grid-cols-[auto,1fr,auto,auto] items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 hover:bg-muted/40"
+                >
+                  <Badge variant={row.type === "invoice" ? "default" : "secondary"} className="capitalize">
+                    {row.type}
+                  </Badge>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">{row.documentNumber} · {row.counterpartyName}</p>
+                    <p className="text-xs text-muted-foreground">Due {row.dueDate}</p>
+                  </div>
+                  <MoneyDisplay value={row.amountDue} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+                  <span className="text-xs text-muted-foreground">View</span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No overdue invoices or bills. You are fully up to date.</p>
+          )}
         </SectionCard>
 
         <SectionCard title="Quick actions" description="The first feature prompts will replace these shortcuts with live accounting workflows.">
