@@ -14,6 +14,9 @@ export const queryKeys = {
     settings: (organizationId: string) => ["organizations", organizationId, "settings"] as const,
     members: (organizationId: string) => ["organizations", organizationId, "members"] as const,
   },
+  dashboard: {
+    overview: (organizationId: string) => ["dashboard", organizationId, "overview"] as const,
+  },
   billing: {
     publicPlans: ["billing", "public-plans"] as const,
     state: (organizationId: string) => ["billing", organizationId, "state"] as const,
