@@ -44,6 +44,27 @@ docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/se
 echo "🔐 Seeding local admin login (dev only)..."
 docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/seed_dev_admin.py"
 
+if [ "${STARACC_SEED_DEMO_DATA:-1}" = "1" ]; then
+  DEMO_SCENARIO="${STARACC_DEMO_SCENARIO:-demo_company_us}"
+  DEMO_MARKER_FILE="$SCRIPT_DIR/.staracc_demo_seeded_${DEMO_SCENARIO}"
+  DEMO_FORCE_RESEED="${STARACC_DEMO_RESEED:-0}"
+  DEMO_RESET_FLAG=""
+  if [ "${STARACC_DEMO_RESET:-0}" = "1" ]; then
+    DEMO_RESET_FLAG="--reset"
+  fi
+
+  if [ ! -f "$DEMO_MARKER_FILE" ] || [ "$DEMO_FORCE_RESEED" = "1" ]; then
+    echo "📦 Seeding demo data scenario '${DEMO_SCENARIO}'..."
+    docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/seed_demo_data.py --scenario ${DEMO_SCENARIO} ${DEMO_RESET_FLAG}"
+    touch "$DEMO_MARKER_FILE"
+  else
+    echo "ℹ️ Demo data already seeded for '${DEMO_SCENARIO}' (marker: $DEMO_MARKER_FILE)."
+    echo "   Set STARACC_DEMO_RESEED=1 to force reseeding."
+  fi
+else
+  echo "ℹ️ Skipping demo data seeding (set STARACC_SEED_DEMO_DATA=1 to enable)."
+fi
+
 
 echo "⏳ Waiting for API to become reachable on http://localhost:8000/health ..."
 API_READY=0
@@ -93,3 +114,4 @@ echo "  Stop backend+db: docker compose down"
 echo "  Stop frontend:   kill \"\$(cat frontend/.frontend-dev.pid)\" && rm -f frontend/.frontend-dev.pid"
 echo "  API logs:        docker compose logs -f api"
 echo "  Frontend logs:   tail -f frontend/frontend.dev.log"
+echo "  Force reseed:    STARACC_DEMO_RESEED=1 STARACC_DEMO_RESET=1 ./run_staracc_mac.command"
