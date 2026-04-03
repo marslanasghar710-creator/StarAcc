@@ -103,6 +103,35 @@ function mergeUniqueById<T extends { id: string }>(...lists: T[][]): T[] {
   return Array.from(merged.values());
 }
 
+function TrendChart({ series, maxValue }: { series: MonthlySeriesPoint[]; maxValue: number }) {
+  if (series.length === 0) {
+    return <div className="h-40 rounded-xl border border-dashed border-border/80 bg-muted/20" />;
+  }
+  const chartWidth = 100;
+  const chartHeight = 48;
+  const step = series.length > 1 ? chartWidth / (series.length - 1) : chartWidth;
+  const toY = (value: number) => {
+    const normalized = Math.max(0, Math.min(1, value / Math.max(maxValue, 1)));
+    return chartHeight - normalized * 34 - 6;
+  };
+  const receivablesPoints = series.map((point, index) => `${index * step},${toY(point.receivables)}`).join(" ");
+  const payablesPoints = series.map((point, index) => `${index * step},${toY(point.payables)}`).join(" ");
+
+  return (
+    <div className="space-y-2">
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-40 w-full rounded-xl border border-border/70 bg-gradient-to-b from-muted/10 to-muted/30 p-2">
+        <line x1="0" y1={chartHeight - 6} x2={chartWidth} y2={chartHeight - 6} stroke="currentColor" className="text-border/80" strokeWidth="0.5" />
+        <polyline points={receivablesPoints} fill="none" stroke="rgb(16 185 129)" strokeWidth="1.8" strokeLinecap="round" />
+        <polyline points={payablesPoints} fill="none" stroke="rgb(245 158 11)" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-500" />Receivables</span>
+        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-amber-500" />Payables</span>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { roleName, can } = usePermissions();
@@ -243,24 +272,17 @@ export default function DashboardPage() {
               <div className="h-28 animate-pulse rounded-xl bg-muted/40" />
             </div>
           ) : (
-            <div className="space-y-3">
-              {exposureSeries.map((point) => (
-                <div key={point.label} className="grid grid-cols-[2.5rem,1fr,auto] items-center gap-3 text-xs">
-                  <span className="text-muted-foreground">{point.label}</span>
-                  <div className="space-y-1">
-                    <div className="h-2 rounded-full bg-muted">
-                      <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${(point.receivables / exposureSeriesMax) * 100}%` }} />
-                    </div>
-                    <div className="h-2 rounded-full bg-muted">
-                      <div className="h-2 rounded-full bg-amber-500" style={{ width: `${(point.payables / exposureSeriesMax) * 100}%` }} />
-                    </div>
-                  </div>
-                  <div className="text-right text-muted-foreground">
+            <div className="space-y-4">
+              <TrendChart series={exposureSeries} maxValue={exposureSeriesMax} />
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {exposureSeries.map((point) => (
+                  <div key={point.label} className="rounded-lg border border-border/70 bg-muted/20 px-2 py-1.5 text-muted-foreground">
+                    <div className="mb-1 font-medium text-foreground">{point.label}</div>
                     <div>AR <MoneyDisplay value={point.receivables} currencyCode={currentOrganization.base_currency} /></div>
                     <div>AP <MoneyDisplay value={point.payables} currencyCode={currentOrganization.base_currency} /></div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </SectionCard>
