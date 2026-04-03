@@ -44,6 +44,18 @@ docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/se
 echo "🔐 Seeding local admin login (dev only)..."
 docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/seed_dev_admin.py"
 
+if [ "${STARACC_SEED_DEMO_DATA:-1}" = "1" ]; then
+  DEMO_SCENARIO="${STARACC_DEMO_SCENARIO:-demo_company_us}"
+  DEMO_RESET_FLAG=""
+  if [ "${STARACC_DEMO_RESET:-1}" = "1" ]; then
+    DEMO_RESET_FLAG="--reset"
+  fi
+  echo "📦 Seeding demo data scenario '${DEMO_SCENARIO}'..."
+  docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app python scripts/seed_demo_data.py --scenario ${DEMO_SCENARIO} ${DEMO_RESET_FLAG}"
+else
+  echo "ℹ️ Skipping demo data seeding (set STARACC_SEED_DEMO_DATA=1 to enable)."
+fi
+
 
 echo "⏳ Waiting for API to become reachable on http://localhost:8000/health ..."
 API_READY=0
