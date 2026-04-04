@@ -6,8 +6,9 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import and_, case, func, inspect, select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.enums import BankTransactionStatus, BillStatus, IntegrationConnectionStatus, InvoiceStatus, SubscriptionStatus
 from app.db.models.ap import Bill
@@ -42,6 +43,13 @@ class _Exposure:
 class DashboardService:
     def __init__(self, db: Session):
         self.db = db
+        self._inspector = inspect(self.db.bind)
+
+    def _has_table(self, table_name: str) -> bool:
+        try:
+            return self._inspector.has_table(table_name)
+        except SQLAlchemyError:
+            return False
 
     def overview(self, organization_id: str) -> DashboardOverviewResponse:
         org_uuid = UUID(organization_id)
@@ -52,7 +60,12 @@ class DashboardService:
         payables = self._bill_exposure(org_uuid, today)
         cash_balance, month_cash_movement = self._cash_metrics(org_uuid, month_start)
         month_revenue, month_expenses = self._month_profitability(org_uuid, month_start)
-        onboarding = self.db.scalar(select(OrgOnboardingStatus).where(OrgOnboardingStatus.organization_id == org_uuid))
+        onboarding = None
+        if self._has_table("org_onboarding_status"):
+            try:
+                onboarding = self.db.scalar(select(OrgOnboardingStatus).where(OrgOnboardingStatus.organization_id == org_uuid))
+            except SQLAlchemyError:
+                onboarding = None
 
         summary_metrics = [
             DashboardMetric(key="cash_balance", label="Cash position", value=float(cash_balance), route="/banking", currency_code="USD", delta=float(month_cash_movement)),
@@ -199,13 +212,18 @@ class DashboardService:
                 )
             )
 
-        failed_syncs = self.db.scalar(
-            select(func.count(IntegrationConnection.id)).where(
-                IntegrationConnection.organization_id == org_uuid,
-                IntegrationConnection.deleted_at.is_(None),
-                IntegrationConnection.status.in_([IntegrationConnectionStatus.FAILED, IntegrationConnectionStatus.DEGRADED, IntegrationConnectionStatus.REQUIRES_REAUTH]),
-            )
-        ) or 0
+        failed_syncs = 0
+        if self._has_table("integration_connections"):
+            try:
+                failed_syncs = self.db.scalar(
+                    select(func.count(IntegrationConnection.id)).where(
+                        IntegrationConnection.organization_id == org_uuid,
+                        IntegrationConnection.deleted_at.is_(None),
+                        IntegrationConnection.status.in_([IntegrationConnectionStatus.FAILED, IntegrationConnectionStatus.DEGRADED, IntegrationConnectionStatus.REQUIRES_REAUTH]),
+                    )
+                ) or 0
+            except SQLAlchemyError:
+                failed_syncs = 0
         if failed_syncs:
             attention.append(
                 DashboardAttentionItem(
@@ -218,17 +236,22 @@ class DashboardService:
                 )
             )
 
-        trial_ending = self.db.scalar(
-            select(func.count(Subscription.id))
-            .select_from(Subscription)
-            .join(BillingAccount, BillingAccount.id == Subscription.billing_account_id)
-            .where(
-                BillingAccount.organization_id == org_uuid,
-                Subscription.status == SubscriptionStatus.TRIALING,
-                Subscription.trial_end_at.is_not(None),
-                Subscription.trial_end_at <= (today.replace(day=min(today.day + 7, 28)).isoformat()),
-            )
-        ) or 0
+        trial_ending = 0
+        if self._has_table("billing_accounts") and self._has_table("subscriptions"):
+            try:
+                trial_ending = self.db.scalar(
+                    select(func.count(Subscription.id))
+                    .select_from(Subscription)
+                    .join(BillingAccount, BillingAccount.id == Subscription.billing_account_id)
+                    .where(
+                        BillingAccount.organization_id == org_uuid,
+                        Subscription.status == SubscriptionStatus.TRIALING,
+                        Subscription.trial_end_at.is_not(None),
+                        Subscription.trial_end_at <= (today.replace(day=min(today.day + 7, 28)).isoformat()),
+                    )
+                ) or 0
+            except SQLAlchemyError:
+                trial_ending = 0
         if trial_ending:
             attention.append(
                 DashboardAttentionItem(
