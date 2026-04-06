@@ -1,438 +1,271 @@
 "use client";
 
-import type { ComponentType } from "react";
-import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BellRing, Building2, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight, CircleCheck, Clock3, RefreshCw, TrendingDown, TrendingUp, WalletCards } from "lucide-react";
 
 import { ErrorState } from "@/components/feedback/error-state";
-import { NotificationList } from "@/components/notifications/notification-list";
-import { MoneyDisplay } from "@/components/shared/money-display";
 import { PageHeader } from "@/components/layout/page-header";
+import { MoneyDisplay } from "@/components/shared/money-display";
 import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useOpenBills, useOverdueBills } from "@/features/bills/hooks";
-import { useOpenInvoices, useOverdueInvoices } from "@/features/invoices/hooks";
-import { useNotificationsQuery, useUnreadNotificationsQuery } from "@/features/notifications/hooks";
-import { usePermissions } from "@/features/permissions/hooks";
-import { useOnboardingStatus } from "@/features/onboarding/hooks";
-import { useOrganizationSettingsQuery } from "@/features/organizations/hooks";
-import { useAuth } from "@/providers/auth-provider";
+import { useDashboardOverview } from "@/features/dashboard/hooks";
+import type { WidgetEnvelope } from "@/features/dashboard/types";
 import { useOrganization } from "@/providers/organization-provider";
 
-function KpiCard({ label, value, hint, icon: Icon }: { label: string; value: string; hint: string; icon: ComponentType<{ className?: string }> }) {
+function widgetByKey(widgets: WidgetEnvelope[], key: string) {
+  return widgets.find((widget) => widget.widgetKey === key);
+}
+
+function statusTone(status: string) {
+  if (status === "warning") return "secondary" as const;
+  if (status === "error") return "danger" as const;
+  return "outline" as const;
+}
+
+function DashboardLoadingSkeleton() {
   return (
-    <SectionCard title={label} description={hint}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-3xl font-semibold tracking-tight text-foreground">{value}</p>
-        <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Icon className="size-5" />
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-function sumAmountDue(items: Array<{ amountDue?: string | number | null }>): number {
-  return items.reduce((total, item) => total + Number(item.amountDue ?? 0), 0);
-}
-
-type OverdueRow = {
-  id: string;
-  type: "invoice" | "bill";
-  documentNumber: string;
-  counterpartyName: string;
-  dueDate: string;
-  amountDue: string | number;
-};
-
-type MonthlySeriesPoint = {
-  label: string;
-  receivables: number;
-  payables: number;
-};
-
-function monthlyLabel(date: Date): string {
-  return date.toLocaleDateString(undefined, { month: "short" });
-}
-
-function toMonthKey(date: Date): string {
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
-function buildExposureSeries(
-  receivableItems: Array<{ dueDate: string; amountDue: string | number }>,
-  payableItems: Array<{ dueDate: string; amountDue: string | number }>,
-  months: number,
-): MonthlySeriesPoint[] {
-  const monthStarts = Array.from({ length: months }, (_, index) => {
-    const date = new Date();
-    date.setUTCDate(1);
-    date.setUTCHours(0, 0, 0, 0);
-    date.setUTCMonth(date.getUTCMonth() - (months - 1 - index));
-    return date;
-  });
-  const seed = new Map(monthStarts.map((month) => [toMonthKey(month), { label: monthlyLabel(month), receivables: 0, payables: 0 }]));
-
-  for (const item of receivableItems) {
-    const due = new Date(item.dueDate);
-    if (Number.isNaN(due.getTime())) continue;
-    const key = toMonthKey(new Date(Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), 1)));
-    const current = seed.get(key);
-    if (!current) continue;
-    current.receivables += Number(item.amountDue ?? 0);
-  }
-  for (const item of payableItems) {
-    const due = new Date(item.dueDate);
-    if (Number.isNaN(due.getTime())) continue;
-    const key = toMonthKey(new Date(Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), 1)));
-    const current = seed.get(key);
-    if (!current) continue;
-    current.payables += Number(item.amountDue ?? 0);
-  }
-
-  return Array.from(seed.values());
-}
-
-function mergeUniqueById<T extends { id: string }>(...lists: T[][]): T[] {
-  const merged = new Map<string, T>();
-  for (const list of lists) {
-    for (const item of list) {
-      merged.set(item.id, item);
-    }
-  }
-  return Array.from(merged.values());
-}
-
-function TrendChart({
-  series,
-  maxValue,
-  activeIndex,
-  onHoverIndex,
-}: {
-  series: MonthlySeriesPoint[];
-  maxValue: number;
-  activeIndex: number | null;
-  onHoverIndex: (index: number | null) => void;
-}) {
-  if (series.length === 0) {
-    return <div className="h-40 rounded-xl border border-dashed border-border/80 bg-muted/20" />;
-  }
-  const chartWidth = 100;
-  const chartHeight = 48;
-  const step = series.length > 1 ? chartWidth / (series.length - 1) : chartWidth;
-  const toY = (value: number) => {
-    const normalized = Math.max(0, Math.min(1, value / Math.max(maxValue, 1)));
-    return chartHeight - normalized * 34 - 6;
-  };
-  const receivablesPoints = series.map((point, index) => `${index * step},${toY(point.receivables)}`).join(" ");
-  const payablesPoints = series.map((point, index) => `${index * step},${toY(point.payables)}`).join(" ");
-
-  return (
-    <div className="space-y-2">
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-40 w-full rounded-xl border border-border/70 bg-gradient-to-b from-muted/10 to-muted/30 p-2">
-        <line x1="0" y1={chartHeight - 6} x2={chartWidth} y2={chartHeight - 6} stroke="currentColor" className="text-border/80" strokeWidth="0.5" />
-        <polyline points={receivablesPoints} fill="none" stroke="rgb(16 185 129)" strokeWidth="1.8" strokeLinecap="round" />
-        <polyline points={payablesPoints} fill="none" stroke="rgb(245 158 11)" strokeWidth="1.8" strokeLinecap="round" />
-        {series.map((point, index) => (
-          <g key={point.label}>
-            <circle
-              cx={index * step}
-              cy={toY(point.receivables)}
-              r={activeIndex === index ? 1.6 : 1.1}
-              fill="rgb(16 185 129)"
-              onMouseEnter={() => onHoverIndex(index)}
-              onMouseLeave={() => onHoverIndex(null)}
-            />
-            <circle
-              cx={index * step}
-              cy={toY(point.payables)}
-              r={activeIndex === index ? 1.6 : 1.1}
-              fill="rgb(245 158 11)"
-              onMouseEnter={() => onHoverIndex(index)}
-              onMouseLeave={() => onHoverIndex(null)}
-            />
-          </g>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, idx) => (
+          <div key={`summary-${idx}`} className="h-36 animate-pulse rounded-xl bg-muted/40" />
         ))}
-      </svg>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-500" />Receivables</span>
-        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-amber-500" />Payables</span>
+      </div>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="h-72 animate-pulse rounded-xl bg-muted/40 xl:col-span-5" />
+        <div className="h-72 animate-pulse rounded-xl bg-muted/40 xl:col-span-7" />
       </div>
     </div>
   );
 }
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const { roleName, can } = usePermissions();
-  const { currentOrganization, currentOrganizationId } = useOrganization();
-  const [trendWindow, setTrendWindow] = useState<3 | 6 | 12>(6);
-  const [activeTrendIndex, setActiveTrendIndex] = useState<number | null>(null);
-  const organizationId = currentOrganizationId ?? undefined;
-  const canReadNotifications = can("notifications.read");
-  const canReadInvoices = can("invoices.read");
-  const canReadBills = can("bills.read");
-  const unreadQuery = useUnreadNotificationsQuery(organizationId, canReadNotifications);
-  const notificationsQuery = useNotificationsQuery(organizationId, canReadNotifications);
-  const openInvoicesQuery = useOpenInvoices(organizationId, canReadInvoices);
-  const overdueInvoicesQuery = useOverdueInvoices(organizationId, canReadInvoices);
-  const openBillsQuery = useOpenBills(organizationId, canReadBills);
-  const overdueBillsQuery = useOverdueBills(organizationId, canReadBills);
-  const settingsQuery = useOrganizationSettingsQuery(organizationId, Boolean(organizationId));
-  const onboardingQuery = useOnboardingStatus(organizationId, Boolean(organizationId));
-  const openInvoices = openInvoicesQuery.data ?? [];
-  const overdueInvoices = overdueInvoicesQuery.data ?? [];
-  const openBills = openBillsQuery.data ?? [];
-  const overdueBills = overdueBillsQuery.data ?? [];
-  const receivablesOpenAmount = sumAmountDue(openInvoices);
-  const receivablesOverdueAmount = sumAmountDue(overdueInvoices);
-  const payablesOpenAmount = sumAmountDue(openBills);
-  const payablesOverdueAmount = sumAmountDue(overdueBills);
-  const receivablesExposure = receivablesOpenAmount + receivablesOverdueAmount;
-  const payablesExposure = payablesOpenAmount + payablesOverdueAmount;
-  const totalExposure = receivablesExposure + payablesExposure;
-  const receivablesRatio = totalExposure > 0 ? (receivablesExposure / totalExposure) * 100 : 0;
-  const payablesRatio = totalExposure > 0 ? (payablesExposure / totalExposure) * 100 : 0;
-  const receivablesUniverse = mergeUniqueById(openInvoices, overdueInvoices);
-  const payablesUniverse = mergeUniqueById(openBills, overdueBills);
-  const exposureSeries = useMemo(
-    () => buildExposureSeries(receivablesUniverse, payablesUniverse, trendWindow),
-    [payablesUniverse, receivablesUniverse, trendWindow],
-  );
-  const exposureSeriesMax = Math.max(
-    1,
-    ...exposureSeries.flatMap((point) => [point.receivables, point.payables]),
-  );
-  const focusedTrendPoint = exposureSeries[activeTrendIndex ?? exposureSeries.length - 1];
-  const financialLoading = openInvoicesQuery.isLoading || overdueInvoicesQuery.isLoading || openBillsQuery.isLoading || overdueBillsQuery.isLoading;
-  const overdueRows: OverdueRow[] = [
-    ...overdueInvoices.map((invoice) => ({
-      id: invoice.id,
-      type: "invoice" as const,
-      documentNumber: invoice.invoiceNumber,
-      counterpartyName: invoice.customerName ?? "Unknown customer",
-      dueDate: invoice.dueDate,
-      amountDue: invoice.amountDue,
-    })),
-    ...overdueBills.map((bill) => ({
-      id: bill.id,
-      type: "bill" as const,
-      documentNumber: bill.billNumber,
-      counterpartyName: bill.supplierName ?? "Unknown supplier",
-      dueDate: bill.dueDate,
-      amountDue: bill.amountDue,
-    })),
-  ]
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-    .slice(0, 6);
+function SummaryCard({ widget, currency }: { widget: WidgetEnvelope; currency: string }) {
+  const payload = widget.payload ?? {};
+  const money = ((payload.totalCashBalance as { amount?: string } | undefined)?.amount
+    ?? (payload.totalOutstanding as { amount?: string } | undefined)?.amount
+    ?? (payload.netResult as { amount?: string } | undefined)?.amount
+    ?? (payload.amount as { amount?: string } | undefined)?.amount
+    ?? "0");
 
-  if (!currentOrganization) {
-    return <ErrorState title="No organization selected" description="Sign in again or switch to an organization to initialize the workspace." />;
-  }
+  const deltaDirection = (payload.delta as { direction?: string } | undefined)?.direction;
+  const deltaAmount = (payload.delta as { amount?: string } | undefined)?.amount;
 
   return (
-    <div className="space-y-6">
+    <SectionCard title={widget.title} description={widget.subtitle ?? ""}>
+      <div className="space-y-2">
+        <MoneyDisplay value={money} currencyCode={currency} className="text-2xl font-semibold tracking-tight text-foreground" />
+        {deltaAmount ? (
+          <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-600" /> : <TrendingUp className="size-3 text-emerald-600" />}
+            MTD <MoneyDisplay value={deltaAmount} currencyCode={currency} />
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Current reporting period</p>
+        )}
+        {widget.drilldownTarget?.route ? (
+          <Button asChild variant="link" className="h-auto p-0 text-xs">
+            <Link href={widget.drilldownTarget.route}>{widget.drilldownTarget.label ?? "Open detail"}</Link>
+          </Button>
+        ) : null}
+      </div>
+    </SectionCard>
+  );
+}
+
+export default function DashboardPage() {
+  const { currentOrganization, currentOrganizationId } = useOrganization();
+  const dashboardQuery = useDashboardOverview(currentOrganizationId ?? undefined, Boolean(currentOrganizationId));
+
+  if (!currentOrganization) {
+    return <ErrorState title="No organization selected" description="Switch to an organization to load dashboard state." />;
+  }
+
+  if (dashboardQuery.isError) {
+    return <ErrorState title="Dashboard unavailable" description="We couldn't load your dashboard overview." onRetry={() => void dashboardQuery.refetch()} />;
+  }
+
+  const data = dashboardQuery.data;
+
+  if (dashboardQuery.isLoading || !data) {
+    return <DashboardLoadingSkeleton />;
+  }
+
+  const currency = data.summary.currency || currentOrganization.base_currency;
+  const maturity = data.dashboardContext.maturityState;
+
+  const summaryWidgets = [
+    "cash_position_summary",
+    "receivables_outstanding_summary",
+    "payables_outstanding_summary",
+    "revenue_this_month_summary",
+    "expenses_this_month_summary",
+    "net_result_this_month_summary",
+  ]
+    .map((key) => widgetByKey(data.widgets, key))
+    .filter((widget): widget is WidgetEnvelope => Boolean(widget && widget.applicable));
+
+  const attention = widgetByKey(data.widgets, "attention_center");
+  const trend = widgetByKey(data.widgets, "revenue_vs_expenses_trend");
+  const aging = widgetByKey(data.widgets, "aging_distribution");
+  const invoiceWorkflow = widgetByKey(data.widgets, "invoice_workflow_summary");
+  const billWorkflow = widgetByKey(data.widgets, "bill_workflow_summary");
+  const recommendations = widgetByKey(data.widgets, "recommended_next_actions");
+  const activity = widgetByKey(data.widgets, "recent_activity");
+  const onboarding = widgetByKey(data.widgets, "onboarding_progress");
+  const billing = widgetByKey(data.widgets, "billing_subscription_status");
+  const integrations = widgetByKey(data.widgets, "integration_health_summary");
+
+  const attentionItems = ((attention?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
+  const trendPeriods = ((trend?.payload?.periods as Array<Record<string, unknown>> | undefined) ?? []);
+  const agingBuckets = ((aging?.payload?.buckets as Array<Record<string, unknown>> | undefined) ?? []);
+  const recommendationItems = ((recommendations?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
+  const activityItems = ((activity?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
+
+  return (
+    <div className="space-y-7 px-1 pb-2 pt-1 md:px-2">
       <PageHeader
         eyebrow="Dashboard"
-        title={`Welcome back${user?.email ? `, ${user.email}` : ""}`}
-        description="This shell stays backend-driven: it reflects your current organization, effective role, and notification state without inventing accounting data prematurely."
-        actions={<Badge variant="secondary" className="capitalize">{roleName ?? "Unassigned role"}</Badge>}
+        title="Finance command center"
+        description={`${data.dashboardContext.scopeLabel} • ${data.dashboardContext.periodLabel}`}
+        actions={(
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="capitalize">{maturity} org profile</Badge>
+            <Button type="button" variant="outline" size="sm" onClick={() => void dashboardQuery.refetch()}>
+              <RefreshCw className="mr-1.5 size-3.5" /> Refresh
+            </Button>
+          </div>
+        )}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Active organization" value={currentOrganization.name} hint={`${currentOrganization.base_currency} • ${currentOrganization.timezone}`} icon={Building2} />
-        <KpiCard label="Unread notifications" value={String(unreadQuery.data?.unread_count ?? 0)} hint="Live organization-scoped inbox status." icon={BellRing} />
-        <KpiCard label="Tax enabled" value={settingsQuery.data?.tax_enabled ? "Yes" : "No"} hint="Derived from organization settings." icon={ShieldCheck} />
-        <KpiCard label="Theme-ready shell" value="Live" hint="Navigation, auth, and route guards are active." icon={Sparkles} />
-      </div>
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {summaryWidgets.map((widget) => <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} />)}
+      </section>
 
-      <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
-        <SectionCard title="Recent notifications" description="Latest alerts for the selected organization.">
-          {notificationsQuery.isError ? (
-            <ErrorState description="We couldn't load notifications for this organization." onRetry={() => void notificationsQuery.refetch()} />
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <SectionCard title={attention?.title ?? "Attention Center"} description={attention?.subtitle ?? "Prioritized action items requiring follow-up."} className="xl:col-span-5 xl:min-h-[320px]">
+          {attention?.status === "empty" ? (
+            <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{attention.emptyState?.title ?? "No urgent issues."}</div>
           ) : (
-            <NotificationList items={notificationsQuery.data?.items.slice(0, 5) ?? []} canMarkRead={false} emptyDescription="Your next operational alerts will surface here." />
-          )}
-        </SectionCard>
-
-
-        <SectionCard title="Setup center" description="Progressive onboarding for this organization.">
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p>Progress: {onboardingQuery.data?.progress_percent ?? 0}% • Tier {onboardingQuery.data?.completion_tier ?? 0}</p>
-            <p>{onboardingQuery.data?.next_recommended_action?.title ?? "Open Setup Center to continue onboarding."}</p>
-            <Button asChild size="sm"><Link href="/setup">Continue setup</Link></Button>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Receivables vs payables" description="Open and overdue invoice/bill exposure by amount due.">
-          {canReadInvoices || canReadBills ? (
-            financialLoading ? (
-              <div className="space-y-3">
-                <div className="h-14 animate-pulse rounded-xl bg-muted/40" />
-                <div className="h-14 animate-pulse rounded-xl bg-muted/40" />
-              </div>
-            ) : (
-              <div className="space-y-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Receivables exposure</span>
-                    <MoneyDisplay value={receivablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
+            <div className="space-y-2 text-sm">
+              {attentionItems.slice(0, 8).map((item) => (
+                <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/activity")} className="group flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 transition hover:border-primary/30 hover:bg-muted/35">
+                  <div>
+                    <div className="mb-1 inline-flex items-center gap-2">
+                      <Badge variant={statusTone(String(item.priority ?? "low"))} className="capitalize">{String(item.priority ?? "low")}</Badge>
+                      <p className="font-medium text-foreground">{String(item.title ?? "Action item")}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
                   </div>
-                  <div className="h-2 rounded-full bg-muted">
-                    <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${receivablesRatio}%` }} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Payables exposure</span>
-                    <MoneyDisplay value={payablesExposure} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
-                  </div>
-                  <div className="h-2 rounded-full bg-muted">
-                    <div className="h-2 rounded-full bg-amber-500" style={{ width: `${payablesRatio}%` }} />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
-                  <span>Total open exposure</span>
-                  <MoneyDisplay value={totalExposure} currencyCode={currentOrganization.base_currency} />
-                </div>
-              </div>
-            )
-          ) : (
-            <p className="text-sm text-muted-foreground">Your current role does not include invoice or bill read access.</p>
-          )}
-        </SectionCard>
-
-        <SectionCard title="AR vs AP trend" description="Outstanding exposure by due month (interactive).">
-          {financialLoading ? (
-            <div className="space-y-2">
-              <div className="h-28 animate-pulse rounded-xl bg-muted/40" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
-                  {focusedTrendPoint ? `Focused month: ${focusedTrendPoint.label}` : "Hover points for details"}
-                </div>
-                <div className="flex items-center gap-1">
-                  {[3, 6, 12].map((months) => (
-                    <Button
-                      key={months}
-                      type="button"
-                      variant={trendWindow === months ? "default" : "ghost"}
-                      size="sm"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => {
-                        setTrendWindow(months as 3 | 6 | 12);
-                        setActiveTrendIndex(null);
-                      }}
-                    >
-                      {months}m
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <TrendChart
-                series={exposureSeries}
-                maxValue={exposureSeriesMax}
-                activeIndex={activeTrendIndex}
-                onHoverIndex={setActiveTrendIndex}
-              />
-              {focusedTrendPoint ? (
-                <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/70 bg-muted/20 p-2 text-xs">
-                  <div className="text-muted-foreground">Receivables <MoneyDisplay value={focusedTrendPoint.receivables} currencyCode={currentOrganization.base_currency} /></div>
-                  <div className="text-muted-foreground">Payables <MoneyDisplay value={focusedTrendPoint.payables} currencyCode={currentOrganization.base_currency} /></div>
-                </div>
-              ) : null}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {exposureSeries.map((point) => (
-                  <div key={point.label} className="rounded-lg border border-border/70 bg-muted/20 px-2 py-1.5 text-muted-foreground">
-                    <div className="mb-1 font-medium text-foreground">{point.label}</div>
-                    <div>AR <MoneyDisplay value={point.receivables} currencyCode={currentOrganization.base_currency} /></div>
-                    <div>AP <MoneyDisplay value={point.payables} currencyCode={currentOrganization.base_currency} /></div>
-                  </div>
-                ))}
-              </div>
+                  <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:text-foreground" />
+                </Link>
+              ))}
             </div>
           )}
         </SectionCard>
 
-        <SectionCard title="Attention queue" description="High-signal operational items that need follow-up.">
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
-              <span className="text-muted-foreground">Overdue invoices</span>
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
-                <Link href="/invoices">{overdueInvoices.length}</Link>
-              </Button>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
-              <span className="text-muted-foreground">Overdue bills</span>
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
-                <Link href="/bills">{overdueBills.length}</Link>
-              </Button>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
-              <span className="text-muted-foreground">Unread notifications</span>
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-foreground">
-                <Link href="/notifications">{String(unreadQuery.data?.unread_count ?? 0)}</Link>
-              </Button>
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Top overdue documents" description="Oldest outstanding invoices and bills by due date.">
-          {financialLoading ? (
-            <div className="space-y-2">
-              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
-              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
-              <div className="h-10 animate-pulse rounded-lg bg-muted/40" />
-            </div>
-          ) : overdueRows.length > 0 ? (
-            <div className="max-h-80 space-y-2 overflow-y-auto pr-1 text-sm">
-              {overdueRows.map((row) => (
-                <div
-                  key={`${row.type}-${row.id}`}
-                  className="grid grid-cols-[auto,1fr,auto,auto] items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2"
-                >
-                  <Badge variant={row.type === "invoice" ? "default" : "secondary"} className="capitalize">
-                    {row.type}
-                  </Badge>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">{row.documentNumber} · {row.counterpartyName}</p>
-                    <p className="text-xs text-muted-foreground">Due {row.dueDate}</p>
-                  </div>
-                  <MoneyDisplay value={row.amountDue} currencyCode={currentOrganization.base_currency} className="font-medium text-foreground" />
-                  <div className="flex items-center gap-1">
-                    <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                      <Link href={row.type === "invoice" ? "/invoices" : `/bills/${row.id}`}>Review</Link>
-                    </Button>
-                    <Button asChild variant="secondary" size="sm" className="h-7 px-2 text-xs">
-                      <Link href={row.type === "invoice" ? "/customer-payments" : "/supplier-payments"}>Record payment</Link>
-                    </Button>
+        <SectionCard title={trend?.title ?? "Revenue vs Expenses"} description={trend?.subtitle ?? "Primary financial snapshot"} className="xl:col-span-7 xl:min-h-[320px]">
+          {trend?.status === "empty" ? (
+            <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{trend.emptyState?.title ?? "No trend data available."}</div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              {trendPeriods.map((period) => (
+                <div key={String(period.periodKey)} className="grid grid-cols-[56px,1fr] items-center gap-3 rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
+                  <p className="text-xs font-medium text-foreground">{String(period.label)}</p>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <span className="text-muted-foreground">Revenue <MoneyDisplay value={String(((period.revenue as Record<string, unknown> | undefined)?.amount ?? 0))} currencyCode={currency} /></span>
+                    <span className="text-muted-foreground">Expenses <MoneyDisplay value={String(((period.expenses as Record<string, unknown> | undefined)?.amount ?? 0))} currencyCode={currency} /></span>
+                    <span className="text-muted-foreground">Net <MoneyDisplay value={String(((period.netResult as Record<string, unknown> | undefined)?.amount ?? 0))} currencyCode={currency} /></span>
                   </div>
                 </div>
               ))}
             </div>
+          )}
+        </SectionCard>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4">
+          {aging?.status === "empty" ? (
+            <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
-            <p className="text-sm text-muted-foreground">No overdue invoices or bills. You are fully up to date.</p>
+            <div className="space-y-2 text-sm">
+              {agingBuckets.map((bucket) => (
+                <div key={String(bucket.bucketKey)} className="grid grid-cols-[72px,1fr,1fr] items-center gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs">
+                  <span className="font-medium text-foreground">{String(bucket.label)}</span>
+                  <span className="text-muted-foreground">AR <MoneyDisplay value={String(((bucket.receivables as Record<string, unknown> | undefined)?.amount ?? 0))} currencyCode={currency} /></span>
+                  <span className="text-muted-foreground">AP <MoneyDisplay value={String(((bucket.payables as Record<string, unknown> | undefined)?.amount ?? 0))} currencyCode={currency} /></span>
+                </div>
+              ))}
+            </div>
           )}
         </SectionCard>
 
-        <SectionCard title="Quick actions" description="The first feature prompts will replace these shortcuts with live accounting workflows.">
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              Review organization settings, branding, numbering, and tax defaults before onboarding the team.
-            </div>
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              Use the organization switcher to move across entities without losing permission context.
-            </div>
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              Notifications and route protection are now active, so future modules can focus on workflow depth.
+        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-4">
+          <div className="space-y-2 text-sm">
+            {(((invoiceWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? [])).map((status) => (
+              <div key={String(status.status)} className="grid grid-cols-[1fr,72px,1fr] gap-2 rounded-lg border border-border/70 bg-muted/20 p-3 text-xs">
+                <span className="font-medium text-foreground capitalize">{String(status.status).replaceAll("_", " ")}</span>
+                <span className="text-muted-foreground">{String(status.count)}</span>
+                <span className="text-muted-foreground"><MoneyDisplay value={String(((status.amount as Record<string, unknown> | undefined)?.amount ?? 0))} currencyCode={currency} /></span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-4">
+          <div className="space-y-2 text-sm">
+            {recommendationItems.slice(0, 5).map((item) => (
+              <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className="group flex items-start justify-between rounded-lg border border-border/70 bg-muted/20 p-3 transition hover:border-primary/30 hover:bg-muted/35">
+                <div>
+                  <p className="font-medium text-foreground">{String(item.title)}</p>
+                  <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
+                </div>
+                <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:text-foreground" />
+              </Link>
+            ))}
+          </div>
+        </SectionCard>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-6">
+          <div className="space-y-2 text-sm">
+            {activityItems.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">{activity?.emptyState?.title ?? "No recent activity."}</div>
+            ) : (
+              activityItems.slice(0, 8).map((item) => (
+                <div key={String(item.activityId)} className="flex items-center justify-between rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs">
+                  <span className="inline-flex items-center gap-2 text-foreground"><CircleCheck className="size-3.5 text-emerald-500" /> {String(item.title)}</span>
+                  <span className="inline-flex items-center gap-1 text-muted-foreground"><Clock3 className="size-3" /> {String(item.relativeTimeLabel ?? "recent")}</span>
+                </div>
+              ))
+            )}
+            <Button asChild variant="outline" size="sm" className="w-full"><Link href="/activity">View all activity</Link></Button>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Platform health widgets" description="Billing, integrations, and guidance state." className="xl:col-span-6">
+          <div className="grid gap-3 text-sm md:grid-cols-3">
+            {[billing, integrations, onboarding].filter(Boolean).map((widget) => (
+              <div key={widget?.widgetKey} className="rounded-lg border border-border/70 bg-muted/20 p-3">
+                <p className="mb-1 inline-flex items-center gap-1 font-medium text-foreground">
+                  <AlertTriangle className="size-4" /> {widget?.title}
+                </p>
+                <p className="text-xs text-muted-foreground">{widget?.status === "empty" ? (widget?.emptyState?.title ?? "No data") : (widget?.subtitle ?? "Operational summary available")}</p>
+                {widget?.drilldownTarget?.route ? (
+                  <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs">
+                    <Link href={widget.drilldownTarget.route}>{widget.drilldownTarget.label ?? "Open"}</Link>
+                  </Button>
+                ) : null}
+              </div>
+            ))}
+            <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+              <p className="mb-1 inline-flex items-center gap-1 font-medium text-foreground"><WalletCards className="size-4" /> Financial clarity</p>
+              <p className="text-xs text-muted-foreground">Summary strip + trends prioritize cash, AR/AP exposure, and net position.</p>
             </div>
           </div>
         </SectionCard>
-      </div>
+      </section>
     </div>
   );
 }
