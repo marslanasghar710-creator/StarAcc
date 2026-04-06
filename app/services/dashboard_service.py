@@ -102,7 +102,7 @@ class DashboardService:
                 recent_activity=recent_activity,
                 recommendations=recommendations,
             )
-        except (ValueError, SQLAlchemyError):
+        except (ValueError, SQLAlchemyError, AttributeError):
             return self._fallback_overview()
 
     def _fallback_overview(self) -> DashboardOverviewResponse:
@@ -172,7 +172,7 @@ class DashboardService:
                 Invoice.organization_id == organization_id,
                 Invoice.deleted_at.is_(None),
                 Invoice.issue_date >= month_start,
-                Invoice.status.in_([InvoiceStatus.POSTED, InvoiceStatus.PAID, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.SENT, InvoiceStatus.OVERDUE]),
+                Invoice.status.in_([InvoiceStatus.APPROVED, InvoiceStatus.PAID, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.SENT, InvoiceStatus.OVERDUE]),
             )
         ) or Decimal("0")
         expenses = self.db.scalar(
