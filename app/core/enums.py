@@ -403,3 +403,83 @@ class OnboardingTaskStatus(StrEnum):
     PENDING = "pending"
     COMPLETED = "completed"
     SKIPPED = "skipped"
+
+
+class BillingAccountStatus(StrEnum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    CLOSED = "closed"
+
+
+class BillingInterval(StrEnum):
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+
+
+class SubscriptionStatus(StrEnum):
+    TRIALING = "trialing"
+    ACTIVE = "active"
+    PAST_DUE = "past_due"
+    UNPAID = "unpaid"
+    CANCELED = "canceled"
+    INCOMPLETE = "incomplete"
+    INCOMPLETE_EXPIRED = "incomplete_expired"
+    EXPIRED = "expired"
+
+
+class BillingScopeType(StrEnum):
+    ORGANIZATION = "organization"
+    GROUP = "group"
+    ENTERPRISE = "enterprise"
+
+
+class EntitlementValueType(StrEnum):
+    BOOLEAN = "boolean"
+    LIMIT = "limit"
+
+
+class IntegrationAuthType(StrEnum):
+    OAUTH2 = "oauth2"
+    API_KEY = "api_key"
+    WEBHOOK_SECRET = "webhook_secret"
+    NONE = "none"
+
+
+class IntegrationConnectionStatus(StrEnum):
+    CONNECTING = "connecting"
+    CONNECTED = "connected"
+    REQUIRES_REAUTH = "requires_reauth"
+    SYNC_PENDING = "sync_pending"
+    SYNCING = "syncing"
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    FAILED = "failed"
+    DISCONNECTED = "disconnected"
+    ARCHIVED = "archived"
+
+
+class IntegrationSyncDirection(StrEnum):
+    PULL = "pull"
+    PUSH = "push"
+    BIDIRECTIONAL = "bidirectional"
+
+
+class IntegrationSyncStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+
+class IntegrationSyncType(StrEnum):
+    MANUAL = "manual"
+    SCHEDULED = "scheduled"
+    WEBHOOK = "webhook"
+    BACKFILL = "backfill"
+
+
+class IntegrationCredentialStatus(StrEnum):
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"

@@ -34,6 +34,7 @@ from app.schemas.payroll import (
     PayrollRunResponse,
     PayrollSummaryResponse,
 )
+from app.services.billing_service import BillingService
 from app.services.payroll_service import PayrollService
 
 router = APIRouter(prefix="/organizations/{organization_id}", tags=["payroll"])
@@ -41,6 +42,9 @@ router = APIRouter(prefix="/organizations/{organization_id}", tags=["payroll"])
 
 @router.post("/employees", response_model=EmployeeResponse)
 def create_employee(organization_id: str, payload: EmployeeCreateRequest, current_user=Depends(get_current_user), _=Depends(require_permission("employees.manage")), db: Session = Depends(get_db)):
+    state = BillingService(db).get_commercial_state(organization_id, requested_by_user_id=current_user.id)
+    current_count = int(state["usage"]["payroll_employees"]["used"])
+    BillingService(db).enforce_limit(organization_id, "payroll_employees", projected_usage=current_count + 1)
     return PayrollService(db).create_employee(organization_id, current_user.id, payload.model_dump(exclude_none=True))
 
 
@@ -117,6 +121,7 @@ def get_payroll_period(organization_id: str, period_id: UUID, _=Depends(require_
 
 @router.post("/payroll-runs", response_model=PayrollRunResponse)
 def create_payroll_run(organization_id: str, payload: PayrollRunCreateRequest, current_user=Depends(get_current_user), _=Depends(require_permission("payroll.create")), db: Session = Depends(get_db)):
+    BillingService(db).ensure_feature(organization_id, "payroll")
     return PayrollService(db).create_run(organization_id, current_user.id, payload.model_dump(exclude_none=True))
 
 

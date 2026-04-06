@@ -24,6 +24,7 @@ from app.schemas.organization import (
 )
 from app.services.membership_service import MembershipService
 from app.services.demo_seed_service import DemoSeedService
+from app.services.billing_service import BillingService
 from app.services.organization_service import OrganizationService
 
 router = APIRouter()
@@ -125,6 +126,8 @@ def invite_member(
     _=Depends(require_permission("users.invite")),
     db: Session = Depends(get_db),
 ):
+    member_count = len(MembershipRepository(db).list_members(organization_id))
+    BillingService(db).enforce_limit(organization_id, "seats", projected_usage=member_count + 1)
     inv = MembershipService(db).invite(organization_id, current_user.id, payload.email, payload.role_id)
     return {"id": str(inv.id), "token": inv.token}
 
