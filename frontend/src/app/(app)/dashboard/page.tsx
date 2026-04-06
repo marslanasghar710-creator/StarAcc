@@ -23,6 +23,88 @@ function statusTone(status: string) {
   return "outline" as const;
 }
 
+function amountToNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function TrendMiniChart({ periods }: { periods: Array<Record<string, unknown>> }) {
+  const normalized = periods.map((period) => ({
+    key: String(period.periodKey ?? period.label ?? ""),
+    label: String(period.label ?? ""),
+    revenue: amountToNumber((period.revenue as Record<string, unknown> | undefined)?.amount),
+    expenses: amountToNumber((period.expenses as Record<string, unknown> | undefined)?.amount),
+  }));
+
+  if (normalized.length < 2) return null;
+
+  const maxValue = Math.max(1, ...normalized.flatMap((period) => [period.revenue, period.expenses]));
+  const width = 100;
+  const height = 44;
+  const stepX = width / (normalized.length - 1);
+  const toY = (value: number) => ((height - 4) - ((value / maxValue) * (height - 8)));
+
+  const revenuePath = normalized
+    .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.revenue).toFixed(2)}`)
+    .join(" ");
+  const expensesPath = normalized
+    .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.expenses).toFixed(2)}`)
+    .join(" ");
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-background px-3 py-2">
+      <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>{normalized[0]?.label}</span>
+        <div className="inline-flex items-center gap-3">
+          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-500" /> Revenue</span>
+          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-amber-500" /> Expenses</span>
+        </div>
+        <span>{normalized[normalized.length - 1]?.label}</span>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-20 w-full" preserveAspectRatio="none" role="img" aria-label="Revenue and expenses trend lines">
+        <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-500" strokeWidth="2" />
+        <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-500" strokeWidth="2" strokeDasharray="4 2" />
+      </svg>
+    </div>
+  );
+}
+
+function AgingDistributionChart({ buckets }: { buckets: Array<Record<string, unknown>> }) {
+  const normalized = buckets.map((bucket) => ({
+    key: String(bucket.bucketKey ?? bucket.label ?? ""),
+    label: String(bucket.label ?? ""),
+    receivables: amountToNumber((bucket.receivables as Record<string, unknown> | undefined)?.amount),
+    payables: amountToNumber((bucket.payables as Record<string, unknown> | undefined)?.amount),
+  }));
+
+  const maxValue = Math.max(1, ...normalized.flatMap((bucket) => [bucket.receivables, bucket.payables]));
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border/70 bg-background p-3">
+      <div className="grid grid-cols-[56px,1fr,1fr] gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span>Bucket</span>
+        <span>AR</span>
+        <span>AP</span>
+      </div>
+      {normalized.map((bucket) => (
+        <div key={bucket.key} className="grid grid-cols-[56px,1fr,1fr] items-center gap-2">
+          <span className="text-xs font-medium text-foreground">{bucket.label}</span>
+          <div className="h-2 rounded-full bg-muted">
+            <div className="h-2 rounded-full bg-emerald-500/80" style={{ width: `${Math.max((bucket.receivables / maxValue) * 100, 2)}%` }} />
+          </div>
+          <div className="h-2 rounded-full bg-muted">
+            <div className="h-2 rounded-full bg-amber-500/80" style={{ width: `${Math.max((bucket.payables / maxValue) * 100, 2)}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DashboardLoadingSkeleton() {
   return (
     <div className="space-y-6">
@@ -168,6 +250,7 @@ export default function DashboardPage() {
             <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{trend.emptyState?.title ?? "No trend data available."}</div>
           ) : (
             <div className="space-y-2 text-sm">
+              <TrendMiniChart periods={trendPeriods} />
               {trendPeriods.map((period) => (
                 <div key={String(period.periodKey)} className="grid grid-cols-[56px,1fr] items-center gap-3 rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
                   <p className="text-xs font-medium text-foreground">{String(period.label)}</p>
@@ -189,6 +272,7 @@ export default function DashboardPage() {
             <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
             <div className="space-y-2 text-sm">
+              <AgingDistributionChart buckets={agingBuckets} />
               {agingBuckets.map((bucket) => (
                 <div key={String(bucket.bucketKey)} className="grid grid-cols-[72px,1fr,1fr] items-center gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs">
                   <span className="font-medium text-foreground">{String(bucket.label)}</span>
