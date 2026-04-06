@@ -184,7 +184,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
-        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4">
+        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-3">
           {aging?.status === "empty" ? (
             <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
@@ -200,7 +200,7 @@ export default function DashboardPage() {
           )}
         </SectionCard>
 
-        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-4">
+        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3">
           <div className="space-y-2 text-sm">
             {(((invoiceWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? [])).map((status) => (
               <div key={String(status.status)} className="grid grid-cols-[1fr,72px,1fr] gap-2 rounded-lg border border-border/70 bg-muted/20 p-3 text-xs">
@@ -212,7 +212,19 @@ export default function DashboardPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-4">
+        <SectionCard title={billWorkflow?.title ?? "Bill workflow"} description={billWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3">
+          <div className="space-y-2 text-sm">
+            {(((billWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? [])).map((status) => (
+              <div key={String(status.status)} className="grid grid-cols-[1fr,72px,1fr] gap-2 rounded-lg border border-border/70 bg-muted/20 p-3 text-xs">
+                <span className="font-medium text-foreground capitalize">{String(status.status).replaceAll("_", " ")}</span>
+                <span className="text-muted-foreground">{String(status.count)}</span>
+                <span className="text-muted-foreground"><MoneyDisplay value={String(((status.amount as Record<string, unknown> | undefined)?.amount ?? 0))} currencyCode={currency} /></span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-3">
           <div className="space-y-2 text-sm">
             {recommendationItems.slice(0, 5).map((item) => (
               <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className="group flex items-start justify-between rounded-lg border border-border/70 bg-muted/20 p-3 transition hover:border-primary/30 hover:bg-muted/35">
