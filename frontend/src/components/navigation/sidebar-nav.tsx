@@ -34,13 +34,13 @@ export function SidebarNav() {
                 href={item.href}
                 className={cn(
                   "group flex items-start gap-3 rounded-2xl px-3 py-2.5 text-sm transition-colors",
-                  active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                  active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground/85 hover:bg-accent/70 hover:text-accent-foreground",
                 )}
               >
-                <Icon className={cn("mt-0.5 size-4 shrink-0", active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-accent-foreground")} />
+                <Icon className={cn("mt-0.5 size-4 shrink-0", active ? "text-primary-foreground" : "text-muted-foreground/80 group-hover:text-accent-foreground")} />
                 <span className="space-y-0.5">
                   <span className="block font-medium">{item.title}</span>
-                  <span className={cn("block text-xs", active ? "text-primary-foreground/80" : "text-muted-foreground")}>{item.description}</span>
+                  <span className={cn("block text-xs", active ? "text-primary-foreground/80" : "text-muted-foreground/80")}>{item.description}</span>
                 </span>
               </Link>
             );
