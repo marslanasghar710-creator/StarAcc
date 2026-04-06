@@ -52,54 +52,84 @@ class DashboardService:
             return False
 
     def overview(self, organization_id: str) -> DashboardOverviewResponse:
-        org_uuid = UUID(organization_id)
-        today = date.today()
-        month_start = today.replace(day=1)
+        try:
+            org_uuid = UUID(organization_id)
+            today = date.today()
+            month_start = today.replace(day=1)
 
-        receivables = self._invoice_exposure(org_uuid, today)
-        payables = self._bill_exposure(org_uuid, today)
-        cash_balance, month_cash_movement = self._cash_metrics(org_uuid, month_start)
-        month_revenue, month_expenses = self._month_profitability(org_uuid, month_start)
-        onboarding = None
-        if self._has_table("org_onboarding_status"):
-            try:
-                onboarding = self.db.scalar(select(OrgOnboardingStatus).where(OrgOnboardingStatus.organization_id == org_uuid))
-            except SQLAlchemyError:
-                onboarding = None
+            receivables = self._invoice_exposure(org_uuid, today)
+            payables = self._bill_exposure(org_uuid, today)
+            cash_balance, month_cash_movement = self._cash_metrics(org_uuid, month_start)
+            month_revenue, month_expenses = self._month_profitability(org_uuid, month_start)
+            onboarding = None
+            if self._has_table("org_onboarding_status"):
+                try:
+                    onboarding = self.db.scalar(select(OrgOnboardingStatus).where(OrgOnboardingStatus.organization_id == org_uuid))
+                except SQLAlchemyError:
+                    onboarding = None
 
-        summary_metrics = [
-            DashboardMetric(key="cash_balance", label="Cash position", value=float(cash_balance), route="/banking", currency_code="USD", delta=float(month_cash_movement)),
-            DashboardMetric(key="receivables", label="Receivables outstanding", value=float(receivables.open_amount), route="/invoices", currency_code="USD", delta=float(receivables.overdue_amount)),
-            DashboardMetric(key="payables", label="Payables outstanding", value=float(payables.open_amount), route="/bills", currency_code="USD", delta=float(payables.overdue_amount)),
-            DashboardMetric(key="month_revenue", label="Revenue this month", value=float(month_revenue), route="/reports/profit-loss", currency_code="USD"),
-            DashboardMetric(key="month_expenses", label="Expenses this month", value=float(month_expenses), route="/reports/profit-loss", currency_code="USD"),
-            DashboardMetric(key="month_net", label="Net result this month", value=float(month_revenue - month_expenses), route="/reports/profit-loss", currency_code="USD"),
-        ]
+            summary_metrics = [
+                DashboardMetric(key="cash_balance", label="Cash position", value=float(cash_balance), route="/banking", currency_code="USD", delta=float(month_cash_movement)),
+                DashboardMetric(key="receivables", label="Receivables outstanding", value=float(receivables.open_amount), route="/invoices", currency_code="USD", delta=float(receivables.overdue_amount)),
+                DashboardMetric(key="payables", label="Payables outstanding", value=float(payables.open_amount), route="/bills", currency_code="USD", delta=float(payables.overdue_amount)),
+                DashboardMetric(key="month_revenue", label="Revenue this month", value=float(month_revenue), route="/reports/profit-loss", currency_code="USD"),
+                DashboardMetric(key="month_expenses", label="Expenses this month", value=float(month_expenses), route="/reports/profit-loss", currency_code="USD"),
+                DashboardMetric(key="month_net", label="Net result this month", value=float(month_revenue - month_expenses), route="/reports/profit-loss", currency_code="USD"),
+            ]
 
-        attention_items = self._attention_items(
-            organization_id=organization_id,
-            receivables=receivables,
-            payables=payables,
-            today=today,
-            onboarding=onboarding,
-        )
+            attention_items = self._attention_items(
+                organization_id=organization_id,
+                receivables=receivables,
+                payables=payables,
+                today=today,
+                onboarding=onboarding,
+            )
 
-        trends = self._trend_series(org_uuid, months=6)
-        aging = self._aging_buckets(org_uuid, today)
-        workflows = self._workflow_status(org_uuid)
-        recent_activity = self._recent_activity(org_uuid)
-        maturity = self._maturity(onboarding, receivables, payables, recent_activity)
-        recommendations = self._recommendations(maturity, receivables, payables, attention_items)
+            trends = self._trend_series(org_uuid, months=6)
+            aging = self._aging_buckets(org_uuid, today)
+            workflows = self._workflow_status(org_uuid)
+            recent_activity = self._recent_activity(org_uuid)
+            maturity = self._maturity(onboarding, receivables, payables, recent_activity)
+            recommendations = self._recommendations(maturity, receivables, payables, attention_items)
 
+            return DashboardOverviewResponse(
+                maturity=maturity,
+                summary_metrics=summary_metrics,
+                attention_items=attention_items,
+                trends=trends,
+                aging=aging,
+                workflows=workflows,
+                recent_activity=recent_activity,
+                recommendations=recommendations,
+            )
+        except (ValueError, SQLAlchemyError):
+            return self._fallback_overview()
+
+    def _fallback_overview(self) -> DashboardOverviewResponse:
         return DashboardOverviewResponse(
-            maturity=maturity,
-            summary_metrics=summary_metrics,
-            attention_items=attention_items,
-            trends=trends,
-            aging=aging,
-            workflows=workflows,
-            recent_activity=recent_activity,
-            recommendations=recommendations,
+            maturity="new",
+            summary_metrics=[
+                DashboardMetric(key="cash_balance", label="Cash position", value=0, route="/banking", currency_code="USD", delta=0),
+                DashboardMetric(key="receivables", label="Receivables outstanding", value=0, route="/invoices", currency_code="USD", delta=0),
+                DashboardMetric(key="payables", label="Payables outstanding", value=0, route="/bills", currency_code="USD", delta=0),
+                DashboardMetric(key="month_revenue", label="Revenue this month", value=0, route="/reports/profit-loss", currency_code="USD"),
+                DashboardMetric(key="month_expenses", label="Expenses this month", value=0, route="/reports/profit-loss", currency_code="USD"),
+                DashboardMetric(key="month_net", label="Net result this month", value=0, route="/reports/profit-loss", currency_code="USD"),
+            ],
+            attention_items=[],
+            trends=[],
+            aging=[],
+            workflows=[],
+            recent_activity=[],
+            recommendations=[
+                DashboardRecommendation(
+                    key="continue_setup",
+                    title="Continue setup",
+                    description="Dashboard data will populate as your organization configuration and activity grow.",
+                    route="/setup",
+                    priority="medium",
+                )
+            ],
         )
 
     def _invoice_exposure(self, organization_id: UUID, today: date) -> _Exposure:
