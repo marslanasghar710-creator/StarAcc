@@ -121,6 +121,13 @@ export default function DashboardPage() {
   const recommendationItems = ((recommendations?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
   const activityItems = ((activity?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
 
+  const data = dashboardQuery.data;
+  const maturity = data?.maturity ?? "new";
+  const widgets = resolveWidgets(maturity, can);
+  const showWidget = (key: (typeof widgets)[number]["key"]) => widgets.some((widget) => widget.key === key);
+
+  const isNewOrg = maturity === "new";
+
   return (
     <div className="space-y-7 px-1 pb-2 pt-1 md:px-2">
       <PageHeader
