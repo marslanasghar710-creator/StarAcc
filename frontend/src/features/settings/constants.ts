@@ -23,6 +23,8 @@ export const SETTINGS_PERMISSION_GROUPS = {
   taxArchive: ["tax_codes.archive", "tax_rates.archive"],
   preferencesRead: ["settings.read", "branding.read", "numbering.read"],
   preferencesWrite: ["settings.update", "branding.update", "numbering.update"],
+  billingRead: ["settings.read"],
+  billingWrite: ["settings.update"],
 } as const;
 
 export const SETTINGS_NAV_SECTIONS = [
@@ -53,5 +55,12 @@ export const SETTINGS_NAV_SECTIONS = [
     description: "Document numbering, locale, and accounting defaults.",
     href: "/settings/preferences",
     requiredPermissions: SETTINGS_PERMISSION_GROUPS.preferencesRead,
+  },
+  {
+    id: "billing",
+    title: "Billing & entitlements",
+    description: "Subscription, plan access, seat caps, and commercial lifecycle controls.",
+    href: "/settings/billing",
+    requiredPermissions: SETTINGS_PERMISSION_GROUPS.billingRead,
   },
 ] as const;
