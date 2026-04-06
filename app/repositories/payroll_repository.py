@@ -52,6 +52,18 @@ class PayrollRepository:
             query = query.where(Employee.status == status)
         return list(self.db.scalars(query.order_by(Employee.last_name, Employee.first_name)).all())
 
+    def count_active_employees(self, organization_id) -> int:
+        return int(
+            self.db.scalar(
+                select(func.count(Employee.id)).where(
+                    Employee.organization_id == organization_id,
+                    Employee.status == EmployeeStatus.ACTIVE,
+                    Employee.deleted_at.is_(None),
+                )
+            )
+            or 0
+        )
+
     def active_employees_for_period(self, organization_id, period_start, period_end):
         return list(
             self.db.scalars(

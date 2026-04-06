@@ -32,8 +32,43 @@ if [ ! -f .env ] && [ -f .env.example ]; then
   echo "ℹ️ Created .env from .env.example"
 fi
 
+DB_PORT="${STARACC_DB_PORT:-5432}"
+if lsof -nP -iTCP:"$DB_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  if [ "$DB_PORT" = "5432" ]; then
+    echo "⚠️ Port 5432 is already in use on this machine."
+    echo "   Falling back to host port 5433 for the StarAcc database container."
+    export STARACC_DB_PORT=5433
+    DB_PORT=5433
+  else
+    echo "❌ Requested STARACC_DB_PORT=$DB_PORT is already in use."
+    echo "   Free that port or set a different STARACC_DB_PORT value before rerunning."
+    exit 1
+  fi
+fi
+
 echo "🚀 Starting StarAcc backend + database (Docker Compose)..."
-docker compose up --build -d --force-recreate db api
+echo "ℹ️ Build/start logs will stream below so startup progress is visible."
+COMPOSE_UP_LOG="$(mktemp -t staracc_compose_up.XXXXXX.log)"
+set +e
+
+docker compose up --build -d --force-recreate db api 2>&1 | tee "$COMPOSE_UP_LOG"
+compose_status=${PIPESTATUS[0]}
+
+set -e
+if [ "$compose_status" -ne 0 ]; then
+  if [ "$DB_PORT" = "5432" ] && grep -qi "ports are not available" "$COMPOSE_UP_LOG"; then
+    echo "⚠️ Docker failed to bind host port 5432 even though no local listener was detected."
+    echo "   Retrying automatically with STARACC_DB_PORT=5433..."
+    export STARACC_DB_PORT=5433
+    DB_PORT=5433
+    docker compose up --build -d --force-recreate db api
+  else
+    echo "❌ docker compose up failed. See output above."
+    rm -f "$COMPOSE_UP_LOG"
+    exit 1
+  fi
+fi
+rm -f "$COMPOSE_UP_LOG"
 
 echo "🗃️ Applying database migrations..."
 docker compose run --rm api sh -lc "cd /app && PYTHONPATH=/app alembic upgrade head"
@@ -108,6 +143,7 @@ echo "✅ StarAcc full stack is starting in the background."
 echo "   Frontend: http://localhost:3000"
 echo "   API:      http://localhost:8000"
 echo "   API docs: http://localhost:8000/docs"
+echo "   DB host:  localhost:${DB_PORT}"
 echo
 echo "Useful commands:"
 echo "  Stop backend+db: docker compose down"
