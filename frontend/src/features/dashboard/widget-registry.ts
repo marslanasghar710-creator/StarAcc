@@ -1,5 +1,3 @@
-import type { DashboardOverview } from "@/features/dashboard/types";
-
 export type DashboardWidgetKey =
   | "summary_strip"
   | "attention_center"
@@ -29,7 +27,7 @@ export const dashboardWidgetRegistry: DashboardWidgetDefinition[] = [
 ];
 
 export function resolveWidgets(
-  maturity: DashboardOverview["maturity"],
+  maturity: "new" | "active" | "mature" | string,
   hasPermission: (permissionCode: string) => boolean,
 ): DashboardWidgetDefinition[] {
   const maturityWeight = MATURITY_WEIGHT[maturity] ?? 0;
