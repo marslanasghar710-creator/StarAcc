@@ -1,71 +1,79 @@
 from pydantic import BaseModel
 
 
-class DashboardMetric(BaseModel):
-    key: str
-    label: str
-    value: float
-    currency_code: str | None = None
-    delta: float | None = None
+class DashboardDrilldownTarget(BaseModel):
     route: str
+    params: dict[str, str | int | bool | None] | None = None
+    label: str | None = None
 
 
-class DashboardAttentionItem(BaseModel):
-    key: str
+class DashboardCta(BaseModel):
+    label: str
+    route: str
+    params: dict[str, str | int | bool | None] | None = None
+
+
+class DashboardEmptyState(BaseModel):
+    kind: str
     title: str
-    detail: str
-    severity: str
-    route: str
-    count: int | None = None
-    amount: float | None = None
-    currency_code: str | None = None
+    description: str | None = None
+    primaryCta: DashboardCta | None = None
 
 
-class DashboardTrendPoint(BaseModel):
-    label: str
-    revenue: float
-    expenses: float
-    cash_movement: float
-
-
-class DashboardAgingBucket(BaseModel):
-    bucket: str
-    receivables: float
-    payables: float
-
-
-class DashboardWorkflowStatus(BaseModel):
-    key: str
-    label: str
-    draft: int
-    in_progress: int
-    overdue: int
-    completed: int
-    route: str
-
-
-class DashboardActivityItem(BaseModel):
-    id: str
-    action: str
-    entity_type: str
-    entity_id: str | None = None
-    created_at: str
-
-
-class DashboardRecommendation(BaseModel):
-    key: str
+class DashboardWarningState(BaseModel):
+    code: str
     title: str
-    description: str
-    route: str
-    priority: str
+    description: str | None = None
+
+
+class DashboardErrorState(BaseModel):
+    code: str
+    title: str
+    description: str | None = None
+    retryable: bool | None = None
+
+
+class DashboardMoneyValue(BaseModel):
+    amount: str
+    formatted: str
+
+
+class DashboardWidgetEnvelope(BaseModel):
+    widgetKey: str
+    title: str
+    subtitle: str | None = None
+    status: str
+    priority: str | None = None
+    sizeHint: str | None = None
+    applicable: bool = True
+    hiddenReason: str | None = None
+    requiredPermissions: list[str] | None = None
+    drilldownTarget: DashboardDrilldownTarget | None = None
+    refreshedAt: str | None = None
+    payload: dict | None = None
+    emptyState: DashboardEmptyState | None = None
+    warningState: DashboardWarningState | None = None
+    errorState: DashboardErrorState | None = None
+
+
+class DashboardContext(BaseModel):
+    scopeType: str
+    scopeId: str
+    scopeLabel: str
+    periodLabel: str
+    maturityState: str
+    roleProfile: str
+    isDemo: bool
+
+
+class DashboardSummary(BaseModel):
+    generatedAt: str
+    currency: str
+    timezone: str
 
 
 class DashboardOverviewResponse(BaseModel):
-    maturity: str
-    summary_metrics: list[DashboardMetric]
-    attention_items: list[DashboardAttentionItem]
-    trends: list[DashboardTrendPoint]
-    aging: list[DashboardAgingBucket]
-    workflows: list[DashboardWorkflowStatus]
-    recent_activity: list[DashboardActivityItem]
-    recommendations: list[DashboardRecommendation]
+    organizationId: str
+    dashboardContext: DashboardContext
+    summary: DashboardSummary
+    widgets: list[DashboardWidgetEnvelope]

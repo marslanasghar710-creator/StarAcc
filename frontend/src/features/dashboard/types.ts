@@ -1,69 +1,47 @@
-export type DashboardMetric = {
-  key: string;
-  label: string;
-  value: number;
-  currencyCode: string | null;
-  delta: number | null;
+export type DrilldownTarget = {
   route: string;
+  params?: Record<string, string | number | boolean | null> | null;
+  label?: string | null;
 };
 
-export type DashboardAttentionItem = {
-  key: string;
+export type WidgetEnvelope = {
+  widgetKey: string;
   title: string;
-  detail: string;
-  severity: "high" | "medium" | "low" | string;
-  route: string;
-  count: number | null;
-  amount: number | null;
-  currencyCode: string | null;
+  subtitle?: string | null;
+  status: "ok" | "empty" | "warning" | "error" | "loading_unavailable" | string;
+  priority?: "high" | "medium" | "low" | string | null;
+  sizeHint?: "small" | "medium" | "large" | "wide" | string | null;
+  applicable: boolean;
+  hiddenReason?: string | null;
+  requiredPermissions?: string[] | null;
+  drilldownTarget?: DrilldownTarget | null;
+  refreshedAt?: string | null;
+  payload?: Record<string, unknown> | null;
+  emptyState?: {
+    kind: string;
+    title: string;
+    description?: string | null;
+    primaryCta?: { label: string; route: string; params?: Record<string, string | number | boolean | null> | null } | null;
+  } | null;
+  warningState?: { code: string; title: string; description?: string | null } | null;
+  errorState?: { code: string; title: string; description?: string | null; retryable?: boolean | null } | null;
 };
 
-export type DashboardTrendPoint = {
-  label: string;
-  revenue: number;
-  expenses: number;
-  cashMovement: number;
-};
-
-export type DashboardAgingBucket = {
-  bucket: string;
-  receivables: number;
-  payables: number;
-};
-
-export type DashboardWorkflowStatus = {
-  key: string;
-  label: string;
-  draft: number;
-  inProgress: number;
-  overdue: number;
-  completed: number;
-  route: string;
-};
-
-export type DashboardActivityItem = {
-  id: string;
-  action: string;
-  entityType: string;
-  entityId: string | null;
-  createdAt: string;
-};
-
-export type DashboardRecommendation = {
-  key: string;
-  title: string;
-  description: string;
-  route: string;
-  priority: "high" | "medium" | "low" | string;
-};
-
-export type DashboardOverview = {
-  maturity: "new" | "active" | "mature" | string;
-  summaryMetrics: DashboardMetric[];
-  attentionItems: DashboardAttentionItem[];
-  trends: DashboardTrendPoint[];
-  aging: DashboardAgingBucket[];
-  workflows: DashboardWorkflowStatus[];
-  recentActivity: DashboardActivityItem[];
-  recommendations: DashboardRecommendation[];
+export type DashboardPage = {
+  organizationId: string;
+  dashboardContext: {
+    scopeType: string;
+    scopeId: string;
+    scopeLabel: string;
+    periodLabel: string;
+    maturityState: "new" | "active" | "mature" | string;
+    roleProfile: "owner_admin" | "finance_operator" | "viewer" | "mixed" | string;
+    isDemo: boolean;
+  };
+  summary: {
+    generatedAt: string;
+    currency: string;
+    timezone: string;
+  };
+  widgets: WidgetEnvelope[];
 };
