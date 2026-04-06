@@ -19,7 +19,7 @@ function widgetByKey(widgets: WidgetEnvelope[], key: string) {
 
 function statusTone(status: string) {
   if (status === "warning") return "secondary" as const;
-  if (status === "error") return "destructive" as const;
+  if (status === "error") return "danger" as const;
   return "outline" as const;
 }
 
