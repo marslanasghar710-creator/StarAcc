@@ -8,7 +8,8 @@ export type PublicEventName =
   | "pricing_viewed"
   | "contact_submitted"
   | "security_viewed"
-  | "feature_viewed";
+  | "feature_viewed"
+  | "faq_interacted";
 
 const eventMap: Record<PublicEventName, Parameters<typeof trackFunnelEvent>[0]> = {
   landing_viewed: "landing_viewed",
@@ -19,6 +20,7 @@ const eventMap: Record<PublicEventName, Parameters<typeof trackFunnelEvent>[0]> 
   contact_submitted: "features_viewed",
   security_viewed: "features_viewed",
   feature_viewed: "features_viewed",
+  faq_interacted: "faq_interacted",
 };
 
 export function trackPublicEvent(name: PublicEventName, payload: Record<string, unknown> = {}) {
