@@ -6,14 +6,11 @@ export const primaryCtas: { primary: Cta; secondary: Cta } = {
 };
 
 export const navigationLinks = [
-  { label: "Product", href: "/product" },
   { label: "Features", href: "/features/accounting-core" },
-  { label: "Solutions", href: "/industries/founders" },
-  { label: "Pricing", href: "/pricing" },
   { label: "Demo", href: "/demo" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Security", href: "/security" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Contact", href: "/contact" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 export const capabilityPillars = [

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/features/funnel/analytics";
 import { useOnboardingMutations } from "@/features/onboarding/hooks";
 import type { OnboardingStatus } from "@/features/onboarding/types";
 
@@ -35,7 +36,20 @@ export function OnboardingHub({ organizationId, status }: Props) {
               <p className="mt-1 text-sm text-muted-foreground">{task.description}</p>
               <div className="mt-3 flex gap-2">
                 {task.route ? <Button asChild size="sm" variant="secondary"><Link href={task.route}>Open</Link></Button> : null}
-                <Button size="sm" onClick={() => taskMutation.mutate({ taskKey: task.key, status: "completed" })} disabled={task.blocked || task.status === "completed"}>Mark done</Button>
+                <Button
+                  size="sm"
+                  onClick={() => taskMutation.mutate(
+                    { taskKey: task.key, status: "completed" },
+                    {
+                      onSuccess: () => {
+                        void trackEvent("activation.checklist_item.completed", { checklist_version: "v1", item_id: task.key, completion_source: "user_action" }, { page_type: "activation", surface: "activation", funnel_domain: "activation", funnel_stage: "activation_started", org_id: organizationId, is_authenticated: true });
+                      },
+                    },
+                  )}
+                  disabled={task.blocked || task.status === "completed"}
+                >
+                  Mark done
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => taskMutation.mutate({ taskKey: task.key, status: "skipped" })} disabled={task.status !== "pending"}>Skip</Button>
               </div>
             </div>

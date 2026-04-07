@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
@@ -10,13 +11,16 @@ import { AppLogo } from "@/components/shared/app-logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { UserMenu } from "@/components/layout/user-menu";
+import { useOnboardingStatus } from "@/features/onboarding/hooks";
 import { navigationItems } from "@/lib/permissions/navigation";
 import { useOrganization } from "@/providers/organization-provider";
 
 export function TopHeader() {
   const pathname = usePathname();
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization, currentOrganizationId } = useOrganization();
+  const onboarding = useOnboardingStatus(currentOrganizationId ?? undefined, Boolean(currentOrganizationId && pathname !== "/setup"));
   const currentNavItem = navigationItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const showSetupBanner = pathname !== "/setup" && Boolean(onboarding.data && onboarding.data.progress_percent < 100);
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -53,6 +57,16 @@ export function TopHeader() {
       <div className="border-t border-border/50 px-4 py-2 text-xs text-muted-foreground lg:px-6 xl:hidden">
         <OrganizationSwitcher />
       </div>
+      {showSetupBanner ? (
+        <div className="border-t border-border/50 bg-muted/30 px-4 py-2 text-xs lg:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-muted-foreground">Setup progress {onboarding.data?.progress_percent}% • continue activation checklist.</p>
+            <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
+              <Link href="/setup">Continue setup</Link>
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }
