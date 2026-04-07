@@ -1,9 +1,40 @@
 from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
+EventName = Literal[
+    "marketing.landing.viewed",
+    "marketing.section.viewed",
+    "marketing.cta.clicked",
+    "marketing.faq.toggled",
+    "marketing.nav.clicked",
+    "demo.entry.started",
+    "demo.workspace.entered",
+    "demo.module.viewed",
+    "demo.convert_to_signup.clicked",
+    "auth.signup.started",
+    "auth.signup.submitted",
+    "auth.signup.completed",
+    "auth.login.completed",
+    "auth.error.shown",
+    "workspace.creation.started",
+    "workspace.creation.submitted",
+    "workspace.creation.completed",
+    "workspace.creation.failed",
+    "workspace.bootstrap.completed",
+    "activation.flow.entered",
+    "activation.checklist.viewed",
+    "activation.checklist_item.completed",
+    "activation.milestone.reached",
+    "activation.completed",
+    "app.handoff.completed",
+]
+
+
 class FunnelEventRequest(BaseModel):
-    event_name: str = Field(min_length=3, max_length=160)
+    event_name: EventName
     event_version: int = Field(ge=1)
     occurred_at: datetime
     session_id: str = Field(min_length=4, max_length=120)
@@ -16,11 +47,11 @@ class FunnelEventRequest(BaseModel):
     path: str | None = Field(default=None, max_length=240)
     page_type: str | None = Field(default=None, max_length=32)
     surface: str | None = Field(default=None, max_length=64)
-    funnel_domain: str | None = Field(default=None, max_length=32)
-    funnel_stage: str | None = Field(default=None, max_length=32)
+    funnel_domain: str = Field(min_length=2, max_length=32)
+    funnel_stage: str = Field(min_length=2, max_length=32)
 
-    is_demo: bool | None = None
-    is_authenticated: bool | None = None
+    is_demo: bool
+    is_authenticated: bool
     environment: str | None = Field(default=None, max_length=32)
 
     referrer: str | None = Field(default=None, max_length=500)

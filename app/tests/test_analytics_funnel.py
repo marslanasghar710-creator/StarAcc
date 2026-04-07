@@ -11,6 +11,8 @@ def test_funnel_event_ingestion(client):
         "route": "/",
         "funnel_domain": "acquisition",
         "funnel_stage": "acquired",
+        "is_demo": False,
+        "is_authenticated": False,
         "payload": {"landing_page_id": "main", "has_utm": False},
     }
 

@@ -39,7 +39,7 @@ function SectionShell({ id, eyebrow, title, subtitle, children, dense = "medium"
 function CtaCluster() {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta_id: "hero_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "hero", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
+      <Button asChild size="lg"><TrackedLink href="/signup?intent=start_workspace" eventPayload={{ cta_id: "hero_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "hero", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
       <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta_id: "hero_explore_demo", cta_label: "Explore Demo", cta_variant: "secondary", source_section: "hero", destination_type: "demo" }}>Explore Demo</TrackedLink></Button>
       <Button asChild variant="ghost" size="lg"><TrackedLink href="#value-grid" eventPayload={{ cta_id: "hero_view_features", cta_label: "View Features", cta_variant: "tertiary", source_section: "hero", destination_type: "features_anchor" }}>View Features</TrackedLink></Button>
     </div>
@@ -250,7 +250,7 @@ export function DemoCTASection() {
     <SectionShell id="demo_cta" dense="medium" eyebrow="Try before setup" title="Explore realistic sample data in an isolated demo workspace" subtitle="Demo includes dashboard, reports, invoices, bills, and reconciliation examples. It is separate from real setup, and you can create your own workspace at any time.">
       <div className="flex flex-wrap gap-3">
         <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta_id: "demo_band_explore_demo", cta_label: "Explore Demo", cta_variant: "secondary", source_section: "demo_cta", destination_type: "demo" }}>Explore Demo</TrackedLink></Button>
-        <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta_id: "midpage_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "demo_cta", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
+        <Button asChild size="lg"><TrackedLink href="/signup?intent=start_workspace" eventPayload={{ cta_id: "midpage_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "demo_cta", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
       </div>
     </SectionShell>
   );
@@ -284,7 +284,7 @@ export function FinalCTASection() {
   return (
     <SectionShell id="final_cta" dense="low" title="Start with a real workspace, or explore the demo first." subtitle="Choose the path that fits your evaluation stage.">
       <div className="flex flex-wrap gap-3">
-        <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta_id: "final_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "final_cta", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
+        <Button asChild size="lg"><TrackedLink href="/signup?intent=start_workspace" eventPayload={{ cta_id: "final_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "final_cta", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
         <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta_id: "final_explore_demo", cta_label: "Explore Demo", cta_variant: "secondary", source_section: "final_cta", destination_type: "demo" }}>Explore Demo</TrackedLink></Button>
       </div>
     </SectionShell>

@@ -14,7 +14,6 @@ class AnalyticsService:
         self.db = db
 
     def track_funnel_event(self, payload: FunnelEventRequest):
-        action = f"funnel.{payload.event_name}"[:100]
         try:
             org_uuid = UUID(payload.org_id) if payload.org_id else None
         except ValueError:
@@ -23,11 +22,12 @@ class AnalyticsService:
             user_uuid = UUID(payload.user_id) if payload.user_id else None
         except ValueError:
             user_uuid = None
+
         log = AuditLog(
             organization_id=org_uuid,
             actor_user_id=user_uuid,
-            action=action,
-            entity_type="funnel_event",
+            action=payload.event_name,
+            entity_type="analytics_event",
             entity_id=payload.session_id,
             metadata_json={
                 "event_version": payload.event_version,
