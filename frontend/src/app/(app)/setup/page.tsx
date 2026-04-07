@@ -1,11 +1,14 @@
 "use client";
 
+import * as React from "react";
+
 import { EmptyState } from "@/components/feedback/empty-state";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/layout/page-header";
 import { FirstRunEntry } from "@/features/onboarding/components/first-run-entry";
 import { OnboardingHub } from "@/features/onboarding/components/onboarding-hub";
 import { useOnboardingStatus } from "@/features/onboarding/hooks";
+import { trackFunnelEvent } from "@/features/funnel/analytics";
 import { useOrganization } from "@/providers/organization-provider";
 
 export default function SetupCenterPage() {
@@ -21,6 +24,22 @@ export default function SetupCenterPage() {
   }
 
   const status = statusQuery.data;
+
+  React.useEffect(() => {
+    void trackFunnelEvent("activation_entered", { organization_id: currentOrganizationId });
+  }, [currentOrganizationId]);
+
+  React.useEffect(() => {
+    if (status.progress_percent >= 100) {
+      void trackFunnelEvent("activation_completed", { organization_id: currentOrganizationId });
+    }
+  }, [currentOrganizationId, status.progress_percent]);
+
+  React.useEffect(() => {
+    if (status.readiness["first_transaction_exists"]) {
+      void trackFunnelEvent("first_business_action_completed", { organization_id: currentOrganizationId, action: "first_transaction" });
+    }
+  }, [currentOrganizationId, status.readiness]);
 
   return (
     <div className="space-y-6">
