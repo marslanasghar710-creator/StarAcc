@@ -42,3 +42,12 @@ export type OrganizationMember = {
   status: string;
   joined_at?: string | null;
 };
+
+export type OrganizationCreatePayload = {
+  name: string;
+  base_currency: string;
+  timezone: string;
+  legal_name?: string | null;
+  fiscal_year_start_month?: number;
+  fiscal_year_start_day?: number;
+};

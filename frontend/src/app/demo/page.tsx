@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { trackEvent } from "@/features/funnel/analytics";
 import { PageViewTracker } from "@/marketing/components/page-view-tracker";
 import { PublicLayout } from "@/marketing/components/public-layout";
 import { TrackedLink } from "@/marketing/components/tracked-link";
@@ -16,11 +18,12 @@ export default function DemoPage() {
   return <PublicLayout>
     <PageViewTracker event="demo_page_entered" payload={{ page: "demo" }} />
     <section className="mx-auto max-w-6xl px-4 py-14 md:px-6">
+      <Badge variant="secondary" className="mb-4">Demo mode • isolated sample data</Badge>
       <h1 className="text-3xl font-semibold tracking-tight">Public demo entry</h1>
       <p className="mt-3 max-w-3xl text-muted-foreground">Demo mode uses isolated seeded sample organizations. It is intentionally separate from real customer ledgers and admin operations.</p>
       <div className="mt-8 grid gap-4 md:grid-cols-2">
         <Card><CardHeader><CardTitle>What to explore</CardTitle></CardHeader><CardContent className="space-y-2 text-sm text-muted-foreground"><p>• Dashboard finance summary</p><p>• Invoice and bill lifecycle</p><p>• Bank reconciliation</p><p>• Profit & Loss and exports</p><p>• Audit timeline</p><p>• Project profitability and consolidation</p></CardContent></Card>
-        <Card><CardHeader><CardTitle>Conversion pathways</CardTitle></CardHeader><CardContent className="space-y-3"><Button asChild className="w-full"><TrackedLink href="/register" eventPayload={{ cta: "demo_start_setup" }}>Set up your own company</TrackedLink></Button><Button asChild variant="outline" className="w-full"><TrackedLink href="/contact?intent=demo" eventPayload={{ cta: "demo_book_walkthrough" }}>Book a guided walkthrough</TrackedLink></Button><Button asChild variant="secondary" className="w-full"><TrackedLink href="/login" eventPayload={{ cta: "demo_login" }}>Go to sign in</TrackedLink></Button></CardContent></Card>
+        <Card><CardHeader><CardTitle>Conversion pathways</CardTitle></CardHeader><CardContent className="space-y-3"><Button asChild className="w-full"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta_id: "demo_band_start_workspace", cta_label: "Create your own workspace", cta_variant: "primary", source_section: "demo_cta", destination_type: "signup" }} onClick={() => void trackEvent("demo.convert_to_signup.clicked", { demo_session_id: "public-demo", source_surface: "demo_banner", target_route: "/register?intent=start_workspace" }, { page_type: "demo", surface: "demo", funnel_domain: "demo", funnel_stage: "signup_started", is_demo: true })}>Create your own workspace</TrackedLink></Button><Button asChild variant="outline" className="w-full"><TrackedLink href="/contact?intent=demo" eventPayload={{ cta_id: "demo_band_walkthrough", cta_label: "Book a guided walkthrough", cta_variant: "secondary", source_section: "demo_cta", destination_type: "other" }}>Book a guided walkthrough</TrackedLink></Button><Button asChild variant="secondary" className="w-full"><TrackedLink href="/login?redirectTo=/start" eventPayload={{ cta_id: "demo_band_sign_in", cta_label: "Go to sign in", cta_variant: "tertiary", source_section: "demo_cta", destination_type: "other" }}>Go to sign in</TrackedLink></Button></CardContent></Card>
       </div>
     </section>
   </PublicLayout>;
