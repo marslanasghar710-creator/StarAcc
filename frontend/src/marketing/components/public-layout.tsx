@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppLogo } from "@/components/shared/app-logo";
 import { Button } from "@/components/ui/button";
 import { navigationLinks } from "@/marketing/content/site-content";
+import { trackPublicEvent } from "@/marketing/lib/analytics";
 
 export function PublicLayout({ children }: { children: ReactNode }) {
   return (
@@ -13,13 +14,13 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <AppLogo href="/" />
           <nav className="hidden items-center gap-4 md:flex">
             {navigationLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="text-sm text-muted-foreground transition hover:text-foreground">{link.label}</Link>
+              <Link key={link.href} href={link.href} onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: link.label.toLowerCase() === "features" ? "features" : link.label.toLowerCase() === "demo" ? "demo" : link.label.toLowerCase() === "pricing" ? "pricing" : "other", nav_area: "header", destination_type: link.href.startsWith("/#") ? "anchor" : "route" })} className="text-sm text-muted-foreground transition hover:text-foreground">{link.label}</Link>
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild className="hidden sm:inline-flex"><Link href="/demo">Explore Demo</Link></Button>
-            <Button variant="ghost" asChild><Link href="/login">Sign in</Link></Button>
-            <Button asChild><Link href="/register?intent=start_workspace">Start Workspace</Link></Button>
+            <Button variant="ghost" asChild className="hidden sm:inline-flex"><Link href="/demo" onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: "header_explore_demo", nav_area: "header", destination_type: "route" })}>Explore Demo</Link></Button>
+            <Button variant="ghost" asChild><Link href="/login" onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: "sign_in", nav_area: "header", destination_type: "route" })}>Sign in</Link></Button>
+            <Button asChild><Link href="/register?intent=start_workspace" onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: "start_workspace", nav_area: "header", destination_type: "route" })}>Start Workspace</Link></Button>
           </div>
         </div>
       </header>

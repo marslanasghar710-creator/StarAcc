@@ -16,7 +16,7 @@ class AnalyticsService:
     def track_funnel_event(self, payload: FunnelEventRequest):
         action = f"funnel.{payload.event_name}"[:100]
         try:
-            org_uuid = UUID(payload.organization_id) if payload.organization_id else None
+            org_uuid = UUID(payload.org_id) if payload.org_id else None
         except ValueError:
             org_uuid = None
         try:
@@ -28,20 +28,36 @@ class AnalyticsService:
             actor_user_id=user_uuid,
             action=action,
             entity_type="funnel_event",
-            entity_id=payload.session_id or payload.anonymous_id,
+            entity_id=payload.session_id,
             metadata_json={
-                "timestamp": payload.timestamp.isoformat(),
-                "route": payload.route,
-                "referrer": payload.referrer,
-                "source": payload.source,
-                "campaign": payload.campaign,
-                "medium": payload.medium,
-                "term": payload.term,
-                "content": payload.content,
-                "experience": payload.experience,
-                "experiment_bucket": payload.experiment_bucket,
+                "event_version": payload.event_version,
+                "occurred_at": payload.occurred_at.isoformat(),
+                "session_id": payload.session_id,
                 "anonymous_id": payload.anonymous_id,
-                "metadata": payload.metadata or {},
+                "workspace_id": payload.workspace_id,
+                "route": payload.route,
+                "path": payload.path,
+                "page_type": payload.page_type,
+                "surface": payload.surface,
+                "funnel_domain": payload.funnel_domain,
+                "funnel_stage": payload.funnel_stage,
+                "is_demo": payload.is_demo,
+                "is_authenticated": payload.is_authenticated,
+                "environment": payload.environment,
+                "referrer": payload.referrer,
+                "utm_source": payload.utm_source,
+                "utm_campaign": payload.utm_campaign,
+                "utm_medium": payload.utm_medium,
+                "utm_term": payload.utm_term,
+                "utm_content": payload.utm_content,
+                "landing_variant": payload.landing_variant,
+                "experiment_assignments": payload.experiment_assignments or {},
+                "device_type": payload.device_type,
+                "viewport_bucket": payload.viewport_bucket,
+                "locale": payload.locale,
+                "timezone": payload.timezone,
+                "country": payload.country,
+                "payload": payload.payload or {},
             },
             created_at=datetime.now(UTC),
         )

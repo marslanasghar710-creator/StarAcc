@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { trackFunnelEvent } from "@/features/funnel/analytics";
+import { trackEvent } from "@/features/funnel/analytics";
 import { useOnboardingMutations } from "@/features/onboarding/hooks";
 import type { OnboardingStatus } from "@/features/onboarding/types";
 
@@ -42,7 +42,7 @@ export function OnboardingHub({ organizationId, status }: Props) {
                     { taskKey: task.key, status: "completed" },
                     {
                       onSuccess: () => {
-                        void trackFunnelEvent("activation_checklist_item_completed", { task_key: task.key, organization_id: organizationId });
+                        void trackEvent("activation.checklist_item.completed", { checklist_version: "v1", item_id: task.key, completion_source: "user_action" }, { page_type: "activation", surface: "activation", funnel_domain: "activation", funnel_stage: "activation_started", org_id: organizationId, is_authenticated: true });
                       },
                     },
                   )}

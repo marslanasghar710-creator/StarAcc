@@ -1,44 +1,41 @@
 # F27 Conversion Engine
 
-## Funnel stages
-1. **Landing discovery** (`/`) with dual CTA paths: demo vs real workspace.
-2. **Demo exploration** (`/demo`) with explicit isolated-data messaging.
-3. **Signup** (`/register` then `/login?redirectTo=/start`).
-4. **Workspace creation + activation bridge** (`/start`).
-5. **Setup center activation** (`/setup`) with backend-driven checklist.
+## Canonical funnel stages
+`acquired` → `engaged` → `demo_entered` → `signup_started` → `authenticated` → `workspace_started` → `workspace_created` → `activation_started` → `activated` → `handoff_to_app`
 
-## Key routes
-- `/` landing + conversion sections
-- `/demo` demo entry path
-- `/register` account signup
-- `/login` auth entry (redirect defaults to `/start`)
-- `/start` workspace creation and activation handoff
-- `/setup` deterministic checklist and completion tracking
+## Canonical event naming
+All events use dot notation: `{surface}.{object}.{action}`.
+Examples:
+- `marketing.landing.viewed`
+- `marketing.section.viewed`
+- `marketing.cta.clicked`
+- `demo.workspace.entered`
+- `auth.signup.completed`
+- `workspace.creation.completed`
+- `activation.completed`
+- `app.handoff.completed`
 
-## Event taxonomy
-Tracked via `frontend/src/features/funnel/analytics.ts` and ingested by `POST /analytics/events`.
+## Event envelope contract
+The frontend tracker emits a typed shared envelope with:
+- identity: `session_id`, `anonymous_id`, optional `user_id` / `org_id`
+- context: `route`, `page_type`, `surface`, `funnel_domain`, `funnel_stage`
+- attribution: `utm_*`, `referrer`, `landing_variant`, `experiment_assignments`
+- device: `device_type`, `viewport_bucket`, `locale`, `timezone`
+- versioning: `event_name`, `event_version`, `occurred_at`
+- event payload: `payload`
 
-Core events:
-- `landing_viewed`, `landing_cta_clicked`, `features_viewed`, `faq_interacted`
-- `demo_entered`
-- `signup_started`, `signup_completed`
-- `workspace_creation_started`, `workspace_created`
-- `activation_entered`, `activation_checklist_item_completed`, `first_business_action_completed`, `activation_completed`
+Backend endpoint: `POST /analytics/events`.
 
-All events include timestamp, anonymous/session IDs, route, attribution fields (UTM/referrer), and metadata.
+## Minimum shipped events
+- Marketing: `marketing.landing.viewed`, `marketing.section.viewed`, `marketing.cta.clicked`
+- Demo: `demo.entry.started`, `demo.workspace.entered`, `demo.convert_to_signup.clicked`
+- Auth: `auth.signup.started`, `auth.signup.completed`, `auth.login.completed`
+- Workspace: `workspace.creation.started`, `workspace.creation.completed`
+- Activation: `activation.flow.entered`, `activation.checklist.viewed`, `activation.checklist_item.completed`, `activation.completed`
+- App handoff: `app.handoff.completed`
 
-## Activation completion rules
-Activation state is backend-authoritative through onboarding status:
-- progress and tasks come from `OnboardingService.get_status`
-- readiness signals are computed from real org/accounting state (e.g., first transaction exists)
-- completion is emitted when progress reaches 100%
+## Attribution continuity
+Attribution is persisted in local storage as first-touch and latest-touch snapshots and reused across marketing → signup → workspace creation events.
 
 ## Demo vs real separation
-- Demo path is public and clearly labeled as isolated sample data.
-- Real conversion path creates authenticated user + real organization workspace.
-- Funnel metadata supports segmentation through event metadata and `experience` fields.
-
-## Extension points
-- Add hero/CTA experiments by passing `experiment_bucket` in event metadata.
-- Expand attribution persistence for paid channels in `rememberAttributionContext()`.
-- Add server-side warehouse forwarders by extending `AnalyticsService.track_funnel_event`.
+Events include `surface`, `funnel_domain`, and optional `is_demo`, enabling clean segmentation of demo exploration vs real signup/activation reporting.

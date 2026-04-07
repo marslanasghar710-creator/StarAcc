@@ -1,34 +1,56 @@
-import { trackFunnelEvent } from "@/features/funnel/analytics";
+import { trackEvent } from "@/features/funnel/analytics";
 
 export type PublicEventName =
   | "landing_viewed"
+  | "section_viewed"
   | "cta_clicked"
   | "demo_page_entered"
   | "signup_started"
-  | "pricing_viewed"
-  | "contact_submitted"
-  | "security_viewed"
   | "feature_viewed"
-  | "faq_interacted";
-
-const eventMap: Record<PublicEventName, Parameters<typeof trackFunnelEvent>[0]> = {
-  landing_viewed: "landing_viewed",
-  cta_clicked: "landing_cta_clicked",
-  demo_page_entered: "demo_entered",
-  signup_started: "signup_started",
-  pricing_viewed: "features_viewed",
-  contact_submitted: "features_viewed",
-  security_viewed: "features_viewed",
-  feature_viewed: "features_viewed",
-  faq_interacted: "faq_interacted",
-};
+  | "faq_interacted"
+  | "nav_clicked";
 
 export function trackPublicEvent(name: PublicEventName, payload: Record<string, unknown> = {}) {
-  if (typeof window === "undefined") return;
-  void trackFunnelEvent(eventMap[name], payload);
+  if (name === "landing_viewed") {
+    return trackEvent("marketing.landing.viewed", {
+      landing_page_id: "main",
+      entry_section: null,
+      hero_variant: "ledger_first",
+      has_utm: Boolean(typeof window !== "undefined" && window.location.search.includes("utm_")),
+      ...payload,
+    }, { page_type: "landing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "acquired", dedupe_key: "landing_main" });
+  }
 
-  const win = window as Window & { dataLayer?: Array<Record<string, unknown>> };
-  win.dataLayer = win.dataLayer ?? [];
-  win.dataLayer.push({ event: name, ...payload });
-  window.dispatchEvent(new CustomEvent("staracc:public-analytics", { detail: { name, payload, ts: new Date().toISOString() } }));
+  if (name === "section_viewed") {
+    return trackEvent("marketing.section.viewed", payload, { page_type: "landing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "engaged", dedupe_key: String(payload.section_id ?? "") });
+  }
+
+  if (name === "cta_clicked") {
+    return trackEvent("marketing.cta.clicked", {
+      cta_id: payload.cta_id ?? payload.cta ?? "unknown_cta",
+      cta_label: payload.cta_label ?? payload.cta ?? "Unknown",
+      cta_variant: payload.cta_variant ?? "secondary",
+      source_section: payload.source_section ?? payload.zone ?? "hero",
+      destination_type: payload.destination_type ?? "other",
+    }, { page_type: "landing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "engaged" });
+  }
+
+  if (name === "faq_interacted") {
+    return trackEvent("marketing.faq.toggled", { question_id: payload.question ?? "unknown", action: payload.action ?? "opened", source_section: "faq" }, { page_type: "landing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "engaged" });
+  }
+
+  if (name === "demo_page_entered") {
+    void trackEvent("demo.entry.started", { entry_point: "direct_route", ...payload }, { page_type: "demo", surface: "demo", funnel_domain: "demo", funnel_stage: "engaged", is_demo: true, dedupe_key: "demo_entry_started" });
+    return trackEvent("demo.workspace.entered", { demo_session_id: "public-demo", entry_point: "direct_route", ...payload }, { page_type: "demo", surface: "demo", funnel_domain: "demo", funnel_stage: "demo_entered", is_demo: true, dedupe_key: "demo_entered" });
+  }
+
+  if (name === "nav_clicked") {
+    return trackEvent("marketing.nav.clicked", payload, { page_type: "marketing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "engaged" });
+  }
+
+  if (name === "signup_started") {
+    return trackEvent("auth.signup.started", payload, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "signup_started" });
+  }
+
+  return trackEvent("marketing.section.viewed", payload, { page_type: "marketing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "engaged" });
 }

@@ -15,7 +15,7 @@ import { Form } from "@/components/ui/form";
 import { useAuth } from "@/providers/auth-provider";
 import { ApiError } from "@/lib/api/errors";
 import { registerSchema, type RegisterFormValues } from "@/features/auth/schemas";
-import { trackFunnelEvent } from "@/features/funnel/analytics";
+import { trackEvent } from "@/features/funnel/analytics";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -34,9 +34,9 @@ export function RegisterForm() {
     setServerError(null);
 
     try {
-      void trackFunnelEvent("signup_started", { surface: "register_form" });
+      void trackEvent("auth.signup.started", { entry_point: "direct_signup", auth_method_intent: "password" }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "signup_started" });
       await register({ email: values.email, password: values.password });
-      void trackFunnelEvent("signup_completed", { surface: "register_form" });
+      void trackEvent("auth.signup.completed", { auth_method: "password", email_verification_required: false }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "authenticated", is_authenticated: false });
       toast.success("Account created. Sign in to continue.");
       router.replace(`/login?registered=1&email=${encodeURIComponent(values.email)}&redirectTo=/start`);
     } catch (error) {

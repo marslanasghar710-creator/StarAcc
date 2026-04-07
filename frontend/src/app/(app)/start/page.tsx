@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { trackFunnelEvent } from "@/features/funnel/analytics";
+import { trackEvent } from "@/features/funnel/analytics";
 import { useCreateOrganizationMutation } from "@/features/organizations/hooks";
 import { useOnboardingStatus } from "@/features/onboarding/hooks";
 import { useOrganization } from "@/providers/organization-provider";
@@ -31,11 +31,11 @@ export default function ConversionStartPage() {
   const [form, setForm] = React.useState({ name: "", legal_name: "", base_currency: "USD", timezone: "America/New_York" });
 
   React.useEffect(() => {
-    void trackFunnelEvent("activation_entered", { screen: "conversion_start" });
+    void trackEvent("activation.flow.entered", { entry_context: "post_workspace_creation", checklist_version: "v1" }, { page_type: "activation", surface: "activation", funnel_domain: "activation", funnel_stage: "activation_started", dedupe_key: "activation_flow_start" });
   }, []);
 
   const createWorkspace = async () => {
-    void trackFunnelEvent("workspace_creation_started", { source: "start_page" });
+    void trackEvent("workspace.creation.started", { source_context: "post_signup" }, { page_type: "signup", surface: "workspace_creation", funnel_domain: "signup", funnel_stage: "workspace_started" });
     const org = await createOrgMutation.mutateAsync({
       name: form.name,
       legal_name: form.legal_name || undefined,
@@ -45,7 +45,7 @@ export default function ConversionStartPage() {
       fiscal_year_start_day: 1,
     });
     setCurrentOrganizationId(org.id);
-    void trackFunnelEvent("workspace_created", { organization_id: org.id, source: "start_page" });
+    void trackEvent("workspace.creation.completed", { org_id: org.id, start_mode: "guided_setup", bootstrap_profile: "default" }, { page_type: "signup", surface: "workspace_creation", funnel_domain: "signup", funnel_stage: "workspace_created", org_id: org.id, is_authenticated: true });
     router.replace("/setup?from=workspace_created");
   };
 

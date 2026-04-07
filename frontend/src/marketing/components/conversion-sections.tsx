@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BarChart3, Building2, CheckCircle2, Landmark, Link2, ShieldCheck, Workflow, WalletCards } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,22 @@ import { trackPublicEvent } from "@/marketing/lib/analytics";
 import { TrackedLink } from "@/marketing/components/tracked-link";
 
 function SectionShell({ id, eyebrow, title, subtitle, children, dense = "medium" }: { id?: string; eyebrow?: string; title: string; subtitle?: string; children: ReactNode; dense?: "low" | "medium" | "high" }) {
+  const ref = useRef<HTMLElement | null>(null);
   const spacing = dense === "high" ? "py-14 md:py-16" : dense === "low" ? "py-12 md:py-14" : "py-16 md:py-20";
+  useEffect(() => {
+    if (!ref.current || !id) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          trackPublicEvent("section_viewed", { section_id: id, view_method: "scroll" });
+        }
+      });
+    }, { threshold: 0.45 });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [id]);
   return (
-    <section id={id} className={`mx-auto max-w-6xl px-4 md:px-6 ${spacing}`}>
+    <section ref={ref} id={id} className={`mx-auto max-w-6xl px-4 md:px-6 ${spacing}`}>
       <div className="mb-6 max-w-3xl space-y-3">
         {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p> : null}
         <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h2>
@@ -26,9 +39,9 @@ function SectionShell({ id, eyebrow, title, subtitle, children, dense = "medium"
 function CtaCluster() {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta: "start_workspace", zone: "hero" }}>Start Workspace</TrackedLink></Button>
-      <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta: "explore_demo", zone: "hero" }}>Explore Demo</TrackedLink></Button>
-      <Button asChild variant="ghost" size="lg"><TrackedLink href="#value-grid" eventPayload={{ cta: "view_features", zone: "hero" }}>View Features</TrackedLink></Button>
+      <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta_id: "hero_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "hero", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
+      <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta_id: "hero_explore_demo", cta_label: "Explore Demo", cta_variant: "secondary", source_section: "hero", destination_type: "demo" }}>Explore Demo</TrackedLink></Button>
+      <Button asChild variant="ghost" size="lg"><TrackedLink href="#value-grid" eventPayload={{ cta_id: "hero_view_features", cta_label: "View Features", cta_variant: "tertiary", source_section: "hero", destination_type: "features_anchor" }}>View Features</TrackedLink></Button>
     </div>
   );
 }
@@ -65,6 +78,9 @@ function ProductFrame() {
 }
 
 export function HeroSection() {
+  useEffect(() => {
+    trackPublicEvent("section_viewed", { section_id: "hero", view_method: "initial_load" });
+  }, []);
   return (
     <section className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-[1.1fr_0.9fr] md:px-6 md:py-16">
       <div className="space-y-5">
@@ -96,7 +112,7 @@ export function TrustStrip() {
   ];
 
   return (
-    <SectionShell id="trust" dense="high" eyebrow="Trust signals" title="Built for reliable financial operations" subtitle="Capability-based credibility, grounded in product truth.">
+    <SectionShell id="trust_strip" dense="high" eyebrow="Trust signals" title="Built for reliable financial operations" subtitle="Capability-based credibility, grounded in product truth.">
       <div className="grid gap-3 md:grid-cols-5">
         {items.map((item) => (
           <div key={item.label} className="rounded-xl border border-border/70 bg-muted/20 p-3">
@@ -146,7 +162,7 @@ export function WorkflowShowcase() {
   ];
 
   return (
-    <SectionShell dense="medium" eyebrow="Operational flow" title="From daily transactions to month-end control" subtitle="A procedural workflow designed for real finance operations.">
+    <SectionShell id="workflow_showcase" dense="medium" eyebrow="Operational flow" title="From daily transactions to month-end control" subtitle="A procedural workflow designed for real finance operations.">
       <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
         <Card className="border-border/70 shadow-sm">
           <CardHeader>
@@ -171,7 +187,7 @@ export function DashboardShowcase() {
     "Report drill-through keeps decisions auditable.",
   ];
   return (
-    <SectionShell dense="medium" eyebrow="Visibility" title="See what needs attention before it becomes a problem" subtitle="Dashboard and reporting surfaces connect daily workflow execution to confident financial review.">
+    <SectionShell id="dashboard_showcase" dense="medium" eyebrow="Visibility" title="See what needs attention before it becomes a problem" subtitle="Dashboard and reporting surfaces connect daily workflow execution to confident financial review.">
       <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <ProductFrame />
         <div className="space-y-3">
@@ -184,7 +200,7 @@ export function DashboardShowcase() {
 
 export function AuditIntegrityBand() {
   return (
-    <SectionShell dense="medium" eyebrow="Control" title="Built on an audit-safe ledger foundation" subtitle="Trace financial activity from workflow to report while maintaining reviewability as processes scale.">
+    <SectionShell id="audit_integrity" dense="medium" eyebrow="Control" title="Built on an audit-safe ledger foundation" subtitle="Trace financial activity from workflow to report while maintaining reviewability as processes scale.">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
           "Immutable financial history",
@@ -199,7 +215,7 @@ export function AuditIntegrityBand() {
 
 export function IntegrationsBand() {
   return (
-    <SectionShell dense="high" eyebrow="Extensibility" title="Integration-ready by design" subtitle="Supports bank data pathways, exports, and a framework for broader workflow connectivity.">
+    <SectionShell id="integrations" dense="high" eyebrow="Extensibility" title="Integration-ready by design" subtitle="Supports bank data pathways, exports, and a framework for broader workflow connectivity.">
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-border/70 shadow-sm"><CardContent className="pt-5 text-sm text-muted-foreground"><Link2 className="mb-2 size-4 text-primary" />Bank data connectivity and import workflows.</CardContent></Card>
         <Card className="border-border/70 shadow-sm"><CardContent className="pt-5 text-sm text-muted-foreground"><WalletCards className="mb-2 size-4 text-primary" />Report exports for finance handoff and external review.</CardContent></Card>
@@ -216,7 +232,7 @@ export function RoleUseCases() {
     { title: "Multi-entity businesses", bullets: ["Preserve process consistency", "Consolidate reporting across entities", "Scale governance as complexity grows"] },
   ];
   return (
-    <SectionShell dense="high" eyebrow="Audience fit" title="Designed for operators, finance leads, and scaling teams" subtitle="Visitors can quickly self-identify how StarAcc fits their operating model.">
+    <SectionShell id="use_cases" dense="high" eyebrow="Audience fit" title="Designed for operators, finance leads, and scaling teams" subtitle="Visitors can quickly self-identify how StarAcc fits their operating model.">
       <div className="grid gap-4 md:grid-cols-3">
         {roles.map((role) => (
           <Card key={role.title} className="border-border/70 shadow-sm">
@@ -231,10 +247,10 @@ export function RoleUseCases() {
 
 export function DemoCTASection() {
   return (
-    <SectionShell dense="medium" eyebrow="Try before setup" title="Explore realistic sample data in an isolated demo workspace" subtitle="Demo includes dashboard, reports, invoices, bills, and reconciliation examples. It is separate from real setup, and you can create your own workspace at any time.">
+    <SectionShell id="demo_cta" dense="medium" eyebrow="Try before setup" title="Explore realistic sample data in an isolated demo workspace" subtitle="Demo includes dashboard, reports, invoices, bills, and reconciliation examples. It is separate from real setup, and you can create your own workspace at any time.">
       <div className="flex flex-wrap gap-3">
-        <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta: "explore_demo", zone: "demo_band" }}>Explore Demo</TrackedLink></Button>
-        <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta: "start_workspace", zone: "demo_band" }}>Start Workspace</TrackedLink></Button>
+        <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta_id: "demo_band_explore_demo", cta_label: "Explore Demo", cta_variant: "secondary", source_section: "demo_cta", destination_type: "demo" }}>Explore Demo</TrackedLink></Button>
+        <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta_id: "midpage_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "demo_cta", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
       </div>
     </SectionShell>
   );
@@ -251,7 +267,7 @@ export function FAQSection({ items }: { items: Array<{ q: string; a: string }> }
             type="button"
             onClick={() => {
               setOpen((current) => current === item.q ? null : item.q);
-              trackPublicEvent("faq_interacted", { question: item.q });
+              trackPublicEvent("faq_interacted", { question: item.q, action: open === item.q ? "closed" : "opened" });
             }}
             className="w-full rounded-xl border border-border/70 bg-card p-4 text-left shadow-sm"
           >
@@ -266,10 +282,10 @@ export function FAQSection({ items }: { items: Array<{ q: string; a: string }> }
 
 export function FinalCTASection() {
   return (
-    <SectionShell dense="low" title="Start with a real workspace, or explore the demo first." subtitle="Choose the path that fits your evaluation stage.">
+    <SectionShell id="final_cta" dense="low" title="Start with a real workspace, or explore the demo first." subtitle="Choose the path that fits your evaluation stage.">
       <div className="flex flex-wrap gap-3">
-        <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta: "start_workspace", zone: "final_cta" }}>Start Workspace</TrackedLink></Button>
-        <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta: "explore_demo", zone: "final_cta" }}>Explore Demo</TrackedLink></Button>
+        <Button asChild size="lg"><TrackedLink href="/register?intent=start_workspace" eventPayload={{ cta_id: "final_start_workspace", cta_label: "Start Workspace", cta_variant: "primary", source_section: "final_cta", destination_type: "signup" }}>Start Workspace</TrackedLink></Button>
+        <Button asChild variant="outline" size="lg"><TrackedLink href="/demo" eventPayload={{ cta_id: "final_explore_demo", cta_label: "Explore Demo", cta_variant: "secondary", source_section: "final_cta", destination_type: "demo" }}>Explore Demo</TrackedLink></Button>
       </div>
     </SectionShell>
   );

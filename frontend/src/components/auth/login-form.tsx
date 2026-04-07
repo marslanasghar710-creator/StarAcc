@@ -15,7 +15,7 @@ import { Form } from "@/components/ui/form";
 import { useAuth } from "@/providers/auth-provider";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas";
 import { ApiError } from "@/lib/api/errors";
-import { trackFunnelEvent } from "@/features/funnel/analytics";
+import { trackEvent } from "@/features/funnel/analytics";
 
 export function LoginForm() {
   const router = useRouter();
@@ -37,6 +37,7 @@ export function LoginForm() {
     try {
       void trackFunnelEvent("signup_completed", { screen: "login", mode: "existing_or_new" });
       await login(values);
+      void trackEvent("auth.login.completed", { auth_method: "password", source_context: "direct" }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "authenticated", is_authenticated: true });
       toast.success("Welcome back to StarAcc.");
       router.replace(searchParams.get("redirectTo") || "/start");
     } catch (error) {
