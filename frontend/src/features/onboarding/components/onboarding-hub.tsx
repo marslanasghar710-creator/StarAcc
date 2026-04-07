@@ -16,6 +16,14 @@ type Props = {
 
 export function OnboardingHub({ organizationId, status }: Props) {
   const { taskMutation } = useOnboardingMutations(organizationId);
+  const toActivationItemId = (taskKey: string) => ({
+    "set-company-details": "settings_reviewed",
+    "confirm-fiscal-year": "settings_reviewed",
+    "setup-chart-of-accounts": "chart_of_accounts_ready",
+    "add-bank-account": "bank_account_added",
+    "add-first-counterparty": "customer_added",
+    "create-first-transaction": "first_invoice_created",
+  }[taskKey] ?? taskKey);
 
   return (
     <div className="space-y-4">
@@ -42,7 +50,7 @@ export function OnboardingHub({ organizationId, status }: Props) {
                     { taskKey: task.key, status: "completed" },
                     {
                       onSuccess: () => {
-                        void trackEvent("activation.checklist_item.completed", { checklist_version: "v1", item_id: task.key, completion_source: "user_action" }, { page_type: "activation", surface: "activation", funnel_domain: "activation", funnel_stage: "activation_started", org_id: organizationId, is_authenticated: true });
+                        void trackEvent("activation.checklist_item.completed", { checklist_version: "v1", item_id: toActivationItemId(task.key), completion_source: "user_action" }, { page_type: "activation", surface: "activation", funnel_domain: "activation", funnel_stage: "activation_started", org_id: organizationId, is_authenticated: true });
                       },
                     },
                   )}
