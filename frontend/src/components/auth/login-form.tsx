@@ -15,6 +15,7 @@ import { Form } from "@/components/ui/form";
 import { useAuth } from "@/providers/auth-provider";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas";
 import { ApiError } from "@/lib/api/errors";
+import { trackFunnelEvent } from "@/features/funnel/analytics";
 
 export function LoginForm() {
   const router = useRouter();
@@ -34,9 +35,10 @@ export function LoginForm() {
     setServerError(null);
 
     try {
+      void trackFunnelEvent("signup_completed", { screen: "login", mode: "existing_or_new" });
       await login(values);
       toast.success("Welcome back to StarAcc.");
-      router.replace(searchParams.get("redirectTo") || "/dashboard");
+      router.replace(searchParams.get("redirectTo") || "/start");
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "We couldn't sign you in with those credentials.";
       setServerError(message);
