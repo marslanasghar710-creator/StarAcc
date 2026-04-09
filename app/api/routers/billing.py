@@ -22,6 +22,7 @@ def list_public_plans(db: Session = Depends(get_db)):
     return [
         PlanResponse(
             code=plan.code,
+            plan_id=plan.plan_id,
             name=plan.name,
             tier=plan.tier,
             is_public=plan.is_public,
@@ -29,6 +30,8 @@ def list_public_plans(db: Session = Depends(get_db)):
             contact_sales_only=plan.contact_sales_only,
             default_trial_days=plan.default_trial_days,
             intervals=list(plan.intervals),
+            pricing=plan.pricing,
+            features=plan.features,
             feature_bundle=plan.feature_bundle,
             limits=plan.limits,
         )

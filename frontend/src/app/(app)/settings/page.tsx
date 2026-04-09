@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 import { PageActionBar } from "@/components/shared/page-action-bar";
 import { usePermissions } from "@/features/permissions/hooks";
 import { useCommandActions, useShortcuts } from "@/features/productivity/shortcuts/use-shortcuts";
@@ -70,7 +72,7 @@ export default function SettingsLandingPage() {
   return (
     <div className="space-y-6">
       <PageHeader eyebrow={currentOrganization?.name || "Settings"} title="Settings" description="Professional admin surfaces for organization, period, tax, and accounting preferences." />
-      <PageActionBar left={<div className="text-sm text-muted-foreground">The backend remains authoritative for fiscal period status, tax code validity, numbering rules, and organization configuration truth.</div>} right={<div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Active organization · {currentOrganization?.name ?? "Unknown"}</div>} />
+      <PageActionBar left={<div className="text-sm text-muted-foreground">The backend remains authoritative for fiscal period status, tax code validity, numbering rules, and organization configuration truth.</div>} right={<div className="flex items-center gap-3"><Button asChild size="sm" variant="outline"><Link href="/settings/integrity">Open integrity center</Link></Button><div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Active organization · {currentOrganization?.name ?? "Unknown"}</div></div>} />
       <SettingsNav sections={sectionsWithAccess} activeHref="/settings" />
       <div className="grid gap-4 lg:grid-cols-2">
         {sectionsWithAccess.map((section) => <SettingsAvailabilityCard key={section.id} section={section} isPermitted={section.isPermitted ?? true} />)}

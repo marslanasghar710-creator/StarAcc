@@ -13,7 +13,7 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (!isBootstrapping && isAuthenticated) {
-      router.replace(searchParams.get("redirectTo") || "/dashboard");
+      router.replace(searchParams.get("redirectTo") || "/start");
     }
   }, [isAuthenticated, isBootstrapping, router, searchParams]);
 

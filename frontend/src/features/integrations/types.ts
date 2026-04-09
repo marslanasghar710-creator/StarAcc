@@ -48,3 +48,18 @@ export type IntegrationSyncRun = {
   records_failed: number;
   error_summary?: string | null;
 };
+
+export type ExternalSourceAccount = {
+  external_account_id: string;
+  label: string;
+  currency?: string | null;
+  account_type?: string | null;
+};
+
+export type ImportSummary = {
+  imported_count: number;
+  duplicate_count: number;
+  failed_count: number;
+  skipped_count: number;
+  job_id?: string | null;
+};
