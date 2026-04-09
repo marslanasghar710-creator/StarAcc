@@ -11,6 +11,7 @@ from app.core.exceptions import forbidden, not_found
 from app.repositories.audit import AuditRepository
 from app.repositories.membership import MembershipRepository
 from app.repositories.users import UserRepository
+from app.services.entitlements_service import EntitlementsService
 
 
 class MembershipService:
@@ -21,6 +22,7 @@ class MembershipService:
         self.audit = AuditRepository(db)
 
     def invite(self, organization_id, invited_by_user_id, email: str, role_id):
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_users")
         token = secrets.token_urlsafe(32)
         user = self.users.get_by_email(email)
         if user and not self.memberships.get_membership(user.id, organization_id):

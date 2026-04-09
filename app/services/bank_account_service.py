@@ -5,6 +5,7 @@ from app.core.exceptions import forbidden, not_found
 from app.repositories.account_repository import AccountRepository
 from app.repositories.audit import AuditRepository
 from app.repositories.bank_account_repository import BankAccountRepository
+from app.services.entitlements_service import EntitlementsService
 
 
 class BankAccountService:
@@ -15,6 +16,7 @@ class BankAccountService:
         self.audit = AuditRepository(db)
 
     def create(self, organization_id, actor_user_id, payload):
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_bank_accounts")
         account = self.accounts.get(organization_id, payload["account_id"])
         if not account:
             raise not_found("Account not found")

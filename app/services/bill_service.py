@@ -19,6 +19,7 @@ from app.services.project_service import ProjectService
 from app.services.numbering_service import NumberingService
 from app.services.tax_calculation_service import TaxCalculationService
 from app.services.tax_settings_service import TaxSettingsService
+from app.services.entitlements_service import EntitlementsService
 
 
 class BillService:
@@ -36,6 +37,7 @@ class BillService:
         self.project_service = ProjectService(db)
 
     def create(self, organization_id, actor_user_id, payload):
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_bills_per_month")
         if payload["due_date"] < payload["issue_date"]:
             raise forbidden("Due date cannot be before issue date")
         supplier = self.suppliers.get(organization_id, payload["supplier_id"])
