@@ -8,7 +8,10 @@ export type PublicEventName =
   | "signup_started"
   | "feature_viewed"
   | "faq_interacted"
-  | "nav_clicked";
+  | "nav_clicked"
+  | "pricing_viewed"
+  | "security_viewed"
+  | "contact_submitted";
 
 export function trackPublicEvent(name: PublicEventName, payload: Record<string, unknown> = {}) {
   if (name === "landing_viewed") {
@@ -50,6 +53,10 @@ export function trackPublicEvent(name: PublicEventName, payload: Record<string, 
 
   if (name === "signup_started") {
     return trackEvent("auth.signup.started", payload, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "signup_started" });
+  }
+
+  if (name === "pricing_viewed") {
+    return trackEvent("pricing.page.viewed", payload, { page_type: "marketing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "engaged" });
   }
 
   return trackEvent("marketing.section.viewed", payload, { page_type: "marketing", surface: "public_site", funnel_domain: "acquisition", funnel_stage: "engaged" });

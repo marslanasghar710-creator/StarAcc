@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { PlanBadge } from "@/components/entitlements/plan-badge";
+import { UsageMeter } from "@/components/entitlements/usage-meter";
+import { UpgradeCTA } from "@/components/entitlements/upgrade-cta";
 import { OrganizationSwitcher } from "@/components/organizations/organization-switcher";
 import { SidebarNav } from "@/components/navigation/sidebar-nav";
 import { AppLogo } from "@/components/shared/app-logo";
@@ -12,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { UserMenu } from "@/components/layout/user-menu";
 import { useOnboardingStatus } from "@/features/onboarding/hooks";
+import { useBillingState } from "@/features/billing/hooks";
 import { navigationItems } from "@/lib/permissions/navigation";
 import { useOrganization } from "@/providers/organization-provider";
 
@@ -20,6 +24,7 @@ export function TopHeader() {
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const onboarding = useOnboardingStatus(currentOrganizationId ?? undefined, Boolean(currentOrganizationId && pathname !== "/setup"));
   const currentNavItem = navigationItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const billing = useBillingState(currentOrganizationId ?? undefined);
   const showSetupBanner = pathname !== "/setup" && Boolean(onboarding.data && onboarding.data.progress_percent < 100);
 
   return (
@@ -51,6 +56,9 @@ export function TopHeader() {
         <div className="hidden xl:block">
           <OrganizationSwitcher />
         </div>
+        <div className="hidden md:flex items-center gap-2">
+          <PlanBadge planId={billing.data?.subscription.plan_code} />
+        </div>
         <NotificationBell />
         <UserMenu />
       </div>
@@ -59,11 +67,19 @@ export function TopHeader() {
       </div>
       {showSetupBanner ? (
         <div className="border-t border-border/50 bg-muted/30 px-4 py-2 text-xs lg:px-6">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-muted-foreground">Setup progress {onboarding.data?.progress_percent}% • continue activation checklist.</p>
-            <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
-              <Link href="/setup">Continue setup</Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <UsageMeter
+                label="Invoices this month"
+                used={billing.data?.usage?.invoices_this_period?.used ?? 0}
+                limit={billing.data?.usage?.invoices_this_period?.limit ?? null}
+              />
+              <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                <Link href="/setup">Continue setup</Link>
+              </Button>
+              <UpgradeCTA />
+            </div>
           </div>
         </div>
       ) : null}

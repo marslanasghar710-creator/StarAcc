@@ -10,6 +10,8 @@ EventName = Literal[
     "marketing.cta.clicked",
     "marketing.faq.toggled",
     "marketing.nav.clicked",
+    "pricing.page.viewed",
+    "pricing.plan.selected",
     "demo.entry.started",
     "demo.workspace.entered",
     "demo.module.viewed",
@@ -30,6 +32,8 @@ EventName = Literal[
     "activation.milestone.reached",
     "activation.completed",
     "app.handoff.completed",
+    "entitlement.limit_reached",
+    "entitlement.feature_blocked",
 ]
 
 

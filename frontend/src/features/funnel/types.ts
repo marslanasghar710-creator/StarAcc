@@ -20,6 +20,8 @@ export type AnalyticsEventName =
   | "marketing.cta.clicked"
   | "marketing.faq.toggled"
   | "marketing.nav.clicked"
+  | "pricing.page.viewed"
+  | "pricing.plan.selected"
   | "demo.entry.started"
   | "demo.workspace.entered"
   | "demo.convert_to_signup.clicked"
@@ -34,7 +36,9 @@ export type AnalyticsEventName =
   | "activation.checklist.viewed"
   | "activation.checklist_item.completed"
   | "activation.completed"
-  | "app.handoff.completed";
+  | "app.handoff.completed"
+  | "entitlement.limit_reached"
+  | "entitlement.feature_blocked";
 
 export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   "marketing.landing.viewed": 1,
@@ -42,6 +46,8 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   "marketing.cta.clicked": 1,
   "marketing.faq.toggled": 1,
   "marketing.nav.clicked": 1,
+  "pricing.page.viewed": 1,
+  "pricing.plan.selected": 1,
   "demo.entry.started": 1,
   "demo.workspace.entered": 1,
   "demo.convert_to_signup.clicked": 1,
@@ -57,6 +63,8 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   "activation.checklist_item.completed": 1,
   "activation.completed": 1,
   "app.handoff.completed": 1,
+  "entitlement.limit_reached": 1,
+  "entitlement.feature_blocked": 1,
 };
 
 export type AnalyticsEventEnvelope = {

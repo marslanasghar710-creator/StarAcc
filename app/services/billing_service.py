@@ -10,12 +10,14 @@ from app.repositories.audit import AuditRepository
 from app.repositories.billing_repository import BillingRepository
 from app.repositories.membership import MembershipRepository
 from app.repositories.payroll_repository import PayrollRepository
+from app.services.usage_service import UsageService
 
 
 class BillingService:
     def __init__(self, db):
         self.db = db
         self.repo = BillingRepository(db)
+        self.usage_service = UsageService(db)
 
     def get_or_create_billing_context(self, organization_id: str, *, requested_by_user_id=None):
         account = self.repo.get_account_by_org(organization_id)
@@ -64,6 +66,7 @@ class BillingService:
         active_members = len([m for m in members if m.status == MembershipStatus.ACTIVE and m.deleted_at is None])
         active_payroll_employees = PayrollRepository(self.db).count_active_employees(organization_id)
         plan = get_plan_or_raise(subscription.plan_code)
+        usage_snapshot = self.usage_service.get_snapshot(organization_id)
 
         usage = {
             "seats": {
@@ -74,15 +77,41 @@ class BillingService:
             "payroll_employees": {
                 "used": active_payroll_employees,
                 "limit": plan.limits.get("payroll_employees"),
-                "within_limit": active_payroll_employees <= plan.limits.get("payroll_employees", 0),
+                "within_limit": active_payroll_employees <= int(plan.limits.get("payroll_employees", 0)),
+            },
+            "invoices_this_period": {
+                "used": usage_snapshot.invoices_this_period,
+                "limit": plan.limits.get("max_invoices_per_month"),
+                "within_limit": plan.limits.get("max_invoices_per_month") == "unlimited" or usage_snapshot.invoices_this_period <= int(plan.limits.get("max_invoices_per_month", 0)),
+            },
+            "bills_this_period": {
+                "used": usage_snapshot.bills_this_period,
+                "limit": plan.limits.get("max_bills_per_month"),
+                "within_limit": plan.limits.get("max_bills_per_month") == "unlimited" or usage_snapshot.bills_this_period <= int(plan.limits.get("max_bills_per_month", 0)),
+            },
+            "users_count": {
+                "used": usage_snapshot.users_count,
+                "limit": plan.limits.get("max_users"),
+                "within_limit": plan.limits.get("max_users") == "unlimited" or usage_snapshot.users_count <= int(plan.limits.get("max_users", 0)),
+            },
+            "bank_accounts_count": {
+                "used": usage_snapshot.bank_accounts_count,
+                "limit": plan.limits.get("max_bank_accounts"),
+                "within_limit": plan.limits.get("max_bank_accounts") == "unlimited" or usage_snapshot.bank_accounts_count <= int(plan.limits.get("max_bank_accounts", 0)),
+            },
+            "integrations_count": {
+                "used": usage_snapshot.integrations_count,
+                "limit": plan.limits.get("max_integrations"),
+                "within_limit": plan.limits.get("max_integrations") == "unlimited" or usage_snapshot.integrations_count <= int(plan.limits.get("max_integrations", 0)),
             },
         }
         for key, row in usage.items():
+            limit = row["limit"]
             self.repo.upsert_usage_snapshot(
                 subscription.id,
                 key,
                 int(row["used"]),
-                int(row["limit"]) if row["limit"] is not None else None,
+                int(limit) if isinstance(limit, int) else None,
                 "within_limit" if row["within_limit"] else "limit_exceeded",
             )
         return usage
@@ -141,6 +170,7 @@ class BillingService:
     def change_plan(self, organization_id: str, *, plan_code: str, interval: BillingInterval, actor_user_id, seats: int | None = None):
         account, current_subscription = self.get_or_create_billing_context(organization_id, requested_by_user_id=actor_user_id)
         plan = get_plan_or_raise(plan_code)
+        AuditRepository(self.db).create(organization_id=organization_id, actor_user_id=actor_user_id, action="billing.upgrade_started", entity_type="billing", entity_id=str(account.id), metadata_json={"from": current_subscription.plan_code, "to": plan_code})
         if plan.contact_sales_only:
             raise bad_request("Selected plan requires sales-assisted provisioning")
 
@@ -168,6 +198,10 @@ class BillingService:
             entity_id=str(new_subscription.id),
             metadata_json={"from": current_subscription.plan_code, "to": plan.code, "interval": interval.value},
         )
+        from_price = int(get_plan_or_raise(current_subscription.plan_code).pricing.get("monthly_price", 0))
+        to_price = int(plan.pricing.get("monthly_price", 0))
+        transition_event = "billing.upgrade_completed" if to_price >= from_price else "billing.downgrade_completed"
+        AuditRepository(self.db).create(organization_id=organization_id, actor_user_id=actor_user_id, action=transition_event, entity_type="billing", entity_id=str(new_subscription.id), metadata_json={"from": current_subscription.plan_code, "to": plan.code})
         self.db.commit()
         self.db.refresh(new_subscription)
         return new_subscription
