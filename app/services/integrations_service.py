@@ -126,6 +126,7 @@ class IntegrationsService:
 
     def create_connection(self, organization_id: str, *, provider_key: str, display_name: str, created_by_user_id, connection_mode: str, config: dict | None = None, secret_ref: str | None = None):
         provider = self.repo.get_provider(provider_key)
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_integrations")
         if not provider:
             raise not_found("Provider not found")
         EntitlementsService(self.db).enforce_limit(organization_id, "max_integrations")
