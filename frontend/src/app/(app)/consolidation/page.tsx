@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDeniedState } from "@/components/feedback/access-denied-state";
+import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
@@ -67,6 +68,7 @@ export default function ConsolidationDashboardPage() {
   }
 
   return (
+    <FeatureGate feature="consolidation">
     <div className="space-y-6">
       <PageHeader
         eyebrow={currentOrganization?.name || "Consolidation"}
@@ -96,5 +98,6 @@ export default function ConsolidationDashboardPage() {
       {latestRun?.income_statement ? <ConsolidatedReportTable title="Income statement" lines={latestRun.income_statement.revenue.lines.concat(latestRun.income_statement.expenses.lines)} /> : null}
       {latestRun?.trial_balance ? <ConsolidatedReportTable title="Trial balance" lines={latestRun.trial_balance.lines} amountLabel="Balance" /> : null}
     </div>
+    </FeatureGate>
   );
 }

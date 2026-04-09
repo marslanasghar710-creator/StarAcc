@@ -8,7 +8,7 @@ def test_public_plan_catalog_endpoint(client):
     codes = {row["code"] for row in data}
     assert "starter" in codes
     assert "growth" in codes
-    assert "advanced" in codes
+    assert "pro" in codes
 
 
 def test_billing_state_auto_initializes_for_org(client):
@@ -20,7 +20,7 @@ def test_billing_state_auto_initializes_for_org(client):
     payload = state.json()
     assert payload["subscription"]["plan_code"] == "starter"
     assert payload["subscription"]["status"] == "trialing"
-    assert payload["limits"]["seats"] == 3
+    assert payload["limits"]["seats"] == 2
 
 
 def test_payroll_run_blocked_without_entitlement(client):
@@ -50,10 +50,10 @@ def test_upgrade_enables_payroll_and_seat_limit_enforced(client):
     upgrade = client.post(
         f"/organizations/{org['id']}/billing/change-plan",
         headers=auth_header(owner["access_token"]),
-        json={"plan_code": "advanced", "billing_interval": "monthly", "seats": 2},
+        json={"plan_code": "pro", "billing_interval": "monthly", "seats": 2},
     )
     assert upgrade.status_code == 200
-    assert upgrade.json()["subscription"]["plan_code"] == "advanced"
+    assert upgrade.json()["subscription"]["plan_code"] == "pro"
 
     roles = client.get("/roles", headers=auth_header(owner["access_token"])).json()
     accountant_role = next(row for row in roles if row["name"] == "accountant")

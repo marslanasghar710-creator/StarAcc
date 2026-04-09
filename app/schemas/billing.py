@@ -5,6 +5,7 @@ from app.core.enums import BillingInterval, SubscriptionStatus
 
 class PlanResponse(BaseModel):
     code: str
+    plan_id: str
     name: str
     tier: str
     is_public: bool
@@ -12,8 +13,10 @@ class PlanResponse(BaseModel):
     contact_sales_only: bool
     default_trial_days: int
     intervals: list[BillingInterval]
+    pricing: dict[str, int | str]
+    features: dict[str, bool]
     feature_bundle: dict[str, bool]
-    limits: dict[str, int]
+    limits: dict[str, int | str]
 
 
 class BillingAccountResponse(BaseModel):
@@ -54,7 +57,7 @@ class CommercialStateResponse(BaseModel):
     account: BillingAccountResponse
     subscription: SubscriptionResponse
     features: dict[str, bool]
-    limits: dict[str, int]
+    limits: dict[str, int | str]
     usage: dict[str, dict[str, int | bool | None]]
     overrides: list[EntitlementOverrideResponse]
 

@@ -15,6 +15,7 @@ import { Form } from "@/components/ui/form";
 import { useAuth } from "@/providers/auth-provider";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas";
 import { ApiError } from "@/lib/api/errors";
+import { trackEvent } from "@/features/funnel/analytics";
 
 export function LoginForm() {
   const router = useRouter();
@@ -35,8 +36,9 @@ export function LoginForm() {
 
     try {
       await login(values);
+      void trackEvent("auth.login.completed", { auth_method: "password", source_context: "direct" }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "authenticated", is_authenticated: true });
       toast.success("Welcome back to StarAcc.");
-      router.replace(searchParams.get("redirectTo") || "/dashboard");
+      router.replace(searchParams.get("redirectTo") || "/start");
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "We couldn't sign you in with those credentials.";
       setServerError(message);

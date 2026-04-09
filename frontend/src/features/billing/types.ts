@@ -1,5 +1,6 @@
 export type BillingPlan = {
   code: string;
+  plan_id: "starter" | "growth" | "pro";
   name: string;
   tier: string;
   is_public: boolean;
@@ -7,8 +8,10 @@ export type BillingPlan = {
   contact_sales_only: boolean;
   default_trial_days: number;
   intervals: Array<"monthly" | "yearly">;
+  pricing: Record<string, number | string>;
+  features: Record<string, boolean>;
   feature_bundle: Record<string, boolean>;
-  limits: Record<string, number>;
+  limits: Record<string, number | string>;
 };
 
 export type BillingState = {
@@ -37,6 +40,6 @@ export type BillingState = {
     seats_purchased: number;
   };
   features: Record<string, boolean>;
-  limits: Record<string, number>;
-  usage: Record<string, { used: number; limit: number | null; within_limit: boolean }>;
+  limits: Record<string, number | string>;
+  usage: Record<string, { used: number; limit: number | string | null; within_limit: boolean }>;
 };

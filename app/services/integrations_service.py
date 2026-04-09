@@ -8,6 +8,7 @@ from app.integrations.provider_registry import INTEGRATION_PROVIDER_REGISTRY
 from app.repositories.audit import AuditRepository
 from app.repositories.integrations_repository import IntegrationsRepository
 from app.services.billing_service import BillingService
+from app.services.entitlements_service import EntitlementsService
 
 
 class IntegrationsService:
@@ -52,11 +53,13 @@ class IntegrationsService:
 
     def create_connection(self, organization_id: str, *, provider_key: str, display_name: str, created_by_user_id, connection_mode: str, config: dict | None = None, secret_ref: str | None = None):
         provider = self.repo.get_provider(provider_key)
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_integrations")
         if not provider:
             raise not_found("Provider not found")
 
         required_feature = INTEGRATION_PROVIDER_REGISTRY[provider.key].required_feature
         if required_feature:
+            EntitlementsService(self.db).enforce_feature(organization_id, "integrations")
             BillingService(self.db).ensure_feature(organization_id, required_feature)
 
         connection = self.repo.create_connection(
