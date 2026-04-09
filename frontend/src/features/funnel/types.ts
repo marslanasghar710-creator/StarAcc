@@ -38,7 +38,13 @@ export type AnalyticsEventName =
   | "activation.completed"
   | "app.handoff.completed"
   | "entitlement.limit_reached"
-  | "entitlement.feature_blocked";
+  | "entitlement.feature_blocked"
+  | "trust.summary.viewed"
+  | "trust.metric_provenance.viewed"
+  | "trust.audit_trace.viewed"
+  | "trust.integrity_issue.viewed"
+  | "trust.reconciliation_attention.clicked"
+  | "trust.report_metadata.viewed";
 
 export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   "marketing.landing.viewed": 1,
@@ -65,6 +71,12 @@ export const EVENT_VERSIONS: Record<AnalyticsEventName, number> = {
   "app.handoff.completed": 1,
   "entitlement.limit_reached": 1,
   "entitlement.feature_blocked": 1,
+  "trust.summary.viewed": 1,
+  "trust.metric_provenance.viewed": 1,
+  "trust.audit_trace.viewed": 1,
+  "trust.integrity_issue.viewed": 1,
+  "trust.reconciliation_attention.clicked": 1,
+  "trust.report_metadata.viewed": 1,
 };
 
 export type AnalyticsEventEnvelope = {

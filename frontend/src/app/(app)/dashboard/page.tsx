@@ -10,6 +10,8 @@ import { SectionCard } from "@/components/shared/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDashboardOverview } from "@/features/dashboard/hooks";
+import { useTrustSummary } from "@/features/trust/hooks";
+import { MetricProvenanceDrawer } from "@/components/trust/metric-provenance-drawer";
 import type { WidgetEnvelope } from "@/features/dashboard/types";
 import { formatDateTime, formatRelativeTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -107,11 +109,13 @@ function SummaryCard({
   currency,
   emphasis,
   performanceWidget,
+  organizationId,
 }: {
   widget: WidgetEnvelope;
   currency: string;
   emphasis?: "strong" | "normal";
   performanceWidget?: boolean;
+  organizationId?: string;
 }) {
   const payload = widget.payload ?? {};
   const money = ((payload.totalCashBalance as { amount?: string } | undefined)?.amount
@@ -148,11 +152,14 @@ function SummaryCard({
         emphasis === "strong" ? "ring-1 ring-primary/25 shadow-md" : "shadow-sm",
         performanceWidget && valueIsZero ? "bg-muted/[0.2]" : "",
       )}
-      actions={widget.drilldownTarget?.route ? (
+      actions=<div className="flex items-center gap-2">
+      {organizationId ? <MetricProvenanceDrawer organizationId={organizationId} metricId={widget.widgetKey} triggerLabel="Why this number?" /> : null}
+      {widget.drilldownTarget?.route ? (
         <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground">
           <Link href={widget.drilldownTarget.route}>{widget.drilldownTarget.label ?? "Detail"}<ChevronRight className="size-3.5" /></Link>
         </Button>
       ) : null}
+      </div>
     >
       <div className="space-y-2.5">
         <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-foreground", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
@@ -300,6 +307,7 @@ function buildActionList({
 export default function DashboardPage() {
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const dashboardQuery = useDashboardOverview(currentOrganizationId ?? undefined, Boolean(currentOrganizationId));
+  const trustSummaryQuery = useTrustSummary(currentOrganizationId ?? undefined);
 
   if (!currentOrganization) {
     return <ErrorState title="No organization selected" description="Switch to an organization to load dashboard state." />;
@@ -376,19 +384,36 @@ export default function DashboardPage() {
         )}
       />
 
+      {trustSummaryQuery.data ? (
+        <SectionCard
+          title="Trust status"
+          description={`Overall status: ${trustSummaryQuery.data.overall_status.replaceAll("_", " ")}`}
+          actions={<Button asChild size="sm" variant="outline"><Link href="/settings/integrity">Open integrity center</Link></Button>}
+        >
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
+            {trustSummaryQuery.data.domains.map((domain: { domain: string; label: string; status: string }) => (
+              <div key={domain.domain} className="rounded-lg border border-border/70 bg-muted/[0.12] p-2">
+                <p className="font-medium">{domain.label}</p>
+                <p className="text-muted-foreground capitalize">{domain.status.replaceAll("_", " ")}</p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
+
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="space-y-2">
           <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Position</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {positionWidgets.map((widget) => (
-              <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} emphasis={widget.widgetKey === "cash_position_summary" ? "strong" : "normal"} />
+              <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} emphasis={widget.widgetKey === "cash_position_summary" ? "strong" : "normal"} />
             ))}
           </div>
         </div>
         <div className="space-y-2">
           <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Performance</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {performanceWidgets.map((widget) => <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} performanceWidget />)}
+            {performanceWidgets.map((widget) => <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} performanceWidget />)}
           </div>
         </div>
       </section>

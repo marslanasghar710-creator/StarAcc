@@ -34,6 +34,12 @@ EventName = Literal[
     "app.handoff.completed",
     "entitlement.limit_reached",
     "entitlement.feature_blocked",
+    "trust.summary.viewed",
+    "trust.metric_provenance.viewed",
+    "trust.audit_trace.viewed",
+    "trust.integrity_issue.viewed",
+    "trust.reconciliation_attention.clicked",
+    "trust.report_metadata.viewed",
 ]
 
 
