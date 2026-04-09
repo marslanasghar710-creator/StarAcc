@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/features/api/query-keys";
-import { getOrganization, getOrganizationSettings, listOrganizationMembers, listOrganizations } from "@/features/organizations/api";
+import { createOrganization, getOrganization, getOrganizationSettings, listOrganizationMembers, listOrganizations } from "@/features/organizations/api";
 
 export function useOrganizationsQuery(enabled = true) {
   return useQuery({
@@ -34,5 +34,15 @@ export function useOrganizationMembersQuery(organizationId?: string, enabled = t
     queryKey: organizationId ? queryKeys.organizations.members(organizationId) : ["organizations", "members", "missing"],
     queryFn: () => listOrganizationMembers(organizationId as string),
     enabled: enabled && Boolean(organizationId),
+  });
+}
+
+export function useCreateOrganizationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createOrganization,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.organizations.list });
+    },
   });
 }
