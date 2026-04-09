@@ -45,6 +45,32 @@ class CreateIntegrationConnectionRequest(BaseModel):
     secret_ref: str | None = None
 
 
+class StartConnectionRequest(BaseModel):
+    provider_id: str
+
+
+class StartConnectionResponse(BaseModel):
+    provider_id: str
+    connection_context: dict
+
+
+class CompleteConnectionRequest(BaseModel):
+    provider_id: str
+    display_name: str
+    auth_payload: dict = Field(default_factory=dict)
+
+
+class ExternalSourceAccount(BaseModel):
+    external_account_id: str
+    label: str
+    currency: str | None = None
+    account_type: str | None = None
+
+
+class ListSourceAccountsResponse(BaseModel):
+    accounts: list[ExternalSourceAccount]
+
+
 class IntegrationSyncRunResponse(BaseModel):
     id: str
     provider_key: str
@@ -66,6 +92,33 @@ class IntegrationSyncRunResponse(BaseModel):
 
 class TriggerSyncRequest(BaseModel):
     direction: IntegrationSyncDirection = IntegrationSyncDirection.PULL
+
+
+class BankStatementRow(BaseModel):
+    transaction_date: str
+    description: str
+    amount: float
+    reference: str | None = None
+    balance: float | None = None
+
+
+class BankStatementImportRequest(BaseModel):
+    bank_account_id: str
+    source_filename: str
+    rows: list[BankStatementRow]
+
+
+class ImportSummaryResponse(BaseModel):
+    imported_count: int
+    duplicate_count: int
+    failed_count: int
+    skipped_count: int
+    job_id: str | None = None
+
+
+class MapExternalAccountRequest(BaseModel):
+    external_account_id: str
+    bank_account_id: str
 
 
 class DisconnectResponse(BaseModel):
