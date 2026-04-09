@@ -21,5 +21,6 @@ export const navigationItems: NavItem[] = [
   { title: "Tax", href: "/tax", description: "Tax center and filings", group: "Insights", icon: ShieldCheck, requiredPermissions: ["tax.settings.read", "tax_reports.read"] },
   { title: "Settings", href: "/settings", description: "Operational controls", group: "Administration", icon: Settings, requiredPermissions: ["settings.read", "organization.read", "org.read", "periods.read", "fiscal_periods.read", "tax_codes.read", "tax.settings.read", "branding.read", "numbering.read"] },
   { title: "Integrations", href: "/integrations", description: "Provider connections and sync health", group: "Administration", icon: PlugZap, requiredPermissions: ["settings.read"] },
+  { title: "Admin Console", href: "/admin", description: "Observability and internal intelligence", group: "Administration", icon: ShieldCheck, requiredPermissions: ["org.read"] },
   { title: "Notifications", href: "/notifications", description: "Alerts and inbox", group: "Administration", icon: Bell, requiredPermissions: ["notifications.read"] },
 ];

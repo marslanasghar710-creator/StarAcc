@@ -23,6 +23,8 @@ from app.repositories.bank_transaction_repository import BankTransactionReposito
 from app.repositories.integrations_repository import IntegrationsRepository
 from app.services.billing_service import BillingService
 from app.services.entitlements_service import EntitlementsService
+from app.services.observability_service import ErrorTrackingService, PerformanceMetricsService, QueryObservabilityService
+from app.schemas.observability import ErrorRecord, PerformanceMetric, QueryPerformanceRecord
 
 
 class IntegrationsService:
@@ -32,6 +34,33 @@ class IntegrationsService:
         self.bank_accounts = BankAccountRepository(db)
         self.bank_transactions = BankTransactionRepository(db)
         self._sync_provider_registry()
+
+    def _record_metric(self, organization_id: str, operation: str, duration_ms: float, status: str, metadata: dict | None = None):
+        PerformanceMetricsService(self.db).record(PerformanceMetric(
+            metric_id=hashlib.sha256(f"{organization_id}:{operation}:{datetime.now(UTC).timestamp()}".encode()).hexdigest()[:24],
+            recorded_at=datetime.now(UTC).isoformat(),
+            domain="integrations",
+            operation=operation,
+            duration_ms=duration_ms,
+            status=status,
+            org_id=organization_id,
+            metadata=metadata or {},
+        ))
+
+    def _record_error(self, organization_id: str, operation: str, error_code: str, message: str, severity: str = "medium", retryable: bool = False, metadata: dict | None = None):
+        ErrorTrackingService(self.db).record(ErrorRecord(
+            error_id=hashlib.sha256(f"{organization_id}:{operation}:{error_code}:{datetime.now(UTC).timestamp()}".encode()).hexdigest()[:24],
+            occurred_at=datetime.now(UTC).isoformat(),
+            domain="integrations",
+            error_class="external_dependency" if "provider" in error_code else "job_failure",
+            error_code=error_code,
+            severity=severity,
+            message=message,
+            org_id=organization_id,
+            operation=operation,
+            retryable=retryable,
+            metadata=metadata or {},
+        ))
 
     def _sync_provider_registry(self):
         for definition in INTEGRATION_PROVIDER_REGISTRY.values():
@@ -65,7 +94,68 @@ class IntegrationsService:
         return payload
 
     def list_connections(self, organization_id: str):
-        return self.repo.list_connections(organization_id)
+        started = datetime.now(UTC)
+        rows = self.repo.list_connections(organization_id)
+        duration_ms = (datetime.now(UTC) - started).total_seconds() * 1000
+        QueryObservabilityService(self.db).record(QueryPerformanceRecord(recorded_at=datetime.now(UTC).isoformat(), query_name="integrations.list_connections", domain="integrations", duration_ms=duration_ms, status="success", row_count=len(rows), org_id=organization_id))
+        return rows
+
+    def start_connection(self, organization_id: str, provider_id: str):
+        provider = self.repo.get_provider(provider_id)
+        if not provider:
+            raise not_found("Provider not found")
+        AuditRepository(self.db).create(
+            organization_id=organization_id,
+            actor_user_id=None,
+            action="integration.connection.started",
+            entity_type="integration_provider",
+            entity_id=provider_id,
+            metadata_json={"provider_id": provider_id},
+        )
+        self.db.commit()
+        return {"provider_id": provider_id, "connection_context": {"authorization_url": f"https://connect.staracc.local/{provider_id}", "state": hashlib.sha256(f"{organization_id}:{provider_id}".encode()).hexdigest()[:24]}}
+
+    def complete_connection(self, organization_id: str, *, provider_id: str, display_name: str, auth_payload: dict, created_by_user_id):
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_integrations")
+        provider = self.repo.get_provider(provider_id)
+        if not provider:
+            raise not_found("Provider not found")
+
+        required_feature = INTEGRATION_PROVIDER_REGISTRY[provider.key].required_feature
+        if required_feature:
+            EntitlementsService(self.db).enforce_feature(organization_id, "integrations")
+            BillingService(self.db).ensure_feature(organization_id, required_feature)
+
+        connection = self.repo.create_connection(
+            organization_id=organization_id,
+            provider_key=provider_id,
+            display_name=display_name,
+            status=IntegrationConnectionStatus.CONNECTED,
+            connection_mode="feed",
+            created_by_user_id=created_by_user_id,
+            config_json={"auth_payload": auth_payload},
+            metadata_json={"required_feature": required_feature},
+        )
+
+        self.repo.create_credential(
+            connection_id=connection.id,
+            credential_type=provider.auth_type.value,
+            secret_ref=f"{provider_id}:{connection.id}",
+            status=IntegrationCredentialStatus.ACTIVE,
+            rotated_at=datetime.now(UTC).isoformat(),
+        )
+
+        AuditRepository(self.db).create(
+            organization_id=organization_id,
+            actor_user_id=created_by_user_id,
+            action="integration.connection.completed",
+            entity_type="integration_connection",
+            entity_id=str(connection.id),
+            metadata_json={"provider_id": provider_id},
+        )
+        self.db.commit()
+        self.db.refresh(connection)
+        return connection
 
     def start_connection(self, organization_id: str, provider_id: str):
         provider = self.repo.get_provider(provider_id)
@@ -310,6 +400,7 @@ class IntegrationsService:
             metadata_json={"source_filename": source_filename, "imported_count": imported, "duplicate_count": duplicates, "failed_count": failed},
         )
         self.db.commit()
+        self._record_metric(organization_id, "import_bank_statement", 0 if len(rows)==0 else (len(rows) * 1.0), "success" if failed == 0 else "partial", {"rows": len(rows), "failed": failed, "duplicates": duplicates})
         return {"imported_count": imported, "duplicate_count": duplicates, "failed_count": failed, "skipped_count": duplicates, "job_id": str(job.id)}
 
     def disconnect_connection(self, organization_id: str, *, connection_id: str, actor_user_id):
@@ -338,6 +429,7 @@ class IntegrationsService:
 
         mapping = self.repo.get_mapping_by_external(connection_id, "bank_account", connection.external_account_id or f"{connection.provider_key}-chk-001")
         if not mapping:
+            self._record_error(organization_id, "trigger_sync", "mapping_required", "Mapping required before import can continue", severity="high")
             raise bad_request("Mapping required before import can continue")
 
         run = self.repo.create_sync_run(
@@ -386,6 +478,7 @@ class IntegrationsService:
             metadata_json=summary,
         )
         self.db.commit()
+        self._record_metric(organization_id, "trigger_sync", 0 if run.records_seen == 0 else (run.records_seen * 2.0), "success" if run.records_failed == 0 else "partial", {"records_seen": run.records_seen, "records_failed": run.records_failed})
         self.db.refresh(run)
         return run
 
