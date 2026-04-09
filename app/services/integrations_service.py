@@ -157,8 +157,66 @@ class IntegrationsService:
         self.db.refresh(connection)
         return connection
 
+    def start_connection(self, organization_id: str, provider_id: str):
+        provider = self.repo.get_provider(provider_id)
+        if not provider:
+            raise not_found("Provider not found")
+        AuditRepository(self.db).create(
+            organization_id=organization_id,
+            actor_user_id=None,
+            action="integration.connection.started",
+            entity_type="integration_provider",
+            entity_id=provider_id,
+            metadata_json={"provider_id": provider_id},
+        )
+        self.db.commit()
+        return {"provider_id": provider_id, "connection_context": {"authorization_url": f"https://connect.staracc.local/{provider_id}", "state": hashlib.sha256(f"{organization_id}:{provider_id}".encode()).hexdigest()[:24]}}
+
+    def complete_connection(self, organization_id: str, *, provider_id: str, display_name: str, auth_payload: dict, created_by_user_id):
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_integrations")
+        provider = self.repo.get_provider(provider_id)
+        if not provider:
+            raise not_found("Provider not found")
+
+        required_feature = INTEGRATION_PROVIDER_REGISTRY[provider.key].required_feature
+        if required_feature:
+            EntitlementsService(self.db).enforce_feature(organization_id, "integrations")
+            BillingService(self.db).ensure_feature(organization_id, required_feature)
+
+        connection = self.repo.create_connection(
+            organization_id=organization_id,
+            provider_key=provider_id,
+            display_name=display_name,
+            status=IntegrationConnectionStatus.CONNECTED,
+            connection_mode="feed",
+            created_by_user_id=created_by_user_id,
+            config_json={"auth_payload": auth_payload},
+            metadata_json={"required_feature": required_feature},
+        )
+
+        self.repo.create_credential(
+            connection_id=connection.id,
+            credential_type=provider.auth_type.value,
+            secret_ref=f"{provider_id}:{connection.id}",
+            status=IntegrationCredentialStatus.ACTIVE,
+            rotated_at=datetime.now(UTC).isoformat(),
+        )
+
+        AuditRepository(self.db).create(
+            organization_id=organization_id,
+            actor_user_id=created_by_user_id,
+            action="integration.connection.completed",
+            entity_type="integration_connection",
+            entity_id=str(connection.id),
+            metadata_json={"provider_id": provider_id},
+        )
+        self.db.commit()
+        self.db.refresh(connection)
+        return connection
+
     def create_connection(self, organization_id: str, *, provider_key: str, display_name: str, created_by_user_id, connection_mode: str, config: dict | None = None, secret_ref: str | None = None):
         provider = self.repo.get_provider(provider_key)
+        EntitlementsService(self.db).enforce_limit(organization_id, "max_integrations")
         if not provider:
             raise not_found("Provider not found")
         EntitlementsService(self.db).enforce_limit(organization_id, "max_integrations")
