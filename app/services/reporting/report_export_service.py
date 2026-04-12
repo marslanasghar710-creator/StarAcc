@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import NotificationType, ReportExportFormat
 from app.services.notification_preference_service import NotificationPreferenceService
 from app.services.notification_service import NotificationService
+from app.services.entitlements_service import EntitlementsService
 from app.services.reporting.export_renderers import flatten_payload, render_report_pdf, render_report_xlsx
 from app.services.reporting.report_context_service import ReportContextService
 
@@ -27,6 +28,8 @@ class ReportExportService:
         serialized = payload.model_dump(mode="json") if hasattr(payload, "model_dump") else payload
         generated_at = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
         file_name = f"{file_stem}-{generated_at}.{export_format.value}"
+        if export_format in {ReportExportFormat.PDF, ReportExportFormat.XLSX}:
+            EntitlementsService(self.db).enforce_feature(organization_id, "advanced_exports")
         rows = flatten_payload(serialized)
         context = self.contexts.build_context(
             report_type=report_type,

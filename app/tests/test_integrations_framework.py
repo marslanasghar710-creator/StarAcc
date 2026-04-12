@@ -46,7 +46,7 @@ def test_sync_and_webhook_idempotency(client):
     client.post(
         f"/organizations/{org['id']}/billing/change-plan",
         headers=auth_header(tokens["access_token"]),
-        json={"plan_code": "advanced", "billing_interval": "monthly"},
+        json={"plan_code": "pro", "billing_interval": "monthly"},
     )
 
     connection = client.post(
