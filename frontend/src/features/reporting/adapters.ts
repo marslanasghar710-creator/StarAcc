@@ -84,7 +84,7 @@ function createDefaultReports(): ReportsLandingItem[] {
       description: "Verify debit and credit balances by account as of a selected date.",
       href: "/reports/trial-balance",
       isAvailable: true,
-      allowedFormats: ["csv", "pdf"],
+      allowedFormats: ["csv", "xlsx", "pdf"],
       requiredPermissions: ["reports.read", "reporting.read", "trial_balance.read", "reports.trial_balance.read"],
       recommended: true,
     },
@@ -95,7 +95,7 @@ function createDefaultReports(): ReportsLandingItem[] {
       description: "Review revenue, cost of sales, expenses, and net profit for a period.",
       href: "/reports/profit-loss",
       isAvailable: true,
-      allowedFormats: ["csv", "pdf"],
+      allowedFormats: ["csv", "xlsx", "pdf"],
       requiredPermissions: ["reports.read", "reporting.read", "profit_and_loss.read", "reports.profit_loss.read"],
       recommended: true,
     },
@@ -106,7 +106,7 @@ function createDefaultReports(): ReportsLandingItem[] {
       description: "Inspect assets, liabilities, equity, and statement balance at a point in time.",
       href: "/reports/balance-sheet",
       isAvailable: true,
-      allowedFormats: ["csv", "pdf"],
+      allowedFormats: ["csv", "xlsx", "pdf"],
       requiredPermissions: ["reports.read", "reporting.read", "balance_sheet.read", "reports.balance_sheet.read"],
       recommended: true,
     },
@@ -117,7 +117,7 @@ function createDefaultReports(): ReportsLandingItem[] {
       description: "Trace detailed ledger movements, references, and running balances by account.",
       href: "/reports/general-ledger",
       isAvailable: true,
-      allowedFormats: ["csv", "pdf"],
+      allowedFormats: ["csv", "xlsx", "pdf"],
       requiredPermissions: ["reports.read", "reporting.read", "general_ledger.read", "reports.general_ledger.read", "ledger.read"],
       recommended: false,
     },
@@ -128,19 +128,19 @@ function createDefaultReports(): ReportsLandingItem[] {
       description: "Build, save, preview, and export backend-driven tabular reports.",
       href: "/reports/custom",
       isAvailable: true,
-      allowedFormats: ["csv", "pdf"],
+      allowedFormats: ["csv", "xlsx", "pdf"],
       requiredPermissions: ["reports.custom.read"],
       recommended: true,
     },
   ];
 }
 
-function adaptFormats(value: unknown): Array<"csv" | "pdf"> {
+function adaptFormats(value: unknown): Array<"csv" | "xlsx" | "pdf"> {
   if (!Array.isArray(value)) {
-    return ["csv", "pdf"];
+    return ["csv", "xlsx", "pdf"];
   }
 
-  return value.filter((item): item is "csv" | "pdf" => item === "csv" || item === "pdf");
+  return value.filter((item): item is "csv" | "xlsx" | "pdf" => item === "csv" || item === "xlsx" || item === "pdf");
 }
 
 function adaptFilterOption(value: unknown): ReportFilterOption | null {

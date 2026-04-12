@@ -8,6 +8,7 @@ export function ReportExportActions({ canExport, isExporting, onExport }: { canE
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button type="button" variant="outline" size="sm" onClick={() => onExport("csv")} disabled={isExporting}><Download className="size-4" />Export CSV</Button>
+      <Button type="button" variant="outline" size="sm" onClick={() => onExport("xlsx")} disabled={isExporting}><Download className="size-4" />Export XLSX</Button>
       <Button type="button" variant="outline" size="sm" onClick={() => onExport("pdf")} disabled={isExporting}><Download className="size-4" />Export PDF</Button>
     </div>
   );

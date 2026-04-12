@@ -468,16 +468,50 @@ def test_reporting_exports_and_permissions(client, db):
     staff_token = create_access_token(str(staff.id))
     outsider_token = create_access_token(str(outsider.id))
 
-    export_response = client.get(
+    export_csv = client.get(
         f"/organizations/{org.id}/reports/trial-balance/export",
         headers=auth_header(owner_token),
         params={"as_of_date": "2026-02-28", "export_format": "csv"},
     )
-    assert export_response.status_code == 200
-    assert export_response.headers["content-type"].startswith("text/csv")
-    assert "lines.code" in export_response.text
-    assert db.scalar(select(ReportRun.id).where(ReportRun.organization_id == org.id)) is not None
-    assert db.scalar(select(ReportExport.id).where(ReportExport.organization_id == org.id)) is not None
+    assert export_csv.status_code == 200
+    assert export_csv.headers["content-type"].startswith("text/csv")
+    assert "lines.code" in export_csv.text
+
+    export_json = client.get(
+        f"/organizations/{org.id}/reports/trial-balance/export",
+        headers=auth_header(owner_token),
+        params={"as_of_date": "2026-02-28", "export_format": "json"},
+    )
+    assert export_json.status_code == 200
+    assert export_json.headers["content-type"].startswith("application/json")
+    assert "metadata" in export_json.text
+
+    export_pdf = client.get(
+        f"/organizations/{org.id}/reports/trial-balance/export",
+        headers=auth_header(owner_token),
+        params={"as_of_date": "2026-02-28", "export_format": "pdf"},
+    )
+    assert export_pdf.status_code == 200
+    assert export_pdf.headers["content-type"].startswith("application/pdf")
+    assert len(export_pdf.content) > 100
+
+    export_xlsx = client.get(
+        f"/organizations/{org.id}/reports/trial-balance/export",
+        headers=auth_header(owner_token),
+        params={"as_of_date": "2026-02-28", "export_format": "xlsx"},
+    )
+    assert export_xlsx.status_code == 200
+    assert export_xlsx.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    assert len(export_xlsx.content) > 100
+
+    assert export_csv.headers["content-disposition"].startswith('attachment; filename="trial-balance-')
+    assert export_pdf.headers["content-disposition"].endswith('.pdf"')
+    assert export_xlsx.headers["content-disposition"].endswith('.xlsx"')
+
+    report_runs = db.scalars(select(ReportRun).where(ReportRun.organization_id == org.id)).all()
+    report_exports = db.scalars(select(ReportExport).where(ReportExport.organization_id == org.id)).all()
+    assert len(report_runs) >= 4
+    assert {row.export_format.value for row in report_exports} >= {"csv", "json", "pdf", "xlsx"}
 
     viewer_read = client.get(
         f"/organizations/{org.id}/reports/profit-loss",
