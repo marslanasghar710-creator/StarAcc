@@ -28,25 +28,6 @@ export default function PricingPage() {
 
         <PricingPlanGrid />
 
-        <div className="rounded-2xl border border-border/70 bg-card p-6">
-          <h2 className="text-xl font-semibold">Usage limits at a glance</h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-muted-foreground">
-                  <th className="py-2">Limit</th><th>Starter</th><th>Growth</th><th>Pro</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td className="py-2">Invoices / month</td><td>50</td><td>500</td><td>Unlimited</td></tr>
-                <tr><td className="py-2">Bills / month</td><td>50</td><td>500</td><td>Unlimited</td></tr>
-                <tr><td className="py-2">Users</td><td>2</td><td>10</td><td>Unlimited</td></tr>
-                <tr><td className="py-2">Bank accounts</td><td>1</td><td>5</td><td>Unlimited</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         <div className="space-y-3">
           <h2 className="text-xl font-semibold">FAQ</h2>
           {faq.map((item) => (

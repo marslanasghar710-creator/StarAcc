@@ -13,6 +13,15 @@ from app.repositories.payroll_repository import PayrollRepository
 from app.services.usage_service import UsageService
 
 
+LIMIT_USAGE_KEY_MAP = {
+    "max_entities": "entities_count",
+    "max_users": "users_count",
+    "max_invoices_per_month": "invoices_this_period",
+    "max_bills_per_month": "bills_this_period",
+    "max_bank_accounts": "bank_accounts_count",
+    "max_integrations": "integrations_count",
+}
+
 class BillingService:
     def __init__(self, db):
         self.db = db
@@ -94,6 +103,11 @@ class BillingService:
                 "limit": plan.limits.get("max_users"),
                 "within_limit": plan.limits.get("max_users") == "unlimited" or usage_snapshot.users_count <= int(plan.limits.get("max_users", 0)),
             },
+            "entities_count": {
+                "used": usage_snapshot.entities_count,
+                "limit": plan.limits.get("max_entities"),
+                "within_limit": plan.limits.get("max_entities") == "unlimited" or usage_snapshot.entities_count <= int(plan.limits.get("max_entities", 0)),
+            },
             "bank_accounts_count": {
                 "used": usage_snapshot.bank_accounts_count,
                 "limit": plan.limits.get("max_bank_accounts"),
@@ -162,8 +176,11 @@ class BillingService:
         limit = state["limits"].get(limit_key)
         if limit is None:
             return state
-        used = projected_usage if projected_usage is not None else state["usage"].get(limit_key, {}).get("used", 0)
-        if used > limit:
+        usage_key = LIMIT_USAGE_KEY_MAP.get(limit_key, limit_key)
+        used = projected_usage if projected_usage is not None else state["usage"].get(usage_key, {}).get("used", 0)
+        if isinstance(limit, str) and limit == "unlimited":
+            return state
+        if used > int(limit):
             raise forbidden(f"Usage limit exceeded for '{limit_key}' ({used}/{limit})")
         return state
 

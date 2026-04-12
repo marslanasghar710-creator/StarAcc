@@ -12,7 +12,7 @@ from app.db.models.ar import Invoice
 from app.db.models.banking import BankAccount
 from app.db.models.integrations import IntegrationConnection
 from app.db.models.membership import OrganizationUser
-from app.db.models.organization import Organization
+from app.db.models.reporting import ConsolidationGroup, GroupEntity
 
 
 @dataclass
@@ -67,9 +67,20 @@ class UsageService:
                 OrganizationUser.deleted_at.is_(None),
             )
         ) or 0
-        entities_count = self.db.scalar(
-            select(func.count()).select_from(Organization).where(Organization.deleted_at.is_(None))
-        ) or 0
+        grouped_entity_ids = {
+            str(entity_id)
+            for entity_id in self.db.scalars(
+                select(GroupEntity.organization_id)
+                .join(ConsolidationGroup, ConsolidationGroup.id == GroupEntity.group_id)
+                .where(
+                    ConsolidationGroup.organization_id == org_uuid,
+                    ConsolidationGroup.deleted_at.is_(None),
+                    GroupEntity.deleted_at.is_(None),
+                )
+            ).all()
+        }
+        grouped_entity_ids.add(str(org_uuid))
+        entities_count = len(grouped_entity_ids)
         bank_accounts_count = self.db.scalar(
             select(func.count()).select_from(BankAccount).where(
                 BankAccount.organization_id == org_uuid,

@@ -140,6 +140,7 @@ class ReportExportFormat(StrEnum):
     JSON = "json"
     CSV = "csv"
     PDF = "pdf"
+    XLSX = "xlsx"
 
 
 class ReportRunStatus(StrEnum):
