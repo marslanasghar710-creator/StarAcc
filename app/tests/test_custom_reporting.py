@@ -70,6 +70,42 @@ def test_custom_report_preview_create_run_and_export(client, db):
     assert export.headers["content-type"].startswith("text/csv")
     assert "rows.source_module" in export.text
 
+    export_pdf = client.post(
+        f"/organizations/{org.id}/custom-reports/{report_id}/export",
+        headers=auth_header(token),
+        json={
+            "dataset_id": "journal_lines",
+            "columns": ["source_module", "net_amount"],
+            "filters": [{"field": "entry_date", "operator": "between", "value": "2026-01-01", "value_to": "2026-02-28"}],
+            "groupings": ["source_module"],
+            "sorting": [{"field": "source_module", "direction": "asc"}],
+            "page": 1,
+            "page_size": 100,
+            "export_format": "pdf",
+        },
+    )
+    assert export_pdf.status_code == 200
+    assert export_pdf.headers["content-type"].startswith("application/pdf")
+    assert len(export_pdf.content) > 100
+
+    export_xlsx = client.post(
+        f"/organizations/{org.id}/custom-reports/{report_id}/export",
+        headers=auth_header(token),
+        json={
+            "dataset_id": "journal_lines",
+            "columns": ["source_module", "net_amount"],
+            "filters": [{"field": "entry_date", "operator": "between", "value": "2026-01-01", "value_to": "2026-02-28"}],
+            "groupings": ["source_module"],
+            "sorting": [{"field": "source_module", "direction": "asc"}],
+            "page": 1,
+            "page_size": 100,
+            "export_format": "xlsx",
+        },
+    )
+    assert export_xlsx.status_code == 200
+    assert export_xlsx.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    assert len(export_xlsx.content) > 100
+
 
 def test_custom_report_definition_validation_permissions_and_org_isolation(client, db):
     owner, org, _accounts = setup_reporting_fixture(db)

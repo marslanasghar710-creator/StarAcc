@@ -62,4 +62,5 @@ export type ImportSummary = {
   failed_count: number;
   skipped_count: number;
   job_id?: string | null;
+  error_samples?: Array<{ row: number; error: string }>;
 };

@@ -71,7 +71,7 @@ export function useMapExternalAccount(organizationId?: string, connectionId?: st
 
 export function useImportBankStatement(organizationId?: string) {
   return useMutation({
-    mutationFn: (payload: { bank_account_id: string; source_filename: string; rows: Array<{ transaction_date: string; description: string; amount: number; reference?: string | null; balance?: number | null }> }) => importBankStatement(organizationId!, payload),
+    mutationFn: (payload: { bank_account_id: string; source_filename: string; rows?: Array<{ transaction_date: string; description: string; amount: number; reference?: string | null; balance?: number | null }>; csv_content?: string; field_mapping?: Record<string, string>; connection_id?: string; external_account_id?: string }) => importBankStatement(organizationId!, payload),
   });
 }
 

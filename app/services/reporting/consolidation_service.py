@@ -39,6 +39,7 @@ from app.schemas.consolidation import (
     GroupEntityCreate,
     GroupEntityDetailResponse,
 )
+from app.services.entitlements_service import EntitlementsService
 from app.services.reporting.common import natural_amount
 
 UTC = timezone.utc
@@ -65,6 +66,7 @@ class ConsolidationService:
             raise forbidden("Not a member of this organization")
         if not self.rbac.role_has_permission(membership.role_id, permission_code):
             raise forbidden("Permission denied")
+        EntitlementsService(self.db).enforce_feature(str(organization_id), "consolidation")
         return membership
 
     def _assert_group_permission(self, group_id: str | UUID, user_id: str | UUID, permission_code: str) -> AccessibleGroup:
@@ -123,6 +125,7 @@ class ConsolidationService:
             raise forbidden("You do not have access to the selected entity organization")
         if self.repo.get_group_entity(group_id, payload.organization_id):
             raise forbidden("Entity is already in this group")
+        EntitlementsService(self.db).enforce_limit(str(access.group.organization_id), "max_entities")
         organization = self.repo.get_organization(payload.organization_id)
         if not organization:
             raise not_found("Organization not found")

@@ -2,7 +2,7 @@ export type CustomReportFieldDataType = "string" | "number" | "date" | "datetime
 export type CustomReportFieldKind = "dimension" | "metric";
 export type CustomReportFilterOperator = "eq" | "neq" | "contains" | "starts_with" | "gt" | "gte" | "lt" | "lte" | "between" | "in" | "is_null" | "not_null";
 export type CustomReportSortDirection = "asc" | "desc";
-export type CustomReportExportFormat = "csv" | "pdf";
+export type CustomReportExportFormat = "csv" | "pdf" | "xlsx";
 export type CustomReportVisibility = "private" | "organization";
 
 export type CustomReportFieldOption = {
