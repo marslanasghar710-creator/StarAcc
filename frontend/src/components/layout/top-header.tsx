@@ -35,18 +35,20 @@ export function TopHeader() {
   return (
     <header className={cn(
       "sticky top-0 z-20 border-b backdrop-blur supports-[backdrop-filter]:bg-background/80",
-      isDashboard ? "border-slate-700/45 bg-slate-950/75 supports-[backdrop-filter]:bg-slate-950/60" : "border-border/60 bg-background/95",
+      isDashboard
+        ? "border-border/60 bg-background/92 shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:bg-background/72 dark:shadow-[0_12px_28px_rgba(2,6,23,0.38)] supports-[backdrop-filter]:bg-background/82"
+        : "border-border/60 bg-background/95",
     )}>
       <div className="flex h-16 items-center gap-3 px-4 lg:px-6">
         <div className="lg:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Open navigation" className={cn("rounded-xl", isDashboard && "border-slate-700/60 bg-slate-900/60 hover:bg-slate-800")}>
+              <Button variant="outline" size="icon" aria-label="Open navigation" className={cn("rounded-xl", isDashboard && "border-border bg-background/70 dark:bg-muted/30")}>
                 <Menu className="size-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className={cn("w-[320px] p-0", isDashboard && "border-slate-700/60 bg-slate-950")}>
-              <div className={cn("border-b px-5 py-5", isDashboard ? "border-slate-700/60" : "border-border/60")}>
+            <SheetContent side="left" className={cn("w-[320px] p-0", isDashboard && "border-border bg-background dark:bg-card")}>
+              <div className={cn("border-b px-5 py-5", isDashboard ? "border-border/60" : "border-border/60")}>
                 <AppLogo />
               </div>
               <div className="px-4 py-4">
@@ -57,8 +59,8 @@ export function TopHeader() {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className={cn("text-xs font-semibold uppercase tracking-[0.2em]", isDashboard ? "text-slate-400" : "text-muted-foreground")}>{currentOrganization?.name ?? "Workspace"}</p>
-          <p className={cn("truncate text-sm font-medium", isDashboard ? "text-slate-100" : "text-foreground")}>{currentNavItem?.title ?? "Accounting workspace"}</p>
+          <p className={cn("text-xs font-semibold uppercase tracking-[0.2em]", isDashboard ? "text-muted-foreground" : "text-muted-foreground")}>{currentOrganization?.name ?? "Workspace"}</p>
+          <p className={cn("truncate text-sm font-medium", isDashboard ? "text-foreground" : "text-foreground")}>{currentNavItem?.title ?? "Accounting workspace"}</p>
         </div>
 
         <div className="hidden xl:block">
@@ -70,13 +72,13 @@ export function TopHeader() {
         <NotificationBell />
         <UserMenu />
       </div>
-      <div className={cn("border-t px-4 py-2 text-xs lg:px-6 xl:hidden", isDashboard ? "border-slate-700/50 text-slate-300" : "border-border/50 text-muted-foreground")}>
+      <div className={cn("border-t px-4 py-2 text-xs lg:px-6 xl:hidden", isDashboard ? "border-border/50 text-muted-foreground" : "border-border/50 text-muted-foreground")}>
         <OrganizationSwitcher />
       </div>
       {showSetupBanner ? (
-        <div className={cn("border-t px-4 py-2 text-xs lg:px-6", isDashboard ? "border-slate-700/45 bg-slate-900/70" : "border-border/50 bg-muted/30")}>
+        <div className={cn("border-t px-4 py-2 text-xs lg:px-6", isDashboard ? "border-border/50 bg-muted/40 dark:bg-muted/25" : "border-border/50 bg-muted/30")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className={cn(isDashboard ? "text-slate-300" : "text-muted-foreground")}>
+            <p className={cn(isDashboard ? "text-muted-foreground" : "text-muted-foreground")}>
               Activation {activationSnapshot?.completion_percent ?? onboarding.data?.progress_percent ?? 0}% • {activationSnapshot?.status === "not_started" ? "start setup checklist" : "continue setup checklist"}.
             </p>
             <div className="flex items-center gap-2">
