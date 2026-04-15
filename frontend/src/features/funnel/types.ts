@@ -11,6 +11,19 @@ export type FunnelStage =
   | "activated"
   | "handoff_to_app";
 
+export const CANONICAL_FUNNEL_STAGES: FunnelStage[] = [
+  "acquired",
+  "engaged",
+  "demo_entered",
+  "signup_started",
+  "authenticated",
+  "workspace_started",
+  "workspace_created",
+  "activation_started",
+  "activated",
+  "handoff_to_app",
+];
+
 export type PageType = "landing" | "marketing" | "demo" | "signup" | "activation" | "app";
 export type SurfaceType = "public_site" | "demo" | "signup" | "workspace_creation" | "activation" | "authenticated_app";
 

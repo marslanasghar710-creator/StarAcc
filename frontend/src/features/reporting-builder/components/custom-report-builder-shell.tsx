@@ -159,7 +159,7 @@ export function CustomReportBuilderShell({ organizationId, datasets, report }: {
     }
   };
 
-  const handleExport = async (format: "csv" | "pdf") => {
+  const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
     try {
       if (report) {
         await exportSavedMutation.mutateAsync({ input: draft, format });

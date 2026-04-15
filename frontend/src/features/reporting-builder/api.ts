@@ -125,7 +125,7 @@ async function downloadReport(path: string, body: Record<string, unknown>, forma
   const response = await fetch(`${clientEnv.NEXT_PUBLIC_API_BASE_URL}${path}`, {
     method: "POST",
     headers: {
-      Accept: format === "csv" ? "text/csv,application/octet-stream" : "application/pdf,application/octet-stream",
+      Accept: format === "csv" ? "text/csv,application/octet-stream" : format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/octet-stream" : "application/pdf,application/octet-stream",
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },

@@ -124,7 +124,7 @@ async function downloadReport(path: string, format: ReportFormat): Promise<Repor
   const response = await fetch(`${clientEnv.NEXT_PUBLIC_API_BASE_URL}${path}`, {
     method: "GET",
     headers: {
-      Accept: format === "csv" ? "text/csv,application/octet-stream" : "application/pdf,application/octet-stream",
+      Accept: format === "csv" ? "text/csv,application/octet-stream" : format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/octet-stream" : "application/pdf,application/octet-stream",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     credentials: "include",
@@ -157,7 +157,7 @@ export async function exportTrialBalance(organizationId: string, filters: TrialB
     account_type: filters.account_type || null,
     search: filters.search || null,
     include_zero_balances: filters.include_zero_balances,
-    format,
+    export_format: format,
   });
 
   return downloadReport(`/organizations/${organizationId}/reports/trial-balance/export${query}`, format);
@@ -170,7 +170,7 @@ export async function exportProfitLoss(organizationId: string, filters: ProfitLo
     period_id: filters.period_id || null,
     comparison_mode: filters.comparison_mode,
     basis: filters.basis || null,
-    format,
+    export_format: format,
   });
 
   return downloadReport(`/organizations/${organizationId}/reports/profit-loss/export${query}`, format);
@@ -181,7 +181,7 @@ export async function exportBalanceSheet(organizationId: string, filters: Balanc
     as_of_date: filters.as_of_date,
     period_id: filters.period_id || null,
     comparison_mode: filters.comparison_mode,
-    format,
+    export_format: format,
   });
 
   return downloadReport(`/organizations/${organizationId}/reports/balance-sheet/export${query}`, format);
@@ -196,7 +196,7 @@ export async function exportGeneralLedger(organizationId: string, filters: Gener
     source_module: filters.source_module || null,
     status: filters.status || null,
     cursor: filters.cursor || null,
-    format,
+    export_format: format,
   });
 
   return downloadReport(`/organizations/${organizationId}/reports/general-ledger/export${query}`, format);

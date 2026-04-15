@@ -39,11 +39,28 @@ export function MetricProvenanceDrawer({ organizationId, metricId, triggerLabel 
               </ul>
             </div>
             <div>
+              <p className="font-medium">Source objects</p>
+              <ul className="mt-1 text-muted-foreground">
+                {Object.entries(query.data.source_objects).map(([k, v]) => <li key={k}>• {k}: {v}</li>)}
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium">Journal effects</p>
+              <ul className="mt-1 text-muted-foreground">
+                {Object.entries(query.data.journal_effects).map(([k, v]) => <li key={k}>• {k}: {String(v)}</li>)}
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium">Context filters</p>
+              <pre className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{JSON.stringify(query.data.context_filters, null, 2)}</pre>
+            </div>
+            <div>
               <p className="font-medium">Drill-through</p>
               <ul className="mt-1 text-muted-foreground">
                 {query.data.drill_targets.map((target) => <li key={`${target.target_type}-${target.route}`}>• {target.label} → {target.route}</li>)}
               </ul>
             </div>
+            <p className="text-xs text-muted-foreground">Generated at {new Date(query.data.generated_at).toLocaleString()}</p>
           </div>
         ) : null}
       </SheetContent>

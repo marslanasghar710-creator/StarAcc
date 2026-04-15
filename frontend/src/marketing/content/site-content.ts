@@ -1,8 +1,8 @@
 export type Cta = { label: string; href: string; event: string };
 
 export const primaryCtas: { primary: Cta; secondary: Cta } = {
-  primary: { label: "Explore Demo", href: "/demo", event: "cta_explore_demo" },
-  secondary: { label: "Start Setup", href: "/register", event: "cta_start_setup" },
+  primary: { label: "Start Workspace", href: "/signup?intent=start_workspace", event: "cta_start_workspace" },
+  secondary: { label: "Explore Demo", href: "/demo", event: "cta_explore_demo" },
 };
 
 export const navigationLinks = [
@@ -30,7 +30,7 @@ export const faqItems = [
   { q: "Can I explore with demo data first?", a: "Yes. The public demo entry uses isolated seeded sample data paths and never touches customer ledgers." },
   { q: "Does StarAcc support multi-entity accounting?", a: "Yes. Consolidation groups, elimination entries, and consolidated runs are available in-platform." },
   { q: "How are permissions handled?", a: "Access is role-based with organization scoping, so workflows and data stay boundary-safe." },
-  { q: "Does it support reports and exports?", a: "Yes. Core reports plus export/PDF-ready surfaces are built in for operational finance handoff." },
+  { q: "Does it support reports and exports?", a: "Yes. Core financial reports and export workflows are built in for operational handoff and review." },
   { q: "How do onboarding and setup work?", a: "Signup routes into real authentication, organization context, and guided onboarding paths." },
 ];
 

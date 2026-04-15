@@ -29,6 +29,9 @@ export function RegisterForm() {
       confirmPassword: "",
     },
   });
+  React.useEffect(() => {
+    void trackEvent("auth.signup.started", { entry_point: "register_page_view", auth_method_intent: "password" }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "signup_started", dedupe_key: "register_page_view" });
+  }, []);
 
   const onSubmit = async (values: RegisterFormValues) => {
     setServerError(null);
@@ -42,6 +45,7 @@ export function RegisterForm() {
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "We couldn't create your account right now.";
       setServerError(message);
+      void trackEvent("auth.error.shown", { source: "signup", error_type: "registration", message }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "signup_started", is_authenticated: false });
       toast.error(message);
     }
   };

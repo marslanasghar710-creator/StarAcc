@@ -35,7 +35,6 @@ export function LoginForm() {
     setServerError(null);
 
     try {
-      void trackFunnelEvent("signup_completed", { screen: "login", mode: "existing_or_new" });
       await login(values);
       void trackEvent("auth.login.completed", { auth_method: "password", source_context: "direct" }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "authenticated", is_authenticated: true });
       toast.success("Welcome back to StarAcc.");
@@ -43,6 +42,7 @@ export function LoginForm() {
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "We couldn't sign you in with those credentials.";
       setServerError(message);
+      void trackEvent("auth.error.shown", { source: "login", error_type: "credentials_or_session", message }, { page_type: "signup", surface: "signup", funnel_domain: "signup", funnel_stage: "signup_started", is_authenticated: false });
       toast.error(message);
     }
   };

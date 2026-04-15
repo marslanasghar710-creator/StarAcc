@@ -49,7 +49,7 @@ export default function BalanceSheetPage() {
     router.replace(next ? `${pathname}?${next}` : pathname);
   }
 
-  async function handleExport(format: "csv" | "pdf") {
+  async function handleExport(format: "csv" | "xlsx" | "pdf") {
     if (!parsedFilters.success || !currentOrganizationId) return;
     try {
       const result = await exportMutation.mutateAsync({ filters: parsedFilters.data, format });

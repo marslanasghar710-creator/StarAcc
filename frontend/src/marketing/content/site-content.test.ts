@@ -3,6 +3,12 @@ import { describe, expect, it } from "vitest";
 import { faqItems, navigationLinks, pricingPlans, primaryCtas } from "@/marketing/content/site-content";
 
 describe("public GTM content", () => {
+  it("keeps primary CTA hierarchy aligned to conversion flow", () => {
+    expect(primaryCtas.primary.label).toBe("Start Workspace");
+    expect(primaryCtas.primary.href).toContain("/signup");
+    expect(primaryCtas.secondary.label).toBe("Explore Demo");
+  });
+
   it("keeps CTA links resolvable", () => {
     const hrefs = [primaryCtas.primary.href, primaryCtas.secondary.href, ...navigationLinks.map((item) => item.href), ...pricingPlans.map((plan) => plan.cta.href)];
     for (const href of hrefs) {
