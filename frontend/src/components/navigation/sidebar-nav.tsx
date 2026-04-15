@@ -21,7 +21,7 @@ export function SidebarNav() {
   }, {});
 
   return (
-    <nav className="space-y-6">
+    <nav className="space-y-7">
       {Object.entries(groupedItems).map(([group, items]) => (
         <SidebarNavGroup key={group} label={group}>
           {items.map((item) => {
@@ -33,14 +33,17 @@ export function SidebarNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "group flex items-start gap-3 rounded-2xl px-3 py-2.5 text-sm transition-colors",
-                  active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground/85 hover:bg-accent/70 hover:text-accent-foreground",
+                  "group relative flex items-start gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-sm transition-all duration-200",
+                  active
+                    ? "border-orange-500/35 bg-[linear-gradient(90deg,rgba(251,146,60,0.18)_0%,rgba(30,41,59,0.24)_90%)] text-slate-50 shadow-[0_0_0_1px_rgba(251,146,60,0.12),0_8px_24px_rgba(15,23,42,0.5)]"
+                    : "border-slate-700/45 bg-slate-900/30 text-slate-300 hover:border-slate-500/70 hover:bg-slate-800/45 hover:text-slate-100",
                 )}
               >
-                <Icon className={cn("mt-0.5 size-4 shrink-0", active ? "text-primary-foreground" : "text-muted-foreground/80 group-hover:text-accent-foreground")} />
+                {active ? <span className="pointer-events-none absolute inset-y-1 left-0 w-0.5 rounded-full bg-orange-400/90" /> : null}
+                <Icon className={cn("mt-0.5 size-4 shrink-0", active ? "text-orange-200" : "text-slate-400 group-hover:text-slate-100")} />
                 <span className="space-y-0.5">
                   <span className="block font-medium">{item.title}</span>
-                  <span className={cn("block text-xs", active ? "text-primary-foreground/80" : "text-muted-foreground/80")}>{item.description}</span>
+                  <span className={cn("block text-xs", active ? "text-orange-100/85" : "text-slate-400/85")}>{item.description}</span>
                 </span>
               </Link>
             );

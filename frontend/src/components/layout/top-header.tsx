@@ -31,17 +31,17 @@ export function TopHeader() {
   const showSetupBanner = pathname !== "/setup" && Boolean(activationSnapshot && activationSnapshot.status !== "completed");
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-20 border-b border-slate-700/45 bg-slate-950/75 backdrop-blur-xl supports-[backdrop-filter]:bg-slate-950/60">
       <div className="flex h-16 items-center gap-3 px-4 lg:px-6">
         <div className="lg:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Open navigation" className="rounded-xl">
+              <Button variant="outline" size="icon" aria-label="Open navigation" className="rounded-xl border-slate-700/60 bg-slate-900/60 hover:bg-slate-800">
                 <Menu className="size-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[320px] p-0">
-              <div className="border-b border-border/60 px-5 py-5">
+            <SheetContent side="left" className="w-[320px] border-slate-700/60 bg-slate-950 p-0">
+              <div className="border-b border-slate-700/60 px-5 py-5">
                 <AppLogo />
               </div>
               <div className="px-4 py-4">
@@ -52,8 +52,8 @@ export function TopHeader() {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{currentOrganization?.name ?? "Workspace"}</p>
-          <p className="truncate text-sm font-medium text-foreground">{currentNavItem?.title ?? "Accounting workspace"}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{currentOrganization?.name ?? "Workspace"}</p>
+          <p className="truncate text-sm font-medium text-slate-100">{currentNavItem?.title ?? "Accounting workspace"}</p>
         </div>
 
         <div className="hidden xl:block">
@@ -65,13 +65,13 @@ export function TopHeader() {
         <NotificationBell />
         <UserMenu />
       </div>
-      <div className="border-t border-border/50 px-4 py-2 text-xs text-muted-foreground lg:px-6 xl:hidden">
+      <div className="border-t border-slate-700/50 px-4 py-2 text-xs text-slate-300 lg:px-6 xl:hidden">
         <OrganizationSwitcher />
       </div>
       {showSetupBanner ? (
-        <div className="border-t border-border/50 bg-muted/30 px-4 py-2 text-xs lg:px-6">
+        <div className="border-t border-slate-700/45 bg-slate-900/70 px-4 py-2 text-xs lg:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted-foreground">
+            <p className="text-slate-300">
               Activation {activationSnapshot?.completion_percent ?? onboarding.data?.progress_percent ?? 0}% • {activationSnapshot?.status === "not_started" ? "start setup checklist" : "continue setup checklist"}.
             </p>
             <div className="flex items-center gap-2">
