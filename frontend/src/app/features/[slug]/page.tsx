@@ -26,7 +26,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
       <h1 className="text-3xl font-semibold tracking-tight">{page.title}</h1>
       <p className="mt-3 text-muted-foreground">{page.problem}</p>
       <Card className="mt-8"><CardHeader><CardTitle>Workflow summary</CardTitle></CardHeader><CardContent className="text-sm text-muted-foreground">{page.workflow}</CardContent></Card>
-      <div className="mt-6 flex flex-wrap gap-3"><Button asChild><TrackedLink href="/demo" eventPayload={{ feature: params.slug }}>Explore Demo</TrackedLink></Button><Button asChild variant="outline"><TrackedLink href="/register" eventPayload={{ feature: params.slug }}>Start Setup</TrackedLink></Button></div>
+      <div className="mt-6 flex flex-wrap gap-3"><Button asChild><TrackedLink href="/demo" eventPayload={{ feature: params.slug }}>Explore Demo</TrackedLink></Button><Button asChild variant="outline"><TrackedLink href="/signup?intent=start_workspace" eventPayload={{ feature: params.slug }}>Start Workspace</TrackedLink></Button></div>
     </section>
   </PublicLayout>;
 }

@@ -25,6 +25,9 @@ from app.schemas.activation import (
 
 UTC = timezone.utc
 CHECKLIST_VERSION = "v1"
+FOUNDATIONAL_ITEMS = ("org_created", "settings_reviewed", "chart_of_accounts_ready")
+OPERATIONAL_SETUP_ITEMS = ("bank_account_added", "customer_added", "supplier_added")
+WORKFLOW_START_ITEMS = ("first_invoice_created", "first_bill_created", "bank_import_started", "first_reconciliation_started")
 
 
 class ActivationDefinitionRegistry:
@@ -141,6 +144,15 @@ class ActivationEvaluationService:
         previously_complete = any((item.get("item_id") == item_id and item.get("status") == "complete") for item in previous_items if isinstance(item, dict))
         return completed_now or previously_complete
 
+    def _previous_completed_at(self, previous: dict[str, Any], item_id: str) -> datetime | None:
+        previous_items = previous.get("items", []) if isinstance(previous, dict) else []
+        for item in previous_items:
+            if isinstance(item, dict) and item.get("item_id") == item_id and item.get("status") == "complete":
+                completed_at = item.get("completed_at")
+                if isinstance(completed_at, str):
+                    return datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+        return None
+
     def _evaluate_raw(self, org_uuid: UUID) -> dict[str, tuple[bool, dict[str, Any], str]]:
         org = self.db.scalar(select(Organization).where(Organization.id == org_uuid))
         settings = self.db.scalar(select(OrganizationSettings).where(OrganizationSettings.organization_id == org_uuid))
@@ -212,15 +224,16 @@ class ActivationEvaluationService:
                 item_id=item_id,
                 version=CHECKLIST_VERSION,
                 status=status,
+                completed_at=(self._previous_completed_at(previous, item_id) or datetime.now(UTC)) if status == "complete" else None,
                 completion_source=source if status == "complete" else None,
                 blocking_reasons=blocking_reasons,
                 evidence=evidence,
             ))
 
         completed_set = {item.item_id for item in items if item.status == "complete"}
-        foundation_ok = all(item in completed_set for item in ["org_created", "settings_reviewed", "chart_of_accounts_ready"])
-        operational_ok = any(item in completed_set for item in ["bank_account_added", "customer_added", "supplier_added"])
-        workflow_ok = any(item in completed_set for item in ["first_invoice_created", "first_bill_created", "bank_import_started", "first_reconciliation_started"])
+        foundation_ok = all(item in completed_set for item in FOUNDATIONAL_ITEMS)
+        operational_ok = any(item in completed_set for item in OPERATIONAL_SETUP_ITEMS)
+        workflow_ok = any(item in completed_set for item in WORKFLOW_START_ITEMS)
 
         status = "completed" if (foundation_ok and operational_ok and workflow_ok) else "in_progress" if completed_set else "not_started"
 

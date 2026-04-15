@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { UserMenu } from "@/components/layout/user-menu";
 import { useOnboardingStatus } from "@/features/onboarding/hooks";
+import { useActivationSnapshot } from "@/features/activation/hooks";
 import { useBillingState } from "@/features/billing/hooks";
 import { navigationItems } from "@/lib/permissions/navigation";
 import { useOrganization } from "@/providers/organization-provider";
@@ -23,9 +24,11 @@ export function TopHeader() {
   const pathname = usePathname();
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const onboarding = useOnboardingStatus(currentOrganizationId ?? undefined, Boolean(currentOrganizationId && pathname !== "/setup"));
+  const activation = useActivationSnapshot(currentOrganizationId ?? undefined, Boolean(currentOrganizationId && pathname !== "/setup"));
   const currentNavItem = navigationItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
   const billing = useBillingState(currentOrganizationId ?? undefined);
-  const showSetupBanner = pathname !== "/setup" && Boolean(onboarding.data && onboarding.data.progress_percent < 100);
+  const activationSnapshot = activation.data?.snapshot;
+  const showSetupBanner = pathname !== "/setup" && Boolean(activationSnapshot && activationSnapshot.status !== "completed");
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -68,7 +71,9 @@ export function TopHeader() {
       {showSetupBanner ? (
         <div className="border-t border-border/50 bg-muted/30 px-4 py-2 text-xs lg:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted-foreground">Setup progress {onboarding.data?.progress_percent}% • continue activation checklist.</p>
+            <p className="text-muted-foreground">
+              Activation {activationSnapshot?.completion_percent ?? onboarding.data?.progress_percent ?? 0}% • {activationSnapshot?.status === "not_started" ? "start setup checklist" : "continue setup checklist"}.
+            </p>
             <div className="flex items-center gap-2">
               <UsageMeter
                 label="Invoices this month"

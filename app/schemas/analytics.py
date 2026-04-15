@@ -4,6 +4,22 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+FunnelDomain = Literal["acquisition", "demo", "signup", "activation"]
+FunnelStage = Literal[
+    "acquired",
+    "engaged",
+    "demo_entered",
+    "signup_started",
+    "authenticated",
+    "workspace_started",
+    "workspace_created",
+    "activation_started",
+    "activated",
+    "handoff_to_app",
+]
+PageType = Literal["landing", "marketing", "demo", "signup", "activation", "app"]
+SurfaceType = Literal["public_site", "demo", "signup", "workspace_creation", "activation", "authenticated_app"]
+
 EventName = Literal[
     "marketing.landing.viewed",
     "marketing.section.viewed",
@@ -55,10 +71,10 @@ class FunnelEventRequest(BaseModel):
 
     route: str | None = Field(default=None, max_length=240)
     path: str | None = Field(default=None, max_length=240)
-    page_type: str | None = Field(default=None, max_length=32)
-    surface: str | None = Field(default=None, max_length=64)
-    funnel_domain: str = Field(min_length=2, max_length=32)
-    funnel_stage: str = Field(min_length=2, max_length=32)
+    page_type: PageType | None = None
+    surface: SurfaceType | None = None
+    funnel_domain: FunnelDomain
+    funnel_stage: FunnelStage
 
     is_demo: bool
     is_authenticated: bool

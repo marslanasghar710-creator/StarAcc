@@ -40,11 +40,11 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
           <UserCircle2 className="size-4" />
-          Profile coming soon
+          Profile from user settings
         </DropdownMenuItem>
         <DropdownMenuItem disabled>
           <Settings2 className="size-4" />
-          Session management later
+          Session controls in security
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setTheme("light")}>

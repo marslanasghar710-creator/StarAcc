@@ -1,10 +1,13 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
 import { EmptyState } from "@/components/feedback/empty-state";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FirstRunEntry } from "@/features/onboarding/components/first-run-entry";
 import { OnboardingHub } from "@/features/onboarding/components/onboarding-hub";
 import { useOnboardingStatus } from "@/features/onboarding/hooks";
@@ -52,6 +55,22 @@ export default function SetupCenterPage() {
         title="Setup Center"
         description="Backend-authoritative onboarding progress, readiness, and next-best actions."
       />
+      <Card className="border-border/70 shadow-sm">
+        <CardHeader>
+          <CardTitle>Activation status: {activation.status === "completed" ? "Completed" : "In progress"}</CardTitle>
+          <CardDescription>{activation.completion_percent}% complete • {activation.completed_item_count}/{activation.total_visible_item_count} checklist items complete.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/dashboard" onClick={() => {
+              void trackEvent("app.handoff.completed", { destination_route: "/dashboard", activation_state: activation.status }, { page_type: "app", surface: "authenticated_app", funnel_domain: "activation", funnel_stage: "handoff_to_app", org_id: currentOrganizationId, is_authenticated: true, dedupe_key: `handoff_click:${currentOrganizationId}` });
+            }}>
+              Go to dashboard
+            </Link>
+          </Button>
+          {activation.status !== "completed" ? <p className="text-xs text-muted-foreground self-center">You can keep working in setup while using the app; activation completes automatically from real workflow activity.</p> : null}
+        </CardContent>
+      </Card>
       {!status.path ? <FirstRunEntry organizationId={currentOrganizationId} onContinue={() => void statusQuery.refetch()} /> : null}
       <OnboardingHub organizationId={currentOrganizationId} status={status} />
     </div>

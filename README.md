@@ -49,6 +49,44 @@ You can override seeded admin credentials before running the script:
 - `STARACC_DEV_ADMIN_PASSWORD`
 - `STARACC_DEV_ADMIN_ORG`
 
+## Canonical commercial plans and gates
+
+Public plans are backend-defined in `app/billing/plan_catalog.py` and currently canonical as:
+- `starter` — $0/mo
+- `growth` — $49/mo
+- `pro` — $129/mo
+
+Feature and limit enforcement is backend-authoritative through entitlements/usage checks. In particular:
+- advanced report formats (`PDF`, `XLSX`) are gated by `advanced_exports`
+- custom reporting and consolidation gates are plan/feature controlled
+- API access and integration limits are enforced server-side
+
+## Conversion and activation flow (F27)
+
+The production conversion path is:
+`landing -> demo (optional) -> signup/auth -> workspace creation -> activation -> app handoff`
+
+Activation truth is computed only by backend snapshot evaluation (`/activation/snapshot`) using real org/workflow state. Frontend progress surfaces and handoff prompts read that snapshot; they do not persist durable activation completion client-side.
+
+## Integrations / manual import behavior
+
+Integrations use backend-controlled connection and sync-run lifecycle with deterministic run status and cursor handling.
+
+Manual bank/import flows support:
+- CSV content ingestion
+- explicit field mapping
+- normalization + validation feedback
+- deduplication/hash checks
+- isolated per-org execution and metrics/audit recording
+
+## Admin observability scope
+
+Admin observability routes are explicitly permissioned:
+- `observability.admin.read` for admin/org/platform observability reads
+- `observability.telemetry.write` for telemetry ingestion/write paths
+
+Org and platform health snapshots are computed server-side from persisted operational signals and surfaced via admin APIs.
+
 ## Audit / activity center
 
 The backend now exposes a richer organization-scoped activity query surface on top of the append-only audit log table:
@@ -135,7 +173,8 @@ Reporting is ledger-first and organization-scoped:
 - AR/AP aging reports read posted open-item state from the receivables/payables subledgers.
 - Every report run/export writes audit metadata (`report.generated`, `report.exported`) and persists lightweight `report_runs` / `report_exports` history rows.
 - Current-year earnings are presented as a computed Balance Sheet equity line until formal closing journals are introduced.
-- Export support is implemented for CSV and JSON. PDF is intentionally scaffolded and returns a not-yet-implemented error.
+- Export support is implemented for CSV, JSON, PDF, and XLSX.
+- `PDF` and `XLSX` exports are gated by the `advanced_exports` entitlement; CSV/JSON remain baseline exports.
 
 ### Reporting endpoints
 
@@ -182,7 +221,8 @@ The advanced reporting extension adds a backend-governed custom report builder f
 - Executions are tracked in `custom_report_executions`, so saved report runs and exports stay attributable to a user, definition, and dataset.
 - Dataset metadata is explicit and permission-aware: the backend only exposes declared datasets, fields, filters, groupings, and aggregations, and it never accepts raw SQL or arbitrary query text from the client.
 - Current built-in custom-report datasets cover accounts, journal lines, invoices, bills, bank transactions, inventory items, projects, and payroll entries.
-- CSV export is implemented for preview and saved-report execution flows; PDF remains scaffolded through the existing export service and intentionally returns the backend's not-yet-implemented response where applicable.
+- Custom reporting export supports CSV/JSON/PDF/XLSX through the shared report export service.
+- `PDF` and `XLSX` custom-report exports require `advanced_exports` entitlement.
 
 ### Custom reporting permissions
 
@@ -239,7 +279,7 @@ The tax module adds reusable VAT/GST-style master data, calculation, posting, an
 - Organization-scoped `tax_settings`, `tax_rates`, `tax_codes`, `tax_code_components`, and `tax_transactions`.
 - Server-side tax calculation previews using deterministic Decimal math.
 - AR/AP posting integrations that preserve tax snapshots on document lines and post tax control lines into the general ledger.
-- Tax summary reporting from persisted `tax_transactions` with JSON/CSV export and PDF scaffold behavior.
+- Tax summary reporting from persisted `tax_transactions` with JSON/CSV/PDF/XLSX export support.
 - Banking cash-coding groundwork is limited to tax capture/snapshot fields on bank transactions; full cash-coding journal generation remains future work.
 
 ### Tax endpoints
