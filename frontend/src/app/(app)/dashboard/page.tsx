@@ -169,14 +169,14 @@ function SummaryCard({
       </div>
     >
       <div className="space-y-2.5">
-        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-foreground", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
+        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-slate-50", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
         {deltaAmount ? (
           <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-600 dark:text-amber-400" /> : <TrendingUp className="size-3 text-emerald-600 dark:text-emerald-400" />}
             {deltaDirection === "down" ? "Down MTD" : "Up MTD"} <MoneyDisplay value={deltaAmount} currencyCode={currency} />
           </p>
         ) : null}
-        <p className="text-xs text-muted-foreground">{context}</p>
+        <p className="text-xs text-slate-400">{context}</p>
       </div>
     </SectionCard>
   );
@@ -522,8 +522,8 @@ export default function DashboardPage() {
                   return (
                     <div key={bucket.key} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-foreground">{bucket.label}</span>
-                        <span className="text-muted-foreground"><MoneyDisplay value={String(total)} currencyCode={currency} /></span>
+                        <span className="font-medium text-slate-100">{bucket.label}</span>
+                        <span className="text-slate-400"><MoneyDisplay value={String(total)} currencyCode={currency} /></span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-muted">
                         <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 dark:from-emerald-400 dark:to-cyan-400" style={{ width: `${Math.max(arWidth, total > 0 ? 4 : 0)}%` }} />
@@ -545,10 +545,10 @@ export default function DashboardPage() {
             {workflowGroups(invoiceStatuses).map((group) => (
               <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/35 p-3 text-xs dark:bg-muted/25">
                 <div>
-                  <p className="font-medium text-foreground">{group.title}</p>
-                  <p className="text-muted-foreground">{group.count} invoices</p>
+                  <p className="font-medium text-slate-100">{group.title}</p>
+                  <p className="text-slate-400">{group.count} invoices</p>
                 </div>
-                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-foreground" />
+                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-slate-100" />
               </div>
             ))}
           </div>
@@ -559,10 +559,10 @@ export default function DashboardPage() {
             {workflowGroups(billStatuses).map((group) => (
               <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/35 p-3 text-xs dark:bg-muted/25">
                 <div>
-                  <p className="font-medium text-foreground">{group.title}</p>
-                  <p className="text-muted-foreground">{group.count} bills</p>
+                  <p className="font-medium text-slate-100">{group.title}</p>
+                  <p className="text-slate-400">{group.count} bills</p>
                 </div>
-                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-foreground" />
+                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-slate-100" />
               </div>
             ))}
           </div>
@@ -573,7 +573,7 @@ export default function DashboardPage() {
         <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-8 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
           <div className="space-y-2 text-sm">
             {curatedActivityItems.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">{activity?.emptyState?.title ?? "No recent activity."}</div>
+              <div className="rounded-lg border border-dashed border-slate-600 p-4 text-xs text-slate-400">{activity?.emptyState?.title ?? "No recent activity."}</div>
             ) : (
               curatedActivityItems.map((item) => (
                 <div key={String(item.activityId)} className="grid grid-cols-[1fr,auto] items-center gap-2 rounded-xl border border-border/70 bg-muted/35 px-3 py-2.5 text-xs transition-colors hover:bg-accent/40 dark:bg-muted/25">
@@ -582,7 +582,7 @@ export default function DashboardPage() {
                 </div>
               ))
             )}
-            <Button asChild variant="outline" size="sm" className="w-full"><Link href="/activity">View all activity</Link></Button>
+            <Button asChild variant="outline" size="sm" className="w-full border-slate-600/70 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/activity">View all activity</Link></Button>
           </div>
         </SectionCard>
 
@@ -599,12 +599,12 @@ export default function DashboardPage() {
               return (
                 <div key={widget.widgetKey} className="rounded-xl border border-border/70 bg-muted/35 p-3 dark:bg-muted/25">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <p className="font-medium text-foreground">{widget.title}</p>
+                    <p className="font-medium text-slate-100">{widget.title}</p>
                     <Badge variant={widget.status === "warning" ? "secondary" : "outline"}>{widgetStatus}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{description}</p>
+                  <p className="text-xs text-slate-400">{description}</p>
                   {widget.drilldownTarget?.route ? (
-                    <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs">
+                    <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs text-slate-200">
                       <Link href={widget.drilldownTarget.route}>{widget.drilldownTarget.label ?? "Open"}</Link>
                     </Button>
                   ) : null}
