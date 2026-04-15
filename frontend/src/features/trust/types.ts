@@ -27,6 +27,9 @@ export type MetricProvenance = {
     currency?: string | null;
   };
   underlying_counts: Record<string, number>;
+  source_objects: Record<string, number>;
+  journal_effects: Record<string, string | number>;
+  context_filters: Record<string, unknown>;
   drill_targets: Array<{ target_type: string; label: string; route: string }>;
   generated_at: string;
 };
@@ -55,5 +58,14 @@ export type IntegrityCenter = {
     missing_elements: Array<{ code: string; label: string; severity: string; action_route?: string }>;
     checked_at: string;
   };
-  recent_issues: Array<Record<string, unknown>>;
+  recent_issues: Array<{
+    severity: "low" | "medium" | "high";
+    domain: string;
+    code: string;
+    title: string;
+    description: string;
+    affected_object_id?: string | null;
+    recommended_action: string;
+    action_route?: string | null;
+  }>;
 };

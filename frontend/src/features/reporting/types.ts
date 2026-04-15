@@ -1,4 +1,4 @@
-export type ReportFormat = "csv" | "pdf";
+export type ReportFormat = "csv" | "pdf" | "xlsx";
 export type ComparisonMode = "none" | "previous_period" | "prior_year";
 export type ReportingBasis = "accrual" | "cash";
 export type ReportSlug = "trial-balance" | "profit-loss" | "balance-sheet" | "general-ledger" | "custom";

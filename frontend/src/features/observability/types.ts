@@ -45,11 +45,12 @@ export type OrgHealthSnapshot = {
   overall_status: HealthStatus;
   activation_status: "not_started" | "in_progress" | "completed";
   billing_status: "trial" | "active" | "past_due" | "canceled" | "unknown";
-  reconciliation_attention: { status: HealthStatus; unreconciled_count?: number };
+  commercial_summary: { plan_code?: string | null; billing_interval?: string | null; features_enabled: number };
+  reconciliation_attention: { status: HealthStatus; unreconciled_count?: number; stale_days?: number | null };
   integration_attention: { status: HealthStatus; failing_integrations_count: number; last_sync_issue_at?: string | null };
   trust_attention: { status: HealthStatus; open_integrity_issues_count: number };
   recent_error_summary: { status: HealthStatus; error_count_24h: number; high_severity_count_24h: number };
-  activity_summary: { last_active_at?: string | null; invoices_30d: number; bills_30d: number; reports_30d?: number };
+  activity_summary: { last_active_at?: string | null; invoices_30d: number; bills_30d: number; reports_30d?: number; audit_events_7d?: number };
   last_computed_at: string;
 };
 

@@ -36,7 +36,8 @@ export default function IntegrityCenterPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Integrity center</h1>
-          <p className="text-sm text-muted-foreground">Operational trust summary, ledger integrity checks, and reconciliation confidence.</p>
+          <p className="text-sm text-muted-foreground">Operational trust summary, ledger integrity checks, reconciliation confidence, and actionable issues.</p>
+                  <p className="text-xs text-muted-foreground">Last evaluated {new Date(query.data.trust_summary.last_evaluated_at).toLocaleString()}</p>
         </div>
         <Button asChild variant="outline"><Link href="/activity">View audit activity</Link></Button>
       </div>
@@ -59,6 +60,20 @@ export default function IntegrityCenterPage() {
             <p key={item.bank_account_id ?? "org"} onClick={() => { if (item.status !== "healthy") { void trackEvent("trust.reconciliation_attention.clicked", { bank_account_id: item.bank_account_id ?? null, status: item.status }, { page_type: "app", surface: "authenticated_app", funnel_domain: "activation", funnel_stage: "activated", org_id: currentOrganizationId, is_authenticated: true }); } }}>
               {item.bank_account_id ? `Account ${item.bank_account_id.slice(0, 8)}…` : "Organization"}: {item.unreconciled_transaction_count} unreconciled • last reconciled {item.last_reconciled_at ?? "never"}
             </p>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border/70 bg-card p-4">
+        <h2 className="text-lg font-semibold">Actionable integrity issues</h2>
+        {query.data.recent_issues.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">No open issues detected.</p> : null}
+        <div className="mt-2 space-y-2 text-sm">
+          {query.data.recent_issues.map((issue) => (
+            <div key={`${issue.code}-${issue.affected_object_id ?? "org"}`} className="rounded border border-border/60 p-2">
+              <p className="font-medium">[{issue.severity.toUpperCase()}] {issue.title}</p>
+              <p className="text-muted-foreground">{issue.description}</p>
+              <p className="text-muted-foreground">Next action: {issue.recommended_action}{issue.action_route ? ` → ${issue.action_route}` : ""}</p>
+            </div>
           ))}
         </div>
       </section>

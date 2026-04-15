@@ -58,7 +58,7 @@ class CommercialStateResponse(BaseModel):
     subscription: SubscriptionResponse
     features: dict[str, bool]
     limits: dict[str, int | str]
-    usage: dict[str, dict[str, int | bool | None]]
+    usage: dict[str, dict[str, int | str | bool | None]]
     overrides: list[EntitlementOverrideResponse]
 
 

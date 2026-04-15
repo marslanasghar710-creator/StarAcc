@@ -122,6 +122,10 @@ def import_bank_statement(organization_id: str, payload: BankStatementImportRequ
         source_filename=payload.source_filename,
         rows=[row.model_dump() for row in payload.rows],
         actor_user_id=current_user.id,
+        field_mapping=payload.field_mapping,
+        connection_id=payload.connection_id,
+        external_account_id=payload.external_account_id,
+        csv_content=payload.csv_content,
     )
     return ImportSummaryResponse(**summary)
 

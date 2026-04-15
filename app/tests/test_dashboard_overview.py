@@ -16,3 +16,14 @@ def test_dashboard_overview_returns_widget_envelope_payload(client):
     assert payload["dashboardContext"]["scopeType"] == "organization"
     assert isinstance(payload["widgets"], list)
     assert any(widget["widgetKey"] == "cash_position_summary" for widget in payload["widgets"])
+
+
+def test_dashboard_widgets_include_freshness_markers(client):
+    tokens = register_and_login(client, "dashboard-fresh-owner@example.com")
+    org = client.post("/organizations", headers=auth_header(tokens["access_token"]), json={"name": "Dashboard Freshness Org"}).json()
+
+    response = client.get(f"/organizations/{org['id']}/dashboard/overview", headers=auth_header(tokens["access_token"]))
+    assert response.status_code == 200
+    widgets = response.json()["widgets"]
+    trend = next(widget for widget in widgets if widget["widgetKey"] == "revenue_vs_expenses_trend")
+    assert trend["refreshedAt"] is not None

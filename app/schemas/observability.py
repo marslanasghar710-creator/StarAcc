@@ -131,6 +131,13 @@ class ActivitySummary(BaseModel):
     invoices_30d: int
     bills_30d: int
     reports_30d: int = 0
+    audit_events_7d: int = 0
+
+
+class CommercialSummary(BaseModel):
+    plan_code: str | None = None
+    billing_interval: str | None = None
+    features_enabled: int = 0
 
 
 class OrgHealthSnapshot(BaseModel):
@@ -138,6 +145,7 @@ class OrgHealthSnapshot(BaseModel):
     overall_status: HealthStatus
     activation_status: Literal["not_started", "in_progress", "completed"]
     billing_status: Literal["trial", "active", "past_due", "canceled", "unknown"]
+    commercial_summary: CommercialSummary = Field(default_factory=CommercialSummary)
     reconciliation_attention: ReconciliationAttention
     integration_attention: IntegrationAttention
     trust_attention: TrustAttention

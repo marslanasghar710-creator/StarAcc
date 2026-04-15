@@ -33,7 +33,7 @@ describe('reporting filter validation', () => {
 
 describe('reporting UI helpers', () => {
   const navReports = [
-    { id: 'trial-balance', slug: 'trial-balance', name: 'Trial Balance', description: 'TB', href: '/reports/trial-balance', isAvailable: true, allowedFormats: ['csv', 'pdf'], requiredPermissions: ['trial_balance.read'], recommended: true, isPermitted: true },
+    { id: 'trial-balance', slug: 'trial-balance', name: 'Trial Balance', description: 'TB', href: '/reports/trial-balance', isAvailable: true, allowedFormats: ['csv', 'xlsx', 'pdf'], requiredPermissions: ['trial_balance.read'], recommended: true, isPermitted: true },
     { id: 'general-ledger', slug: 'general-ledger', name: 'General Ledger', description: 'GL', href: '/reports/general-ledger', isAvailable: true, allowedFormats: ['csv'], requiredPermissions: ['general_ledger.read'], recommended: false, isPermitted: false },
   ] as const;
 
@@ -133,6 +133,7 @@ describe('reporting UI helpers', () => {
 
     rerender(<ReportExportActions canExport onExport={() => {}} />);
     expect(screen.getByText(/export csv/i)).toBeInTheDocument();
+    expect(screen.getByText(/export xlsx/i)).toBeInTheDocument();
     expect(screen.getByText(/export pdf/i)).toBeInTheDocument();
   });
 

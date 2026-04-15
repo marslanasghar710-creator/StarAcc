@@ -387,7 +387,7 @@ export default function DashboardPage() {
       {trustSummaryQuery.data ? (
         <SectionCard
           title="Trust status"
-          description={`Overall status: ${trustSummaryQuery.data.overall_status.replaceAll("_", " ")}`}
+          description={`Overall status: ${trustSummaryQuery.data.overall_status.replaceAll("_", " ")} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
           actions={<Button asChild size="sm" variant="outline"><Link href="/settings/integrity">Open integrity center</Link></Button>}
         >
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">

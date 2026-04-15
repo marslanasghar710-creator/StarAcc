@@ -57,6 +57,7 @@ from app.schemas.custom_reporting import (
     FieldKind,
     FilterOperator,
 )
+from app.services.entitlements_service import EntitlementsService
 from app.services.reporting.report_export_service import ReportExportService
 
 UTC = timezone.utc
@@ -130,6 +131,9 @@ class CustomReportingService:
         self.rbac = RBACRepository(db)
         self.exporter = ReportExportService(db)
         self.datasets = self._build_datasets()
+
+    def _enforce_advanced_reporting(self, organization_id: str):
+        EntitlementsService(self.db).enforce_feature(organization_id, "advanced_reporting")
 
     def _account_dataset(self, organization_id: str):
         balance_sq = (
@@ -515,10 +519,12 @@ class CustomReportingService:
         if not self._has_any_permission(role_id, dataset.required_permissions):
             raise forbidden("You do not have access to this reporting dataset")
 
-    def list_datasets(self, role_id: UUID) -> list[CustomReportDatasetSummaryResponse]:
+    def list_datasets(self, organization_id: str, role_id: UUID) -> list[CustomReportDatasetSummaryResponse]:
+        self._enforce_advanced_reporting(organization_id)
         return [dataset.summary() for dataset in self.datasets.values() if self._has_any_permission(role_id, dataset.required_permissions)]
 
-    def get_dataset(self, role_id: UUID, dataset_id: str) -> CustomReportDatasetResponse:
+    def get_dataset(self, organization_id: str, role_id: UUID, dataset_id: str) -> CustomReportDatasetResponse:
+        self._enforce_advanced_reporting(organization_id)
         dataset = self._get_dataset_or_404(dataset_id)
         self._ensure_dataset_access(role_id, dataset)
         return dataset.detail()
@@ -657,6 +663,7 @@ class CustomReportingService:
         report_definition_id: UUID | None = None,
         persist_execution: bool = False,
     ) -> CustomReportResultResponse:
+        self._enforce_advanced_reporting(organization_id)
         dataset, field_map = self.validate_definition(role_id, payload)
         from_clause, exprs = dataset.builder(organization_id)
         where_clauses = [self._filter_clause(exprs[item.field], field_map[item.field], item) for item in payload.filters]
@@ -822,6 +829,7 @@ class CustomReportingService:
         )
 
     def list_definitions(self, organization_id: str) -> list[CustomReportDefinitionResponse]:
+        self._enforce_advanced_reporting(organization_id)
         rows = self.repo.list_definitions(organization_id)
         latest_map: dict[UUID, Any] = {}
         for execution in self.repo.list_executions_for_reports(organization_id, [row.id for row in rows]):
@@ -830,6 +838,7 @@ class CustomReportingService:
         return [self._definition_response(organization_id, row, latest_map) for row in rows]
 
     def create_definition(self, organization_id: str, role_id: UUID, created_by_user_id: str | UUID | None, payload: CustomReportDefinitionCreate):
+        self._enforce_advanced_reporting(organization_id)
         self.validate_definition(role_id, CustomReportPreviewRequest(**payload.model_dump()))
         row = self.repo.create_definition(
             organization_id=organization_id,
@@ -856,12 +865,14 @@ class CustomReportingService:
         return self._definition_response(organization_id, row)
 
     def get_definition(self, organization_id: str, report_id: str) -> CustomReportDefinitionResponse:
+        self._enforce_advanced_reporting(organization_id)
         row = self.repo.get_definition(organization_id, report_id)
         if not row or row.archived_at:
             raise not_found("Custom report definition not found")
         return self._definition_response(organization_id, row, {row.id: self.repo.latest_execution_for_report(organization_id, row.id)} if row.id else {})
 
     def update_definition(self, organization_id: str, role_id: UUID, report_id: str, updated_by_user_id: str | UUID | None, payload: CustomReportDefinitionUpdate):
+        self._enforce_advanced_reporting(organization_id)
         row = self.repo.get_definition(organization_id, report_id)
         if not row or row.archived_at:
             raise not_found("Custom report definition not found")
@@ -901,6 +912,7 @@ class CustomReportingService:
         return self._definition_response(organization_id, row)
 
     def delete_definition(self, organization_id: str, report_id: str, deleted_by_user_id: str | UUID | None):
+        self._enforce_advanced_reporting(organization_id)
         row = self.repo.get_definition(organization_id, report_id)
         if not row or row.archived_at:
             raise not_found("Custom report definition not found")
@@ -916,6 +928,7 @@ class CustomReportingService:
         self.db.commit()
 
     def run_definition(self, organization_id: str, role_id: UUID, report_id: str, requested_by_user_id: str | UUID | None, requested_by_email: str | None):
+        self._enforce_advanced_reporting(organization_id)
         row = self.repo.get_definition(organization_id, report_id)
         if not row or row.archived_at:
             raise not_found("Custom report definition not found")
@@ -942,6 +955,7 @@ class CustomReportingService:
         return self.run_definition(organization_id, role_id, report_id, requested_by_user_id, requested_by_email)
 
     def export_preview(self, organization_id: str, role_id: UUID, requested_by_user_id: str | UUID | None, requested_by_email: str | None, payload: CustomReportExportRequest):
+        self._enforce_advanced_reporting(organization_id)
         result = self.execute_preview(
             organization_id=organization_id,
             role_id=role_id,
@@ -973,6 +987,7 @@ class CustomReportingService:
         )
 
     def export_definition(self, organization_id: str, role_id: UUID, report_id: str, requested_by_user_id: str | UUID | None, requested_by_email: str | None, payload: CustomReportExportRequest):
+        self._enforce_advanced_reporting(organization_id)
         row = self.repo.get_definition(organization_id, report_id)
         if not row or row.archived_at:
             raise not_found("Custom report definition not found")
