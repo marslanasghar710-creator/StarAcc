@@ -18,6 +18,7 @@ import { useOnboardingStatus } from "@/features/onboarding/hooks";
 import { useActivationSnapshot } from "@/features/activation/hooks";
 import { useBillingState } from "@/features/billing/hooks";
 import { navigationItems } from "@/lib/permissions/navigation";
+import { cn } from "@/lib/utils";
 import { useOrganization } from "@/providers/organization-provider";
 
 export function TopHeader() {
@@ -29,19 +30,23 @@ export function TopHeader() {
   const billing = useBillingState(currentOrganizationId ?? undefined);
   const activationSnapshot = activation.data?.snapshot;
   const showSetupBanner = pathname !== "/setup" && Boolean(activationSnapshot && activationSnapshot.status !== "completed");
+  const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className={cn(
+      "sticky top-0 z-20 border-b backdrop-blur supports-[backdrop-filter]:bg-background/80",
+      isDashboard ? "border-slate-700/45 bg-slate-950/75 supports-[backdrop-filter]:bg-slate-950/60" : "border-border/60 bg-background/95",
+    )}>
       <div className="flex h-16 items-center gap-3 px-4 lg:px-6">
         <div className="lg:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Open navigation" className="rounded-xl">
+              <Button variant="outline" size="icon" aria-label="Open navigation" className={cn("rounded-xl", isDashboard && "border-slate-700/60 bg-slate-900/60 hover:bg-slate-800")}>
                 <Menu className="size-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[320px] p-0">
-              <div className="border-b border-border/60 px-5 py-5">
+            <SheetContent side="left" className={cn("w-[320px] p-0", isDashboard && "border-slate-700/60 bg-slate-950")}>
+              <div className={cn("border-b px-5 py-5", isDashboard ? "border-slate-700/60" : "border-border/60")}>
                 <AppLogo />
               </div>
               <div className="px-4 py-4">
@@ -52,8 +57,8 @@ export function TopHeader() {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{currentOrganization?.name ?? "Workspace"}</p>
-          <p className="truncate text-sm font-medium text-foreground">{currentNavItem?.title ?? "Accounting workspace"}</p>
+          <p className={cn("text-xs font-semibold uppercase tracking-[0.2em]", isDashboard ? "text-slate-400" : "text-muted-foreground")}>{currentOrganization?.name ?? "Workspace"}</p>
+          <p className={cn("truncate text-sm font-medium", isDashboard ? "text-slate-100" : "text-foreground")}>{currentNavItem?.title ?? "Accounting workspace"}</p>
         </div>
 
         <div className="hidden xl:block">
@@ -65,13 +70,13 @@ export function TopHeader() {
         <NotificationBell />
         <UserMenu />
       </div>
-      <div className="border-t border-border/50 px-4 py-2 text-xs text-muted-foreground lg:px-6 xl:hidden">
+      <div className={cn("border-t px-4 py-2 text-xs lg:px-6 xl:hidden", isDashboard ? "border-slate-700/50 text-slate-300" : "border-border/50 text-muted-foreground")}>
         <OrganizationSwitcher />
       </div>
       {showSetupBanner ? (
-        <div className="border-t border-border/50 bg-muted/30 px-4 py-2 text-xs lg:px-6">
+        <div className={cn("border-t px-4 py-2 text-xs lg:px-6", isDashboard ? "border-slate-700/45 bg-slate-900/70" : "border-border/50 bg-muted/30")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted-foreground">
+            <p className={cn(isDashboard ? "text-slate-300" : "text-muted-foreground")}>
               Activation {activationSnapshot?.completion_percent ?? onboarding.data?.progress_percent ?? 0}% • {activationSnapshot?.status === "not_started" ? "start setup checklist" : "continue setup checklist"}.
             </p>
             <div className="flex items-center gap-2">

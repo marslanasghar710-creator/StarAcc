@@ -27,6 +27,13 @@ function statusTone(status: string) {
   return "outline" as const;
 }
 
+function priorityStyles(priority: string) {
+  if (priority === "critical") return "border-rose-500/50 bg-rose-500/12 text-rose-100";
+  if (priority === "high") return "border-amber-500/50 bg-amber-500/12 text-amber-100";
+  if (priority === "medium") return "border-sky-500/50 bg-sky-500/12 text-sky-100";
+  return "border-slate-600/70 bg-slate-800/70 text-slate-200";
+}
+
 function amountToNumber(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -71,19 +78,19 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
     .join(" ");
 
   return (
-    <div className="rounded-xl border border-border/70 bg-muted/[0.18] p-3">
-      <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
+    <div className="rounded-2xl border border-slate-700/60 bg-gradient-to-b from-slate-900/90 to-slate-950/70 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="mb-2 flex items-center justify-between text-[11px] text-slate-400">
         <span>{periods[0]?.label}</span>
         <div className="inline-flex items-center gap-3">
-          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-500" /> Revenue</span>
-          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-amber-500" /> Expenses</span>
+          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-400" /> Revenue</span>
+          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-amber-400" /> Expenses</span>
         </div>
         <span>{periods[periods.length - 1]?.label}</span>
       </div>
       <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" preserveAspectRatio="none" role="img" aria-label="Revenue and expenses trend lines">
-        <path d="M 0 46 L 100 46" stroke="currentColor" className="text-border/80" strokeWidth="0.75" strokeDasharray="3 3" />
-        <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-500" strokeWidth="2.2" />
-        <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-500" strokeWidth="2" strokeDasharray="4 2" />
+        <path d="M 0 46 L 100 46" stroke="currentColor" className="text-slate-600/80" strokeWidth="0.75" strokeDasharray="3 3" />
+        <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-400" strokeWidth="2.2" />
+        <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-400" strokeWidth="2" strokeDasharray="4 2" />
       </svg>
     </div>
   );
@@ -148,28 +155,28 @@ function SummaryCard({
       title={widget.title}
       description={widget.subtitle ?? ""}
       className={cn(
-        "h-full border-border/70",
-        emphasis === "strong" ? "ring-1 ring-primary/25 shadow-md" : "shadow-sm",
-        performanceWidget && valueIsZero ? "bg-muted/[0.2]" : "",
+        "h-full border-slate-700/60 bg-gradient-to-b from-slate-900/85 to-slate-950/70 shadow-[0_12px_34px_rgba(2,6,23,0.34),inset_0_1px_0_rgba(255,255,255,0.03)]",
+        emphasis === "strong" ? "ring-1 ring-orange-400/35 shadow-[0_0_0_1px_rgba(251,146,60,0.25),0_20px_40px_rgba(251,146,60,0.12)]" : "",
+        performanceWidget && valueIsZero ? "opacity-90" : "",
       )}
       actions=<div className="flex items-center gap-2">
       {organizationId ? <MetricProvenanceDrawer organizationId={organizationId} metricId={widget.widgetKey} triggerLabel="Why this number?" /> : null}
       {widget.drilldownTarget?.route ? (
-        <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground">
+        <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-slate-400 hover:text-slate-100">
           <Link href={widget.drilldownTarget.route}>{widget.drilldownTarget.label ?? "Detail"}<ChevronRight className="size-3.5" /></Link>
         </Button>
       ) : null}
       </div>
     >
       <div className="space-y-2.5">
-        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-foreground", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
+        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-slate-50", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
         {deltaAmount ? (
-          <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-600" /> : <TrendingUp className="size-3 text-emerald-600" />}
-            MTD <MoneyDisplay value={deltaAmount} currencyCode={currency} />
+          <p className="inline-flex items-center gap-1 text-xs text-slate-300">
+            {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-400" /> : <TrendingUp className="size-3 text-emerald-400" />}
+            {deltaDirection === "down" ? "Down MTD" : "Up MTD"} <MoneyDisplay value={deltaAmount} currencyCode={currency} />
           </p>
         ) : null}
-        <p className="text-xs text-muted-foreground">{context}</p>
+        <p className="text-xs text-slate-400">{context}</p>
       </div>
     </SectionCard>
   );
@@ -369,32 +376,35 @@ export default function DashboardPage() {
   const billStatuses = ((billWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? []);
 
   return (
-    <div className="space-y-6 px-1 pb-2 pt-1 md:px-2">
-      <PageHeader
-        eyebrow="Dashboard"
-        title="Finance command center"
-        description={`${data.dashboardContext.scopeLabel} • ${data.dashboardContext.periodLabel}`}
-        actions={(
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => void dashboardQuery.refetch()}>
-              <RefreshCw className="mr-1.5 size-3.5" /> Refresh
-            </Button>
-            <Button asChild type="button" variant="ghost" size="sm"><Link href="/reports/profit-loss">Open P&L</Link></Button>
-          </div>
-        )}
-      />
+    <div className="space-y-5 rounded-3xl border border-slate-800/70 bg-[radial-gradient(circle_at_20%_-10%,rgba(56,189,248,0.12),transparent_34%),radial-gradient(circle_at_80%_0%,rgba(249,115,22,0.09),transparent_30%),linear-gradient(180deg,rgba(2,6,23,0.93)_0%,rgba(3,7,18,0.95)_100%)] px-2 pb-4 pt-2 shadow-[0_24px_56px_rgba(2,6,23,0.52)] md:px-3">
+      <div className="rounded-2xl border border-slate-700/50 bg-gradient-to-r from-slate-950/90 via-slate-900/80 to-slate-950/80 p-4 shadow-[0_18px_40px_rgba(2,6,23,0.45)]">
+        <PageHeader
+          eyebrow="Dashboard"
+          title="Finance command center"
+          description={`${data.dashboardContext.scopeLabel} • ${data.dashboardContext.periodLabel}`}
+          actions={(
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" className="border-slate-600/75 bg-slate-900/80 text-slate-100 hover:bg-slate-800" onClick={() => void dashboardQuery.refetch()}>
+                <RefreshCw className="mr-1.5 size-3.5" /> Refresh
+              </Button>
+              <Button asChild type="button" variant="ghost" size="sm" className="text-slate-200 hover:bg-slate-800 hover:text-slate-50"><Link href="/reports/profit-loss">Open P&L</Link></Button>
+            </div>
+          )}
+        />
+      </div>
 
       {trustSummaryQuery.data ? (
         <SectionCard
           title="Trust status"
           description={`Overall status: ${trustSummaryQuery.data.overall_status.replaceAll("_", " ")} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
-          actions={<Button asChild size="sm" variant="outline"><Link href="/settings/integrity">Open integrity center</Link></Button>}
+          className="border-slate-700/60 bg-gradient-to-br from-slate-900/90 to-slate-950/80 shadow-[0_12px_34px_rgba(2,6,23,0.42)]"
+          actions={<Button asChild size="sm" variant="outline" className="border-slate-500/70 bg-slate-900/60 text-slate-100 hover:bg-slate-800"><Link href="/settings/integrity">Open integrity center</Link></Button>}
         >
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
             {trustSummaryQuery.data.domains.map((domain: { domain: string; label: string; status: string }) => (
-              <div key={domain.domain} className="rounded-lg border border-border/70 bg-muted/[0.12] p-2">
-                <p className="font-medium">{domain.label}</p>
-                <p className="text-muted-foreground capitalize">{domain.status.replaceAll("_", " ")}</p>
+              <div key={domain.domain} className="rounded-xl border border-slate-700/75 bg-slate-900/70 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <p className="font-medium text-slate-100">{domain.label}</p>
+                <p className="text-slate-400 capitalize">{domain.status.replaceAll("_", " ")}</p>
               </div>
             ))}
           </div>
@@ -403,7 +413,7 @@ export default function DashboardPage() {
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="space-y-2">
-          <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Position</p>
+          <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Position</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {positionWidgets.map((widget) => (
               <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} emphasis={widget.widgetKey === "cash_position_summary" ? "strong" : "normal"} />
@@ -411,7 +421,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="space-y-2">
-          <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Performance</p>
+          <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Performance</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {performanceWidgets.map((widget) => <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} performanceWidget />)}
           </div>
@@ -419,21 +429,21 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <SectionCard title={attention?.title ?? "Attention Center"} description={attention?.subtitle ?? "Prioritized action items requiring follow-up."} className="xl:col-span-5">
+        <SectionCard title={attention?.title ?? "Attention Center"} description={attention?.subtitle ?? "Prioritized action items requiring follow-up."} className="xl:col-span-5 border-slate-700/60 bg-gradient-to-b from-slate-900/88 to-slate-950/78 shadow-[0_14px_32px_rgba(2,6,23,0.38)]">
           {attention?.status === "empty" ? (
-            <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{attention.emptyState?.title ?? "No urgent issues."}</div>
+            <div className="rounded-xl border border-dashed border-slate-600 p-4 text-sm text-slate-400">{attention.emptyState?.title ?? "No urgent issues."}</div>
           ) : (
             <div className="space-y-2 text-sm">
               {attentionItems.slice(0, 6).map((item) => (
-                <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/activity")} className="group flex items-start justify-between gap-3 rounded-xl border border-border/70 bg-muted/[0.16] p-3 transition hover:border-primary/30 hover:bg-muted/35">
+                <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/activity")} className="group flex items-start justify-between gap-3 rounded-xl border border-slate-700/70 bg-slate-900/65 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-400/45 hover:bg-slate-800/90 hover:shadow-[0_12px_24px_rgba(2,6,23,0.5)]">
                   <div className="space-y-1">
                     <div className="inline-flex items-center gap-2">
-                      <Badge variant={statusTone(String(item.priority ?? "low"))} className="capitalize">{String(item.priority ?? "low")}</Badge>
-                      <p className="font-medium text-foreground">{String(item.title ?? "Action item")}</p>
+                      <Badge variant={statusTone(String(item.priority ?? "low"))} className={cn("capitalize border", priorityStyles(String(item.priority ?? "low")))}>{String(item.priority ?? "low")}</Badge>
+                      <p className="font-medium text-slate-100">{String(item.title ?? "Action item")}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
+                    <p className="text-xs text-slate-400">{String(item.description ?? "")}</p>
                   </div>
-                  <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:text-foreground" />
+                  <ArrowRight className="mt-1 size-4 text-slate-500 transition group-hover:text-slate-100" />
                 </Link>
               ))}
             </div>
@@ -443,30 +453,30 @@ export default function DashboardPage() {
         <SectionCard
           title={trend?.title ?? "Revenue vs Expenses"}
           description={trend?.subtitle ?? "Primary financial snapshot"}
-          className="xl:col-span-7 border-border/80 shadow-md"
+          className="xl:col-span-7 border-slate-700/60 bg-gradient-to-b from-slate-900/85 to-slate-950/75 shadow-[0_16px_36px_rgba(2,6,23,0.44)]"
           actions={trend?.drilldownTarget?.route ? (
-            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground">
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-slate-400 hover:text-slate-100">
               <Link href={trend.drilldownTarget.route}>{trend.drilldownTarget.label ?? "Open detail"}<ChevronRight className="size-3.5" /></Link>
             </Button>
           ) : null}
         >
           {trend?.status === "empty" ? (
-            <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{trend.emptyState?.title ?? "No trend data available."}</div>
+            <div className="rounded-xl border border-dashed border-slate-600 p-4 text-slate-400">{trend.emptyState?.title ?? "No trend data available."}</div>
           ) : (
             <div className="space-y-3 text-sm">
               <TrendMiniChart periods={trendPeriods} />
-              <div className="grid grid-cols-1 gap-2 rounded-xl border border-border/70 bg-muted/[0.14] p-3 text-xs sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 text-xs sm:grid-cols-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Revenue total</p>
-                  <MoneyDisplay value={String(trendRevenueTotal)} currencyCode={currency} className="text-sm font-semibold text-emerald-600" />
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Revenue total</p>
+                  <MoneyDisplay value={String(trendRevenueTotal)} currencyCode={currency} className="text-sm font-semibold text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Expense total</p>
-                  <MoneyDisplay value={String(trendExpensesTotal)} currencyCode={currency} className="text-sm font-semibold text-amber-600" />
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Expense total</p>
+                  <MoneyDisplay value={String(trendExpensesTotal)} currencyCode={currency} className="text-sm font-semibold text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Net total</p>
-                  <MoneyDisplay value={String(trendNetTotal)} currencyCode={currency} className={cn("text-sm font-semibold", trendNetTotal >= 0 ? "text-emerald-600" : "text-rose-600")} />
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Net total</p>
+                  <MoneyDisplay value={String(trendNetTotal)} currencyCode={currency} className={cn("text-sm font-semibold", trendNetTotal >= 0 ? "text-emerald-400" : "text-rose-400")} />
                 </div>
               </div>
             </div>
@@ -475,76 +485,76 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
-        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4">
+        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4 border-slate-700/60 bg-gradient-to-b from-slate-900/84 to-slate-950/72 shadow-[0_10px_22px_rgba(2,6,23,0.3)]">
           {aging?.status === "empty" ? (
-            <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
+            <div className="rounded-xl border border-dashed border-slate-600 p-4 text-sm text-slate-400">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
             <div className="space-y-3 text-sm">
-              <div className="space-y-2 rounded-xl border border-border/70 bg-muted/[0.12] p-3">
+              <div className="space-y-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3">
                 {risk.normalized.map((bucket) => {
                   const total = bucket.receivables + bucket.payables;
                   const arWidth = total > 0 ? (bucket.receivables / total) * 100 : 0;
                   return (
                     <div key={bucket.key} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-foreground">{bucket.label}</span>
-                        <span className="text-muted-foreground"><MoneyDisplay value={String(total)} currencyCode={currency} /></span>
+                        <span className="font-medium text-slate-100">{bucket.label}</span>
+                        <span className="text-slate-400"><MoneyDisplay value={String(total)} currencyCode={currency} /></span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full bg-emerald-500/80" style={{ width: `${Math.max(arWidth, total > 0 ? 4 : 0)}%` }} />
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-700/70">
+                        <div className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400" style={{ width: `${Math.max(arWidth, total > 0 ? 4 : 0)}%` }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className={cn("rounded-xl border p-3 text-xs", risk.severity === "high" ? "border-amber-500/40 bg-amber-500/10" : "border-border/70 bg-muted/[0.14]") }>
-                <p className="mb-1 font-medium text-foreground">Risk summary</p>
-                <p className="text-muted-foreground">{risk.summary}</p>
+              <div className={cn("rounded-xl border p-3 text-xs", risk.severity === "high" ? "border-amber-500/40 bg-amber-500/12" : "border-slate-700/70 bg-slate-900/70") }>
+                <p className="mb-1 font-medium text-slate-100">Risk summary</p>
+                <p className="text-slate-400">{risk.summary}</p>
               </div>
             </div>
           )}
         </SectionCard>
 
-        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3">
+        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {workflowGroups(invoiceStatuses).map((group) => (
-              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/[0.14] p-3 text-xs">
+              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 text-xs">
                 <div>
-                  <p className="font-medium text-foreground">{group.title}</p>
-                  <p className="text-muted-foreground">{group.count} invoices</p>
+                  <p className="font-medium text-slate-100">{group.title}</p>
+                  <p className="text-slate-400">{group.count} invoices</p>
                 </div>
-                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-foreground" />
+                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-slate-100" />
               </div>
             ))}
-            <p className="text-[11px] text-muted-foreground">Amounts reflect current open pipeline by status.</p>
+            <p className="text-[11px] text-slate-400">Amounts reflect current open pipeline by status.</p>
           </div>
         </SectionCard>
 
-        <SectionCard title={billWorkflow?.title ?? "Bill workflow"} description={billWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3">
+        <SectionCard title={billWorkflow?.title ?? "Bill workflow"} description={billWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {workflowGroups(billStatuses).map((group) => (
-              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/[0.14] p-3 text-xs">
+              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 text-xs">
                 <div>
-                  <p className="font-medium text-foreground">{group.title}</p>
-                  <p className="text-muted-foreground">{group.count} bills</p>
+                  <p className="font-medium text-slate-100">{group.title}</p>
+                  <p className="text-slate-400">{group.count} bills</p>
                 </div>
-                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-foreground" />
+                <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-slate-100" />
               </div>
             ))}
-            <p className="text-[11px] text-muted-foreground">Amounts reflect current payable exposure by status.</p>
+            <p className="text-[11px] text-slate-400">Amounts reflect current payable exposure by status.</p>
           </div>
         </SectionCard>
 
-        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-2">
+        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-2 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {actionItems.slice(0, 5).map((item) => (
-              <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className="group flex items-start justify-between gap-2 rounded-xl border border-border/70 bg-muted/[0.12] p-3 transition hover:border-primary/30 hover:bg-muted/35">
+              <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className="group flex items-start justify-between gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-400/50 hover:bg-slate-800/90">
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-foreground">{String(item.title)}</p>
-                  <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
+                  <p className="text-sm font-medium text-slate-100">{String(item.title)}</p>
+                  <p className="text-xs text-slate-400">{String(item.description ?? "")}</p>
                 </div>
-                <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:text-foreground" />
+                <ArrowRight className="mt-1 size-4 text-slate-500 transition group-hover:text-slate-100" />
               </Link>
             ))}
           </div>
@@ -552,23 +562,23 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-7">
+        <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-7 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {curatedActivityItems.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">{activity?.emptyState?.title ?? "No recent activity."}</div>
+              <div className="rounded-lg border border-dashed border-slate-600 p-4 text-xs text-slate-400">{activity?.emptyState?.title ?? "No recent activity."}</div>
             ) : (
               curatedActivityItems.map((item) => (
-                <div key={String(item.activityId)} className="grid grid-cols-[1fr,auto] items-center gap-2 rounded-xl border border-border/70 bg-muted/[0.12] px-3 py-2.5 text-xs">
-                  <span className="inline-flex items-center gap-2 text-foreground"><CircleCheck className="size-3.5 text-emerald-500" /> {String(item.eventSummary)}</span>
-                  <span className="inline-flex items-center gap-1 text-muted-foreground" title={formatDateTime(String(item.occurredAt ?? ""))}><Clock3 className="size-3" /> {formatRelativeTime(String(item.occurredAt ?? ""))}</span>
+                <div key={String(item.activityId)} className="grid grid-cols-[1fr,auto] items-center gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 px-3 py-2.5 text-xs">
+                  <span className="inline-flex items-center gap-2 text-slate-100"><CircleCheck className="size-3.5 text-emerald-400" /> {String(item.eventSummary)}</span>
+                  <span className="inline-flex items-center gap-1 text-slate-400" title={formatDateTime(String(item.occurredAt ?? ""))}><Clock3 className="size-3" /> {formatRelativeTime(String(item.occurredAt ?? ""))}</span>
                 </div>
               ))
             )}
-            <Button asChild variant="outline" size="sm" className="w-full"><Link href="/activity">View all activity</Link></Button>
+            <Button asChild variant="outline" size="sm" className="w-full border-slate-600/70 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/activity">View all activity</Link></Button>
           </div>
         </SectionCard>
 
-        <SectionCard title="System & setup health" description="Billing, integrations, and readiness status." className="xl:col-span-5">
+        <SectionCard title="System & setup health" description="Billing, integrations, and readiness status." className="xl:col-span-5 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="grid gap-2 text-sm md:grid-cols-1">
             {[billing, integrations, onboarding].filter((widget): widget is WidgetEnvelope => Boolean(widget)).map((widget) => {
               const widgetStatus = widget.status === "empty"
@@ -579,14 +589,14 @@ export default function DashboardPage() {
                 : (widget.subtitle ?? "Operational summary available");
 
               return (
-                <div key={widget.widgetKey} className="rounded-xl border border-border/70 bg-muted/[0.12] p-3">
+                <div key={widget.widgetKey} className="rounded-xl border border-slate-700/70 bg-slate-900/70 p-3">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <p className="font-medium text-foreground">{widget.title}</p>
+                    <p className="font-medium text-slate-100">{widget.title}</p>
                     <Badge variant={widget.status === "warning" ? "secondary" : "outline"}>{widgetStatus}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{description}</p>
+                  <p className="text-xs text-slate-400">{description}</p>
                   {widget.drilldownTarget?.route ? (
-                    <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs">
+                    <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs text-slate-200">
                       <Link href={widget.drilldownTarget.route}>{widget.drilldownTarget.label ?? "Open"}</Link>
                     </Button>
                   ) : null}
