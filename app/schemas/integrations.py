@@ -105,7 +105,11 @@ class BankStatementRow(BaseModel):
 class BankStatementImportRequest(BaseModel):
     bank_account_id: str
     source_filename: str
-    rows: list[BankStatementRow]
+    rows: list[BankStatementRow] = Field(default_factory=list)
+    csv_content: str | None = None
+    field_mapping: dict[str, str] = Field(default_factory=dict)
+    connection_id: str | None = None
+    external_account_id: str | None = None
 
 
 class ImportSummaryResponse(BaseModel):
@@ -114,6 +118,7 @@ class ImportSummaryResponse(BaseModel):
     failed_count: int
     skipped_count: int
     job_id: str | None = None
+    error_samples: list[dict] = Field(default_factory=list)
 
 
 class MapExternalAccountRequest(BaseModel):

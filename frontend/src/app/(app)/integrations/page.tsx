@@ -23,27 +23,6 @@ import {
 } from "@/features/integrations/hooks";
 import { useOrganization } from "@/providers/organization-provider";
 
-function parseCsvRows(text: string) {
-  const lines = text.trim().split(/\r?\n/).filter(Boolean);
-  const [header, ...rows] = lines;
-  if (!header) return [];
-  const columns = header.split(",").map((c) => c.trim().toLowerCase());
-  const idxDate = columns.indexOf("transaction_date");
-  const idxDesc = columns.indexOf("description");
-  const idxAmount = columns.indexOf("amount");
-  const idxRef = columns.indexOf("reference");
-  if (idxDate < 0 || idxDesc < 0 || idxAmount < 0) return [];
-  return rows.map((line) => {
-    const parts = line.split(",");
-    return {
-      transaction_date: parts[idxDate]?.trim(),
-      description: parts[idxDesc]?.trim(),
-      amount: Number(parts[idxAmount]),
-      reference: idxRef >= 0 ? parts[idxRef]?.trim() : null,
-    };
-  }).filter((row) => row.transaction_date && row.description && Number.isFinite(row.amount));
-}
-
 export default function IntegrationsPage() {
   const { currentOrganizationId } = useOrganization();
   const providersQuery = useIntegrationProviders(currentOrganizationId ?? undefined);
@@ -160,14 +139,19 @@ export default function IntegrationsPage() {
                 const selectEl = document.getElementById("manual-bank") as HTMLSelectElement | null;
                 const bankAccountId = selectEl?.value;
                 if (!bankAccountId) return;
-                importStatement.mutate({ bank_account_id: bankAccountId, source_filename: "manual.csv", rows: parseCsvRows(csvText) });
+                importStatement.mutate({
+                  bank_account_id: bankAccountId,
+                  source_filename: "manual.csv",
+                  csv_content: csvText,
+                  field_mapping: { transaction_date: "transaction_date", description: "description", amount: "amount", reference: "reference" },
+                });
               }}
               disabled={importStatement.isPending}
             >
               Import statement
             </Button>
           </div>
-          {importStatement.data ? <p className="text-sm text-muted-foreground">Imported {importStatement.data.imported_count}, duplicates {importStatement.data.duplicate_count}, failed {importStatement.data.failed_count}.</p> : null}
+          {importStatement.data ? <p className="text-sm text-muted-foreground">Imported {importStatement.data.imported_count}, duplicates {importStatement.data.duplicate_count}, failed {importStatement.data.failed_count}{importStatement.data.error_samples?.length ? ` • sample error: ${importStatement.data.error_samples[0]?.error}` : ""}.</p> : null}
         </CardContent>
       </Card>
 

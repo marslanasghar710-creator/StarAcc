@@ -37,7 +37,7 @@ export function fetchIntegrationSyncRuns(organizationId: string, connectionId: s
   return apiClient<IntegrationSyncRun[]>(`/organizations/${organizationId}/integrations/connections/${connectionId}/sync-runs`);
 }
 
-export function importBankStatement(organizationId: string, payload: { bank_account_id: string; source_filename: string; rows: Array<{ transaction_date: string; description: string; amount: number; reference?: string | null; balance?: number | null }> }) {
+export function importBankStatement(organizationId: string, payload: { bank_account_id: string; source_filename: string; rows?: Array<{ transaction_date: string; description: string; amount: number; reference?: string | null; balance?: number | null }>; csv_content?: string; field_mapping?: Record<string, string>; connection_id?: string; external_account_id?: string }) {
   return apiClient<ImportSummary>(`/organizations/${organizationId}/integrations/import/bank-statement`, { method: "POST", body: payload });
 }
 

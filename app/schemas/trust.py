@@ -49,6 +49,9 @@ class MetricProvenance(BaseModel):
     label: str
     value_basis: MetricValueBasis
     underlying_counts: dict[str, int] = Field(default_factory=dict)
+    source_objects: dict[str, int] = Field(default_factory=dict)
+    journal_effects: dict[str, str | int] = Field(default_factory=dict)
+    context_filters: dict[str, object] = Field(default_factory=dict)
     drill_targets: list[DrillTarget] = Field(default_factory=list)
     generated_at: datetime
 
@@ -60,10 +63,22 @@ class AuditTraceObject(BaseModel):
     route: str
 
 
+class AccountingImpact(BaseModel):
+    journal_id: str
+    entry_number: str
+    entry_date: str
+    posting_count: int
+    debit_total: str
+    credit_total: str
+    source_type: str | None = None
+    source_id: str | None = None
+
+
 class AuditTraceLink(BaseModel):
     source_type: Literal["invoice", "bill", "bank_transaction", "journal", "report_metric"]
     source_id: str
     related_objects: list[AuditTraceObject]
+    accounting_impacts: list[AccountingImpact] = Field(default_factory=list)
     generated_at: datetime
 
 
@@ -105,9 +120,20 @@ class DataCompletenessStatus(BaseModel):
     checked_at: datetime
 
 
+class IntegrityIssue(BaseModel):
+    severity: Literal["low", "medium", "high"]
+    domain: TrustDomain
+    code: str
+    title: str
+    description: str
+    affected_object_id: str | None = None
+    recommended_action: str
+    action_route: str | None = None
+
+
 class IntegrityCenterResponse(BaseModel):
     trust_summary: TrustSummary
     ledger_integrity: LedgerIntegrityStatus
     reconciliation_status: list[ReconciliationTrustStatus]
     data_completeness: DataCompletenessStatus
-    recent_issues: list[dict[str, object]]
+    recent_issues: list[IntegrityIssue]

@@ -286,7 +286,7 @@ def list_custom_report_datasets(
     membership=Depends(require_permission("reports.custom.read")),
     db: Session = Depends(get_db),
 ):
-    return CustomReportingService(db).list_datasets(membership.role_id)
+    return CustomReportingService(db).list_datasets(organization_id, membership.role_id)
 
 
 @router.get("/custom-reports/datasets/{dataset_id}", response_model=CustomReportDatasetResponse)
@@ -296,7 +296,7 @@ def get_custom_report_dataset(
     membership=Depends(require_permission("reports.custom.read")),
     db: Session = Depends(get_db),
 ):
-    return CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+    return CustomReportingService(db).get_dataset(organization_id, membership.role_id, dataset_id)
 
 
 @router.get("/custom-reports/datasets/{dataset_id}/fields", response_model=list[CustomReportFieldResponse])
@@ -306,7 +306,7 @@ def get_custom_report_dataset_fields(
     membership=Depends(require_permission("reports.custom.read")),
     db: Session = Depends(get_db),
 ):
-    dataset = CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+    dataset = CustomReportingService(db).get_dataset(organization_id, membership.role_id, dataset_id)
     return dataset.fields
 
 
@@ -317,7 +317,7 @@ def get_custom_report_dataset_filters(
     membership=Depends(require_permission("reports.custom.read")),
     db: Session = Depends(get_db),
 ):
-    dataset = CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+    dataset = CustomReportingService(db).get_dataset(organization_id, membership.role_id, dataset_id)
     return dataset.supported_filters
 
 
@@ -328,7 +328,7 @@ def get_custom_report_dataset_groupings(
     membership=Depends(require_permission("reports.custom.read")),
     db: Session = Depends(get_db),
 ):
-    dataset = CustomReportingService(db).get_dataset(membership.role_id, dataset_id)
+    dataset = CustomReportingService(db).get_dataset(organization_id, membership.role_id, dataset_id)
     return dataset.supported_groupings
 
 

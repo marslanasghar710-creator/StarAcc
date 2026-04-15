@@ -24,6 +24,10 @@ export function ReportExportActions({
         <FileSpreadsheet className="size-4" />
         Export CSV
       </Button>
+      <Button type="button" variant="outline" onClick={() => onExport("xlsx")} disabled={isExporting}>
+        <FileSpreadsheet className="size-4" />
+        Export XLSX
+      </Button>
       <Button type="button" variant="outline" onClick={() => onExport("pdf")} disabled={isExporting}>
         <Download className="size-4" />
         Export PDF

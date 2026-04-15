@@ -20,7 +20,7 @@ export function FeatureGate({ feature, children }: { feature: string; children: 
       <CardContent className="flex items-center justify-between gap-3 p-4">
         <div>
           <p className="text-sm font-medium">Feature locked</p>
-          <p className="text-xs text-muted-foreground">Available on Growth/Pro plan.</p>
+          <p className="text-xs text-muted-foreground">Available on a higher plan tier.</p>
         </div>
         <UpgradeCTA />
       </CardContent>
