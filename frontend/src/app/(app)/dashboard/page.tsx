@@ -171,9 +171,9 @@ function SummaryCard({
       <div className="space-y-2.5">
         <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-slate-50", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
         {deltaAmount ? (
-          <p className="inline-flex items-center gap-1 text-xs text-slate-400">
+          <p className="inline-flex items-center gap-1 text-xs text-slate-300">
             {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-400" /> : <TrendingUp className="size-3 text-emerald-400" />}
-            MTD <MoneyDisplay value={deltaAmount} currencyCode={currency} />
+            {deltaDirection === "down" ? "Down MTD" : "Up MTD"} <MoneyDisplay value={deltaAmount} currencyCode={currency} />
           </p>
         ) : null}
         <p className="text-xs text-slate-400">{context}</p>
@@ -376,7 +376,7 @@ export default function DashboardPage() {
   const billStatuses = ((billWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? []);
 
   return (
-    <div className="space-y-5 px-1 pb-2 pt-1 md:px-2">
+    <div className="space-y-5 rounded-3xl border border-slate-800/70 bg-[radial-gradient(circle_at_20%_-10%,rgba(56,189,248,0.12),transparent_34%),radial-gradient(circle_at_80%_0%,rgba(249,115,22,0.09),transparent_30%),linear-gradient(180deg,rgba(2,6,23,0.93)_0%,rgba(3,7,18,0.95)_100%)] px-2 pb-4 pt-2 shadow-[0_24px_56px_rgba(2,6,23,0.52)] md:px-3">
       <div className="rounded-2xl border border-slate-700/50 bg-gradient-to-r from-slate-950/90 via-slate-900/80 to-slate-950/80 p-4 shadow-[0_18px_40px_rgba(2,6,23,0.45)]">
         <PageHeader
           eyebrow="Dashboard"
@@ -485,7 +485,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
-        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4 border-slate-700/60 bg-gradient-to-b from-slate-900/86 to-slate-950/75 shadow-[0_14px_30px_rgba(2,6,23,0.4)]">
+        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4 border-slate-700/60 bg-gradient-to-b from-slate-900/84 to-slate-950/72 shadow-[0_10px_22px_rgba(2,6,23,0.3)]">
           {aging?.status === "empty" ? (
             <div className="rounded-xl border border-dashed border-slate-600 p-4 text-sm text-slate-400">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
@@ -516,7 +516,7 @@ export default function DashboardPage() {
           )}
         </SectionCard>
 
-        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3 border-slate-700/60 bg-gradient-to-b from-slate-900/86 to-slate-950/75 shadow-[0_14px_30px_rgba(2,6,23,0.4)]">
+        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {workflowGroups(invoiceStatuses).map((group) => (
               <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 text-xs">
@@ -531,7 +531,7 @@ export default function DashboardPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title={billWorkflow?.title ?? "Bill workflow"} description={billWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3 border-slate-700/60 bg-gradient-to-b from-slate-900/86 to-slate-950/75 shadow-[0_14px_30px_rgba(2,6,23,0.4)]">
+        <SectionCard title={billWorkflow?.title ?? "Bill workflow"} description={billWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {workflowGroups(billStatuses).map((group) => (
               <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 text-xs">
@@ -546,7 +546,7 @@ export default function DashboardPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-2 border-slate-700/60 bg-gradient-to-b from-slate-900/88 to-slate-950/78 shadow-[0_14px_30px_rgba(2,6,23,0.4)]">
+        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-2 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {actionItems.slice(0, 5).map((item) => (
               <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className="group flex items-start justify-between gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-400/50 hover:bg-slate-800/90">
@@ -562,7 +562,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-7 border-slate-700/60 bg-gradient-to-b from-slate-900/86 to-slate-950/75 shadow-[0_14px_30px_rgba(2,6,23,0.4)]">
+        <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-7 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="space-y-2 text-sm">
             {curatedActivityItems.length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-600 p-4 text-xs text-slate-400">{activity?.emptyState?.title ?? "No recent activity."}</div>
@@ -578,7 +578,7 @@ export default function DashboardPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="System & setup health" description="Billing, integrations, and readiness status." className="xl:col-span-5 border-slate-700/60 bg-gradient-to-b from-slate-900/88 to-slate-950/78 shadow-[0_14px_30px_rgba(2,6,23,0.4)]">
+        <SectionCard title="System & setup health" description="Billing, integrations, and readiness status." className="xl:col-span-5 border-slate-700/60 bg-gradient-to-b from-slate-900/82 to-slate-950/70 shadow-[0_8px_18px_rgba(2,6,23,0.28)]">
           <div className="grid gap-2 text-sm md:grid-cols-1">
             {[billing, integrations, onboarding].filter((widget): widget is WidgetEnvelope => Boolean(widget)).map((widget) => {
               const widgetStatus = widget.status === "empty"
