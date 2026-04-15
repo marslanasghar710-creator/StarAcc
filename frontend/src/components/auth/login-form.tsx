@@ -54,7 +54,7 @@ export function LoginForm() {
       footer={
         <p className="text-sm text-muted-foreground">
           New to StarAcc?{" "}
-          <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
             Create your account
           </Link>
         </p>

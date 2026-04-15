@@ -40,7 +40,7 @@ export default function BillingSettingsPage() {
       <Card>
         <CardHeader><CardTitle>Change plan</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">Self-serve plans are listed below. Enterprise plans route to sales-assisted flow.</p>
+          <p className="text-sm text-muted-foreground">Available public plans are listed below and applied immediately with backend entitlement recalculation.</p>
           <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={selectedPlan} onChange={(event) => setSelectedPlan(event.target.value)}>
             {(plansQuery.data ?? []).map((plan) => <option key={plan.code} value={plan.code}>{plan.name}</option>)}
           </select>

@@ -20,7 +20,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <Button variant="ghost" asChild className="hidden sm:inline-flex"><Link href="/demo" onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: "header_explore_demo", nav_area: "header", destination_type: "route" })}>Explore Demo</Link></Button>
             <Button variant="ghost" asChild><Link href="/login" onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: "sign_in", nav_area: "header", destination_type: "route" })}>Sign in</Link></Button>
-            <Button asChild><Link href="/register?intent=start_workspace" onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: "start_workspace", nav_area: "header", destination_type: "route" })}>Start Workspace</Link></Button>
+            <Button asChild><Link href="/signup?intent=start_workspace" onClick={() => void trackPublicEvent("nav_clicked", { nav_item_id: "start_workspace", nav_area: "header", destination_type: "route" })}>Start Workspace</Link></Button>
           </div>
         </div>
       </header>

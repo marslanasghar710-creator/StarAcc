@@ -35,8 +35,7 @@ export const faqItems = [
 ];
 
 export const pricingPlans = [
-  { name: "Starter", price: "$49", period: "/month", description: "Single-entity accounting foundation for early operators.", highlights: ["GL + AR/AP", "Banking + reconciliation", "Core reports + exports"], cta: { label: "Start Starter", href: "/register", event: "pricing_starter" } },
-  { name: "Growth", price: "$149", period: "/month", description: "Operational accounting for scaling teams and controller workflows.", highlights: ["Everything in Starter", "Projects, assets, inventory, payroll", "Automation + activity controls"], cta: { label: "Start Growth", href: "/register", event: "pricing_growth" } },
-  { name: "Multi-Entity", price: "$399", period: "/month", description: "Group-level finance with consolidation and elimination workflows.", highlights: ["Everything in Growth", "Consolidation + eliminations", "Cross-entity reporting"], cta: { label: "Compare Advanced", href: "/contact?intent=pricing", event: "pricing_multientity" } },
-  { name: "Enterprise", price: "Custom", period: "", description: "Custom controls, rollout support, and implementation pathways.", highlights: ["Implementation planning", "Custom operating controls", "Priority support path"], cta: { label: "Talk to Sales", href: "/contact?intent=demo", event: "pricing_enterprise" } },
+  { name: "Starter", price: "$0", period: "/month", description: "Single-entity accounting foundation for early operators.", highlights: ["GL + AR/AP", "Banking + reconciliation", "Core reports + exports"], cta: { label: "Start Starter", href: "/signup?intent=start_workspace", event: "pricing_starter" } },
+  { name: "Growth", price: "$49", period: "/month", description: "Operational accounting for scaling teams and controller workflows.", highlights: ["Everything in Starter", "Automation + activity controls", "Advanced reporting + exports"], cta: { label: "Start Growth", href: "/signup?intent=start_workspace", event: "pricing_growth" } },
+  { name: "Pro", price: "$129", period: "/month", description: "Multi-entity scale with consolidation, API access, and unlimited limits.", highlights: ["Everything in Growth", "Consolidation workflows", "Unlimited limits + API access"], cta: { label: "Start Pro", href: "/signup?intent=start_workspace", event: "pricing_pro" } },
 ];
