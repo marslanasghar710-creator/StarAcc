@@ -315,12 +315,14 @@ function SummaryCard({
   emphasis,
   performanceWidget,
   organizationId,
+  sparklineValues,
 }: {
   widget: WidgetEnvelope;
   currency: string;
   emphasis?: "strong" | "normal";
   performanceWidget?: boolean;
   organizationId?: string;
+  sparklineValues?: number[];
 }) {
   const payload = widget.payload ?? {};
   const money = ((payload.totalCashBalance as { amount?: string } | undefined)?.amount
@@ -358,6 +360,19 @@ function SummaryCard({
       : "No activity yet this month";
   }
 
+  const showSparkline = Boolean(sparklineValues && sparklineValues.length > 1);
+  const sparkValues = sparklineValues ?? [];
+  const sparkMin = showSparkline ? Math.min(...sparkValues) : 0;
+  const sparkMax = showSparkline ? Math.max(...sparkValues) : 1;
+  const sparkRange = Math.max(1, sparkMax - sparkMin);
+  const sparkPath = showSparkline
+    ? sparkValues.map((value, idx) => {
+      const x = (idx / (sparkValues.length - 1)) * 100;
+      const y = 100 - (((value - sparkMin) / sparkRange) * 100);
+      return `${idx === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    }).join(" ")
+    : "";
+
   return (
     <SectionCard
       title={widget.title}
@@ -383,6 +398,13 @@ function SummaryCard({
             {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-600 dark:text-amber-400" /> : <TrendingUp className="size-3 text-emerald-600 dark:text-emerald-400" />}
             {deltaDirection === "down" ? "Down MTD" : "Up MTD"} <MoneyDisplay value={deltaAmount} currencyCode={currency} />
           </p>
+        ) : null}
+        {showSparkline ? (
+          <div className="pt-1">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-10 w-full">
+              <path d={sparkPath} fill="none" stroke="currentColor" className="text-primary/85" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+          </div>
         ) : null}
         <p className="text-[11px] text-muted-foreground">{context}</p>
       </div>
@@ -649,6 +671,8 @@ export default function DashboardPage() {
 
   const positionWidgets = summaryWidgets.filter((widget) => ["cash_position_summary", "receivables_outstanding_summary", "payables_outstanding_summary"].includes(widget.widgetKey));
   const performanceWidgets = summaryWidgets.filter((widget) => ["revenue_this_month_summary", "expenses_this_month_summary", "net_result_this_month_summary"].includes(widget.widgetKey));
+  const cashWidget = positionWidgets.find((widget) => widget.widgetKey === "cash_position_summary");
+  const supportingWidgets = [...positionWidgets.filter((widget) => widget.widgetKey !== "cash_position_summary"), ...performanceWidgets];
 
   const invoiceStatuses = ((invoiceWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? []);
   const billStatuses = ((billWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? []);
@@ -673,6 +697,11 @@ export default function DashboardPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             {attentionItems.filter((item) => ["critical", "high"].includes(String(item.priority ?? ""))).length} high-priority issues · Activation {onboarding?.status === "ok" ? "on track" : onboarding?.status === "warning" ? "needs attention" : "pending"} · Reconciliation {reconciliationNeedsAttention ? "requires attention" : "healthy"}.
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-1 text-muted-foreground">{attentionItems.length} total items in attention queue</span>
+            <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-1 text-muted-foreground">{receivablesOverdueCount} overdue invoices</span>
+            <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-1 text-muted-foreground">{payablesOverdueCount} overdue bills</span>
+          </div>
           <div className="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
             {[onboarding, integrations, billing].filter((widget): widget is WidgetEnvelope => Boolean(widget)).map((widget) => (
               <div key={widget.widgetKey} className="rounded-xl border border-border/70 bg-muted/35 px-3 py-2 dark:bg-muted/25">
@@ -728,19 +757,38 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between px-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Financial position & performance</p>
         </div>
-        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-6">
-          {positionWidgets.map((widget) => (
-            <div key={widget.widgetKey} className={widget.widgetKey === "cash_position_summary" ? "lg:col-span-2" : "lg:col-span-1"}>
-              <SummaryCard widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} emphasis={widget.widgetKey === "cash_position_summary" ? "strong" : "normal"} />
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+          {cashWidget ? (
+            <div className="lg:col-span-5">
+              <SummaryCard
+                widget={cashWidget}
+                currency={currency}
+                organizationId={currentOrganizationId ?? undefined}
+                emphasis="strong"
+                sparklineValues={trendPeriods.map((period) => period.net)}
+              />
             </div>
-          ))}
-          {performanceWidgets.map((widget) => (
-            <div key={widget.widgetKey} className="lg:col-span-1">
-              <SummaryCard widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} performanceWidget />
-            </div>
-          ))}
+          ) : null}
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:col-span-7 lg:grid-cols-3">
+            {supportingWidgets.map((widget) => (
+              <SummaryCard
+                key={widget.widgetKey}
+                widget={widget}
+                currency={currency}
+                organizationId={currentOrganizationId ?? undefined}
+                performanceWidget={["revenue_this_month_summary", "expenses_this_month_summary", "net_result_this_month_summary"].includes(widget.widgetKey)}
+              />
+            ))}
+            {supportingWidgets.length < 6 ? <div className="hidden lg:block" /> : null}
+          </div>
         </div>
       </section>
+
+      {supportingWidgets.length === 0 && !cashWidget ? (
+        <section className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+          Financial position widgets will appear once transactions are posted.
+        </section>
+      ) : null}
 
       <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <SectionCard
