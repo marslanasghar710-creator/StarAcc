@@ -32,6 +32,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   const { isAuthenticated, memberships, isBootstrapping } = useAuth();
   const { data: organizations = [], isLoading } = useOrganizationsQuery(isAuthenticated);
   const [currentOrganizationId, setCurrentOrganizationIdState] = React.useState<string | null>(null);
+  const previousOrganizationIdRef = React.useRef<string | null>(null);
 
   const membershipSet = React.useMemo(() => new Set(memberships.map((membership) => membership.organization_id)), [memberships]);
   const scopedOrganizations = React.useMemo(() => organizations.filter((organization) => membershipSet.has(organization.id)), [membershipSet, organizations]);
@@ -48,6 +49,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     }
 
     if (!scopedOrganizations.length) {
+      setCurrentOrganizationIdState(null);
+      window.localStorage.removeItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
       return;
     }
 
@@ -61,8 +64,28 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     }
   }, [currentOrganizationId, isAuthenticated, scopedOrganizations]);
 
+  React.useEffect(() => {
+    const previousOrganizationId = previousOrganizationIdRef.current;
+    if (!previousOrganizationId || previousOrganizationId === currentOrganizationId) {
+      previousOrganizationIdRef.current = currentOrganizationId;
+      return;
+    }
+
+    void queryClient.cancelQueries({
+      predicate: (query) => Array.isArray(query.queryKey) && query.queryKey.includes(previousOrganizationId),
+    });
+    queryClient.removeQueries({
+      predicate: (query) => Array.isArray(query.queryKey) && query.queryKey.includes(previousOrganizationId),
+    });
+
+    previousOrganizationIdRef.current = currentOrganizationId;
+  }, [currentOrganizationId, queryClient]);
+
   const setCurrentOrganizationId = React.useCallback(
     (organizationId: string) => {
+      if (!membershipSet.has(organizationId)) {
+        return;
+      }
       setCurrentOrganizationIdState(organizationId);
       if (typeof window !== "undefined") {
         window.localStorage.setItem(ACTIVE_ORGANIZATION_STORAGE_KEY, organizationId);
@@ -74,7 +97,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       void queryClient.invalidateQueries({ queryKey: ["periods", organizationId] });
       void queryClient.invalidateQueries({ queryKey: ["reports", organizationId] });
     },
-    [queryClient],
+    [membershipSet, queryClient],
   );
 
   const currentOrganization = React.useMemo(

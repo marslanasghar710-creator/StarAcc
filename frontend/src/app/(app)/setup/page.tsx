@@ -17,10 +17,11 @@ import { useOrganization } from "@/providers/organization-provider";
 
 export default function SetupCenterPage() {
   const { currentOrganizationId, currentOrganization } = useOrganization();
-  const statusQuery = useOnboardingStatus(currentOrganizationId ?? undefined, Boolean(currentOrganizationId));
-  const activationQuery = useActivationSnapshot(currentOrganizationId ?? undefined, Boolean(currentOrganizationId));
+  const hasScopedOrganization = Boolean(currentOrganizationId && currentOrganization);
+  const statusQuery = useOnboardingStatus(currentOrganizationId ?? undefined, hasScopedOrganization);
+  const activationQuery = useActivationSnapshot(currentOrganizationId ?? undefined, hasScopedOrganization);
 
-  if (!currentOrganizationId) {
+  if (!hasScopedOrganization || !currentOrganizationId) {
     return <EmptyState title="No organization selected" description="Choose an organization to open Setup Center." />;
   }
 
