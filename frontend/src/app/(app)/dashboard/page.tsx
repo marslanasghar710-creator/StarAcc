@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { ArrowRight, ChevronRight, CircleCheck, Clock3, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 
 import { ErrorState } from "@/components/feedback/error-state";
@@ -25,6 +26,13 @@ function statusTone(status: string) {
   if (status === "warning") return "secondary" as const;
   if (status === "error") return "danger" as const;
   return "outline" as const;
+}
+
+function priorityStyles(priority: string) {
+  if (priority === "critical") return "border-rose-500/40 bg-rose-500/12 text-rose-700 dark:text-rose-200";
+  if (priority === "high") return "border-amber-500/40 bg-amber-500/12 text-amber-700 dark:text-amber-200";
+  if (priority === "medium") return "border-sky-500/40 bg-sky-500/12 text-sky-700 dark:text-sky-200";
+  return "border-border/70 bg-muted text-muted-foreground";
 }
 
 function amountToNumber(value: unknown): number {
@@ -54,37 +62,234 @@ function parseTrendPeriods(periods: Array<Record<string, unknown>>): TrendPoint[
   }));
 }
 
+type ChartJsRuntime = {
+  new (ctx: CanvasRenderingContext2D, config: Record<string, unknown>): { destroy: () => void };
+};
+
+declare global {
+  interface Window {
+    Chart?: ChartJsRuntime;
+  }
+}
+
+async function ensureChartJs() {
+  if (typeof window === "undefined") return null;
+  if (window.Chart) return window.Chart;
+
+  await new Promise<void>((resolve, reject) => {
+    const existing = document.getElementById("chartjs-cdn");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Chart.js failed to load")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "chartjs-cdn";
+    script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Chart.js failed to load"));
+    document.head.appendChild(script);
+  });
+
+  return window.Chart ?? null;
+}
+
+function chartPalette() {
+  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+  return {
+    foreground: isDark ? "rgba(241, 245, 249, 0.94)" : "rgba(15, 23, 42, 0.9)",
+    muted: isDark ? "rgba(203, 213, 225, 0.86)" : "rgba(71, 85, 105, 0.86)",
+    grid: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(100, 116, 139, 0.12)",
+  };
+}
+
 function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
   if (periods.length < 2) return null;
 
-  const maxValue = Math.max(1, ...periods.flatMap((period) => [period.revenue, period.expenses]));
-  const width = 100;
-  const height = 52;
-  const stepX = width / (periods.length - 1);
-  const toY = (value: number) => (height - 6) - ((value / maxValue) * (height - 12));
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const revenuePath = periods
-    .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.revenue).toFixed(2)}`)
-    .join(" ");
-  const expensesPath = periods
-    .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.expenses).toFixed(2)}`)
-    .join(" ");
+  useEffect(() => {
+    let chartInstance: { destroy: () => void } | null = null;
+
+    const createChart = async () => {
+      const Chart = await ensureChartJs();
+      if (!Chart || !canvasRef.current) return;
+
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
+
+      const existingChart = (window.Chart as { getChart?: (canvas: HTMLCanvasElement) => { destroy: () => void } | undefined } | undefined)?.getChart?.(canvasRef.current);
+      existingChart?.destroy();
+
+      const palette = chartPalette();
+      const revenueColor = "rgba(16, 185, 129, 0.9)";
+      const expenseColor = "rgba(245, 158, 11, 0.9)";
+
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: periods.map((period) => period.label),
+          datasets: [
+            {
+              label: "Revenue",
+              data: periods.map((period) => period.revenue),
+              borderColor: revenueColor,
+              backgroundColor: "rgba(16, 185, 129, 0.2)",
+              fill: true,
+              pointRadius: 2.5,
+              pointHoverRadius: 4,
+              borderWidth: 2.8,
+              tension: 0.35,
+            },
+            {
+              label: "Expenses",
+              data: periods.map((period) => period.expenses),
+              borderColor: expenseColor,
+              backgroundColor: "rgba(245, 158, 11, 0.14)",
+              fill: true,
+              pointRadius: 2.5,
+              pointHoverRadius: 4,
+              borderWidth: 2.4,
+              tension: 0.35,
+            },
+          ],
+        },
+        options: {
+          maintainAspectRatio: false,
+          responsive: true,
+          animation: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: palette.muted,
+                boxWidth: 12,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: palette.muted, maxRotation: 0 },
+              grid: { color: palette.grid, drawTicks: false, drawOnChartArea: true },
+              border: { display: false },
+            },
+            y: {
+              ticks: { color: palette.muted },
+              grid: { color: palette.grid, drawTicks: false, drawOnChartArea: true },
+              border: { display: false },
+            },
+          },
+        },
+      });
+      if (canvasRef.current) canvasRef.current.style.color = palette.foreground;
+    };
+
+    void createChart();
+
+    return () => {
+      chartInstance?.destroy();
+    };
+  }, [periods]);
 
   return (
-    <div className="rounded-xl border border-border/70 bg-muted/[0.18] p-3">
+    <div className="rounded-2xl border border-border/70 bg-gradient-to-b from-card to-muted/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:from-muted/35 dark:to-background/20 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>{periods[0]?.label}</span>
-        <div className="inline-flex items-center gap-3">
-          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-500" /> Revenue</span>
-          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-amber-500" /> Expenses</span>
+        <div className="inline-flex items-center gap-3 font-medium">
+          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-600 dark:bg-emerald-400" /> Revenue</span>
+          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-amber-600 dark:bg-amber-400" /> Expenses</span>
         </div>
         <span>{periods[periods.length - 1]?.label}</span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" preserveAspectRatio="none" role="img" aria-label="Revenue and expenses trend lines">
-        <path d="M 0 46 L 100 46" stroke="currentColor" className="text-border/80" strokeWidth="0.75" strokeDasharray="3 3" />
-        <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-500" strokeWidth="2.2" />
-        <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-500" strokeWidth="2" strokeDasharray="4 2" />
-      </svg>
+      <div className="h-48 w-full">
+        <canvas ref={canvasRef} />
+      </div>
+    </div>
+  );
+}
+
+function AgingDistributionChartJs({ buckets }: { buckets: ReturnType<typeof summarizeRisk>["normalized"] }) {
+  if (buckets.length === 0) return null;
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    let chartInstance: { destroy: () => void } | null = null;
+
+    const createChart = async () => {
+      const Chart = await ensureChartJs();
+      if (!Chart || !canvasRef.current) return;
+
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
+
+      const existingChart = (window.Chart as { getChart?: (canvas: HTMLCanvasElement) => { destroy: () => void } | undefined } | undefined)?.getChart?.(canvasRef.current);
+      existingChart?.destroy();
+
+      const palette = chartPalette();
+
+      chartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: buckets.map((bucket) => bucket.label),
+          datasets: [
+            {
+              label: "Receivables",
+              data: buckets.map((bucket) => bucket.receivables),
+              backgroundColor: "rgba(16, 185, 129, 0.75)",
+              borderRadius: 4,
+              borderSkipped: false,
+            },
+            {
+              label: "Payables",
+              data: buckets.map((bucket) => bucket.payables),
+              backgroundColor: "rgba(245, 158, 11, 0.75)",
+              borderRadius: 4,
+              borderSkipped: false,
+            },
+          ],
+        },
+        options: {
+          maintainAspectRatio: false,
+          responsive: true,
+          indexAxis: "y",
+          animation: false,
+          plugins: {
+            legend: {
+              labels: { color: palette.muted, boxWidth: 12 },
+            },
+          },
+          scales: {
+            x: {
+              stacked: true,
+              ticks: { color: palette.muted },
+              grid: { color: palette.grid, drawTicks: false, drawOnChartArea: true },
+              border: { display: false },
+            },
+            y: {
+              stacked: true,
+              ticks: { color: palette.muted },
+              grid: { display: false, drawTicks: false },
+              border: { display: false },
+            },
+          },
+        },
+      });
+    };
+
+    void createChart();
+
+    return () => {
+      chartInstance?.destroy();
+    };
+  }, [buckets]);
+
+  return (
+    <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+      <div className="h-48 w-full">
+        <canvas ref={canvasRef} />
+      </div>
     </div>
   );
 }
@@ -132,15 +337,25 @@ function SummaryCard({
   if (widget.widgetKey === "receivables_outstanding_summary") {
     const overdueAmount = amountToNumber(((payload.overdue as Record<string, unknown> | undefined)?.amount));
     const overdueCount = Number((payload.overdue as Record<string, unknown> | undefined)?.invoiceCount ?? 0);
-    context = overdueAmount > 0 ? `${overdueCount} overdue invoices` : "No overdue invoices";
+    context = overdueAmount > 0 ? `${overdueCount} invoices overdue` : "No overdue invoices";
   }
   if (widget.widgetKey === "payables_outstanding_summary") {
     const overdueAmount = amountToNumber(((payload.overdue as Record<string, unknown> | undefined)?.amount));
     const overdueCount = Number((payload.overdue as Record<string, unknown> | undefined)?.billCount ?? 0);
-    context = overdueAmount > 0 ? `${overdueCount} overdue bills` : "No overdue bills";
+    context = overdueAmount > 0 ? `${overdueCount} bills pending payment` : "No overdue bills";
+  }
+  if (widget.widgetKey === "cash_position_summary") {
+    const deltaPercent = Number((payload.delta as Record<string, unknown> | undefined)?.percent ?? 0);
+    if (Number.isFinite(deltaPercent) && deltaPercent !== 0) {
+      context = `${deltaPercent > 0 ? "Up" : "Down"} ${Math.abs(deltaPercent).toFixed(1)}% vs last period`;
+    } else if (deltaAmount) {
+      context = `${deltaDirection === "down" ? "Down" : "Up"} vs last period`;
+    }
   }
   if (performanceWidget && valueIsZero) {
-    context = "No posted activity yet this month";
+    context = widget.widgetKey === "revenue_this_month_summary"
+      ? "No activity yet this month • Create your first invoice to start tracking revenue."
+      : "No activity yet this month";
   }
 
   return (
@@ -148,28 +363,28 @@ function SummaryCard({
       title={widget.title}
       description={widget.subtitle ?? ""}
       className={cn(
-        "h-full border-border/70",
-        emphasis === "strong" ? "ring-1 ring-primary/25 shadow-md" : "shadow-sm",
-        performanceWidget && valueIsZero ? "bg-muted/[0.2]" : "",
+        "h-full border-border/70 bg-gradient-to-b from-card to-muted/35 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/35 dark:from-card dark:to-muted/20 dark:shadow-[0_14px_28px_rgba(2,6,23,0.38)]",
+        emphasis === "strong" ? "ring-1 ring-primary/35 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_20%,transparent),0_20px_40px_rgba(15,23,42,0.12)] dark:shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_24%,transparent),0_24px_44px_rgba(2,6,23,0.45)]" : "",
+        performanceWidget && valueIsZero ? "opacity-90" : "",
       )}
       actions=<div className="flex items-center gap-2">
       {organizationId ? <MetricProvenanceDrawer organizationId={organizationId} metricId={widget.widgetKey} triggerLabel="Why this number?" /> : null}
       {widget.drilldownTarget?.route ? (
-        <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground">
+        <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground">
           <Link href={widget.drilldownTarget.route}>{widget.drilldownTarget.label ?? "Detail"}<ChevronRight className="size-3.5" /></Link>
         </Button>
       ) : null}
       </div>
     >
-      <div className="space-y-2.5">
-        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-foreground", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
+      <div className="space-y-2">
+        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-foreground", emphasis === "strong" ? "text-4xl" : "text-[1.72rem]")} />
         {deltaAmount ? (
           <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-600" /> : <TrendingUp className="size-3 text-emerald-600" />}
-            MTD <MoneyDisplay value={deltaAmount} currencyCode={currency} />
+            {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-600 dark:text-amber-400" /> : <TrendingUp className="size-3 text-emerald-600 dark:text-emerald-400" />}
+            {deltaDirection === "down" ? "Down MTD" : "Up MTD"} <MoneyDisplay value={deltaAmount} currencyCode={currency} />
           </p>
         ) : null}
-        <p className="text-xs text-muted-foreground">{context}</p>
+        <p className="text-[11px] text-muted-foreground">{context}</p>
       </div>
     </SectionCard>
   );
@@ -191,9 +406,31 @@ function summarizeRisk(buckets: Array<Record<string, unknown>>) {
     arPeak,
     apPeak,
     severity,
-    summary: `Receivables risk is concentrated in ${arPeak.label}; payables pressure is highest in ${apPeak.label}.`,
+    summary: `Receivables risk concentrated in ${arPeak.label} bucket · monitor collections closely. Payables pressure is highest in ${apPeak.label}.`,
     normalized,
   };
+}
+
+function prioritizedAttentionItems(items: Array<Record<string, unknown>>) {
+  const severityScore = (priority: string) => {
+    if (priority === "critical") return 4;
+    if (priority === "high") return 3;
+    if (priority === "medium") return 2;
+    return 1;
+  };
+
+  return [...items].sort((a, b) => {
+    const severity = severityScore(String(b.priority ?? "low")) - severityScore(String(a.priority ?? "low"));
+    if (severity !== 0) return severity;
+
+    const amountA = amountToNumber((a.impact as Record<string, unknown> | undefined)?.amount ?? (a.amount as Record<string, unknown> | undefined)?.amount);
+    const amountB = amountToNumber((b.impact as Record<string, unknown> | undefined)?.amount ?? (b.amount as Record<string, unknown> | undefined)?.amount);
+    if (amountB !== amountA) return amountB - amountA;
+
+    const tsA = Date.parse(String(a.occurredAt ?? a.updatedAt ?? a.createdAt ?? ""));
+    const tsB = Date.parse(String(b.occurredAt ?? b.updatedAt ?? b.createdAt ?? ""));
+    return (Number.isFinite(tsB) ? tsB : 0) - (Number.isFinite(tsA) ? tsA : 0);
+  });
 }
 
 function workflowGroups(statuses: Array<Record<string, unknown>>) {
@@ -268,12 +505,18 @@ function curatedActivity(items: Array<Record<string, unknown>>) {
 function buildActionList({
   recommendations,
   attentionItems,
+  receivablesOverdueCount,
+  payablesOverdueCount,
+  reconciliationNeedsAttention,
   onboarding,
   integrations,
   billing,
 }: {
   recommendations: Array<Record<string, unknown>>;
   attentionItems: Array<Record<string, unknown>>;
+  receivablesOverdueCount: number;
+  payablesOverdueCount: number;
+  reconciliationNeedsAttention: boolean;
   onboarding?: WidgetEnvelope;
   integrations?: WidgetEnvelope;
   billing?: WidgetEnvelope;
@@ -281,16 +524,28 @@ function buildActionList({
   const attentionTitles = new Set(attentionItems.map((item) => String(item.title ?? "").toLowerCase()));
   const base = recommendations.filter((item) => !attentionTitles.has(String(item.title ?? "").toLowerCase()));
 
-  if (onboarding?.applicable && onboarding.status === "ok") {
+  if (receivablesOverdueCount > 0) {
+    base.unshift({ id: "review_overdue_invoices", title: "Review overdue invoices", description: `${receivablesOverdueCount} overdue invoices require follow-up.`, cta: { route: "/invoices", label: "Open invoices" } });
+  }
+
+  if (payablesOverdueCount > 0) {
+    base.push({ id: "clear_overdue_bills", title: "Review overdue bills", description: `${payablesOverdueCount} overdue bills need payment planning.`, cta: { route: "/bills", label: "Open bills" } });
+  }
+
+  if (onboarding?.applicable && onboarding.status !== "ok") {
     base.push({ id: "continue_setup", title: "Complete remaining setup", description: "Finish setup tasks to unlock stronger automation and controls.", cta: { route: "/setup", label: "Continue setup" } });
   }
 
   if (integrations?.status === "empty") {
-    base.push({ id: "connect_integration", title: "Connect your first integration", description: "Link banks or payroll to reduce manual posting overhead.", cta: { route: "/integrations", label: "Open integrations" } });
+    base.push({ id: "connect_integration", title: "Connect bank accounts", description: "Link bank feeds to improve reconciliation speed and cash visibility.", cta: { route: "/integrations", label: "Open integrations" } });
   }
 
   if (billing?.status === "empty") {
     base.push({ id: "configure_billing", title: "Set up billing profile", description: "Configure billing now to avoid subscription interruptions.", cta: { route: "/settings/billing", label: "Open billing" } });
+  }
+
+  if (reconciliationNeedsAttention) {
+    base.push({ id: "reconcile_gaps", title: "Resolve reconciliation gaps", description: "Address unmatched transactions to improve trust status.", cta: { route: "/banking/reconciliations", label: "Open reconciliation" } });
   }
 
   if (base.length < 3) {
@@ -301,7 +556,18 @@ function buildActionList({
     );
   }
 
-  return base.slice(0, 5);
+  const deduped: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+
+  for (const item of base) {
+    const ctaRoute = String((item.cta as Record<string, unknown> | undefined)?.route ?? "");
+    const identity = `${String(item.id ?? "")}:${String(item.title ?? "")}:${ctaRoute}`;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    deduped.push(item);
+  }
+
+  return deduped.slice(0, 5);
 }
 
 export default function DashboardPage() {
@@ -347,13 +613,32 @@ export default function DashboardPage() {
   const billing = widgetByKey(data.widgets, "billing_subscription_status");
   const integrations = widgetByKey(data.widgets, "integration_health_summary");
 
-  const attentionItems = ((attention?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
+  const rawAttentionItems = ((attention?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
   const trendPeriods = parseTrendPeriods(((trend?.payload?.periods as Array<Record<string, unknown>> | undefined) ?? []));
   const agingBuckets = ((aging?.payload?.buckets as Array<Record<string, unknown>> | undefined) ?? []);
   const recommendationItems = ((recommendations?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
   const activityItems = ((activity?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
 
-  const actionItems = buildActionList({ recommendations: recommendationItems, attentionItems, onboarding, integrations, billing });
+  const attentionItems = prioritizedAttentionItems(rawAttentionItems);
+
+  const receivablesWidget = widgetByKey(data.widgets, "receivables_outstanding_summary");
+  const payablesWidget = widgetByKey(data.widgets, "payables_outstanding_summary");
+  const receivablesOverdueCount = Number(((receivablesWidget?.payload?.overdue as Record<string, unknown> | undefined)?.invoiceCount ?? 0));
+  const payablesOverdueCount = Number(((payablesWidget?.payload?.overdue as Record<string, unknown> | undefined)?.billCount ?? 0));
+
+  const reconciliationDomain = trustSummaryQuery.data?.domains.find((domain) => domain.domain === "reconciliation");
+  const reconciliationNeedsAttention = Boolean(reconciliationDomain && reconciliationDomain.status !== "healthy");
+
+  const actionItems = buildActionList({
+    recommendations: recommendationItems,
+    attentionItems,
+    receivablesOverdueCount,
+    payablesOverdueCount,
+    reconciliationNeedsAttention,
+    onboarding,
+    integrations,
+    billing,
+  });
   const curatedActivityItems = curatedActivity(activityItems);
 
   const trendRevenueTotal = trendPeriods.reduce((sum, period) => sum + period.revenue, 0);
@@ -369,31 +654,69 @@ export default function DashboardPage() {
   const billStatuses = ((billWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? []);
 
   return (
-    <div className="space-y-6 px-1 pb-2 pt-1 md:px-2">
-      <PageHeader
-        eyebrow="Dashboard"
-        title="Finance command center"
-        description={`${data.dashboardContext.scopeLabel} • ${data.dashboardContext.periodLabel}`}
-        actions={(
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => void dashboardQuery.refetch()}>
-              <RefreshCw className="mr-1.5 size-3.5" /> Refresh
-            </Button>
-            <Button asChild type="button" variant="ghost" size="sm"><Link href="/reports/profit-loss">Open P&L</Link></Button>
+    <div className="space-y-4 rounded-3xl border border-border/70 bg-gradient-to-b from-background via-background to-muted/35 p-3 shadow-[0_16px_34px_rgba(15,23,42,0.08)] dark:border-border/50 dark:shadow-[0_26px_56px_rgba(2,6,23,0.48)] md:p-4">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
+        <div className="xl:col-span-9 rounded-2xl border border-border/70 bg-card/90 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-all duration-200 dark:bg-card/70 dark:shadow-[0_18px_32px_rgba(2,6,23,0.38)]">
+          <PageHeader
+            eyebrow="Dashboard"
+            title="Finance command center"
+            description={`${data.dashboardContext.scopeLabel} • ${data.dashboardContext.periodLabel}`}
+            actions={(
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" className="transition-all duration-200 hover:-translate-y-0.5" onClick={() => void dashboardQuery.refetch()}>
+                  <RefreshCw className="mr-1.5 size-3.5" /> Refresh
+                </Button>
+                <Button asChild type="button" size="sm" className="transition-all duration-200 hover:-translate-y-0.5"><Link href="/reports/profit-loss">Open P&L</Link></Button>
+              </div>
+            )}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            {attentionItems.filter((item) => ["critical", "high"].includes(String(item.priority ?? ""))).length} high-priority issues · Activation {onboarding?.status === "ok" ? "on track" : onboarding?.status === "warning" ? "needs attention" : "pending"} · Reconciliation {reconciliationNeedsAttention ? "requires attention" : "healthy"}.
+          </p>
+          <div className="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
+            {[onboarding, integrations, billing].filter((widget): widget is WidgetEnvelope => Boolean(widget)).map((widget) => (
+              <div key={widget.widgetKey} className="rounded-xl border border-border/70 bg-muted/35 px-3 py-2 dark:bg-muted/25">
+                <p className="font-medium text-foreground">{widget.title}</p>
+                <p className="text-muted-foreground">{widget.status === "warning" ? "Needs attention" : widget.status === "empty" ? "Action required" : "Healthy"}</p>
+              </div>
+            ))}
           </div>
-        )}
-      />
+        </div>
+
+        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-3 border-border/70 bg-card/90 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-card/70 dark:shadow-[0_18px_32px_rgba(2,6,23,0.38)]">
+          <div className="space-y-2 text-sm">
+            {actionItems.slice(0, 5).map((item, index) => (
+              <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className={cn(
+                "group flex items-start justify-between gap-2 rounded-xl border p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent/50",
+                index === 0
+                  ? "border-primary/45 bg-primary/8 shadow-[0_8px_18px_rgba(15,23,42,0.1)] dark:bg-primary/12"
+                  : "border-border/70 bg-muted/35 hover:border-primary/45 dark:bg-muted/25",
+              )}>
+                <div className="space-y-0.5">
+                  <p className={cn("text-sm font-medium text-foreground", index === 0 ? "text-[0.95rem]" : "")}>{index + 1}. {String(item.title)}</p>
+                  <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
+                </div>
+                <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:text-foreground" />
+              </Link>
+            ))}
+          </div>
+        </SectionCard>
+      </section>
 
       {trustSummaryQuery.data ? (
         <SectionCard
           title="Trust status"
-          description={`Overall status: ${trustSummaryQuery.data.overall_status.replaceAll("_", " ")} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
+          description={`Trust: ${trustSummaryQuery.data.overall_status === "healthy" ? "Healthy" : "Attention needed"}${reconciliationNeedsAttention ? " due to reconciliation gaps" : ""} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
+          className="border-border/70 bg-card/90 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-card/70 dark:shadow-[0_18px_32px_rgba(2,6,23,0.38)]"
           actions={<Button asChild size="sm" variant="outline"><Link href="/settings/integrity">Open integrity center</Link></Button>}
         >
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-xs">
+          <div className="mb-2 inline-flex rounded-full border border-border/70 bg-muted/35 px-2.5 py-1 text-[11px] font-medium text-foreground dark:bg-muted/25">
+            Trust: {trustSummaryQuery.data.overall_status === "healthy" ? "Healthy" : "Attention needed"}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6 text-xs">
             {trustSummaryQuery.data.domains.map((domain: { domain: string; label: string; status: string }) => (
-              <div key={domain.domain} className="rounded-lg border border-border/70 bg-muted/[0.12] p-2">
-                <p className="font-medium">{domain.label}</p>
+              <div key={domain.domain} className="rounded-xl border border-border/70 bg-muted/35 p-2.5 dark:bg-muted/25">
+                <p className="font-medium text-foreground">{domain.label}</p>
                 <p className="text-muted-foreground capitalize">{domain.status.replaceAll("_", " ")}</p>
               </div>
             ))}
@@ -401,34 +724,68 @@ export default function DashboardPage() {
         </SectionCard>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="space-y-2">
-          <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Position</p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {positionWidgets.map((widget) => (
-              <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} emphasis={widget.widgetKey === "cash_position_summary" ? "strong" : "normal"} />
-            ))}
-          </div>
+      <section className="space-y-1.5">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Financial position & performance</p>
         </div>
-        <div className="space-y-2">
-          <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Performance</p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {performanceWidgets.map((widget) => <SummaryCard key={widget.widgetKey} widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} performanceWidget />)}
-          </div>
+        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-6">
+          {positionWidgets.map((widget) => (
+            <div key={widget.widgetKey} className={widget.widgetKey === "cash_position_summary" ? "lg:col-span-2" : "lg:col-span-1"}>
+              <SummaryCard widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} emphasis={widget.widgetKey === "cash_position_summary" ? "strong" : "normal"} />
+            </div>
+          ))}
+          {performanceWidgets.map((widget) => (
+            <div key={widget.widgetKey} className="lg:col-span-1">
+              <SummaryCard widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} performanceWidget />
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <SectionCard title={attention?.title ?? "Attention Center"} description={attention?.subtitle ?? "Prioritized action items requiring follow-up."} className="xl:col-span-5">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
+        <SectionCard
+          title={trend?.title ?? "Revenue vs Expenses"}
+          description={trend?.subtitle ?? "Primary financial snapshot"}
+          className="xl:col-span-8 border-border/70 bg-card/90 shadow-[0_12px_28px_rgba(15,23,42,0.1)] dark:bg-card/70 dark:shadow-[0_20px_36px_rgba(2,6,23,0.42)]"
+          actions={trend?.drilldownTarget?.route ? (
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground">
+              <Link href={trend.drilldownTarget.route}>{trend.drilldownTarget.label ?? "Open detail"}<ChevronRight className="size-3.5" /></Link>
+            </Button>
+          ) : null}
+        >
+          {trend?.status === "empty" ? (
+            <div className="rounded-xl border border-dashed border-border p-4 text-muted-foreground">{trend.emptyState?.title ?? "No trend data available."}</div>
+          ) : (
+            <div className="space-y-3 text-sm">
+              <TrendMiniChart periods={trendPeriods} />
+              <div className="grid grid-cols-1 gap-2 rounded-xl border border-border/70 bg-muted/35 p-3 text-xs sm:grid-cols-3 dark:bg-muted/25">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Revenue total</p>
+                  <MoneyDisplay value={String(trendRevenueTotal)} currencyCode={currency} className="text-sm font-semibold text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Expense total</p>
+                  <MoneyDisplay value={String(trendExpensesTotal)} currencyCode={currency} className="text-sm font-semibold text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Net total</p>
+                  <MoneyDisplay value={String(trendNetTotal)} currencyCode={currency} className={cn("text-sm font-semibold", trendNetTotal >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")} />
+                </div>
+              </div>
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard title={attention?.title ?? "Attention Center"} description={attention?.subtitle ?? "Prioritized action items requiring follow-up."} className="xl:col-span-4 border-border/70 bg-card/90 shadow-[0_12px_28px_rgba(15,23,42,0.1)] dark:bg-card/70 dark:shadow-[0_20px_36px_rgba(2,6,23,0.42)]">
           {attention?.status === "empty" ? (
-            <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{attention.emptyState?.title ?? "No urgent issues."}</div>
+            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{attention.emptyState?.title ?? "No urgent issues."}</div>
           ) : (
             <div className="space-y-2 text-sm">
               {attentionItems.slice(0, 6).map((item) => (
-                <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/activity")} className="group flex items-start justify-between gap-3 rounded-xl border border-border/70 bg-muted/[0.16] p-3 transition hover:border-primary/30 hover:bg-muted/35">
+                <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/activity")} className="group flex items-start justify-between gap-3 rounded-xl border border-border/70 bg-muted/35 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:bg-accent/50 dark:bg-muted/25">
                   <div className="space-y-1">
                     <div className="inline-flex items-center gap-2">
-                      <Badge variant={statusTone(String(item.priority ?? "low"))} className="capitalize">{String(item.priority ?? "low")}</Badge>
+                      <Badge variant={statusTone(String(item.priority ?? "low"))} className={cn("capitalize border", priorityStyles(String(item.priority ?? "low")))}>{String(item.priority ?? "low")}</Badge>
                       <p className="font-medium text-foreground">{String(item.title ?? "Action item")}</p>
                     </div>
                     <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
@@ -439,66 +796,16 @@ export default function DashboardPage() {
             </div>
           )}
         </SectionCard>
-
-        <SectionCard
-          title={trend?.title ?? "Revenue vs Expenses"}
-          description={trend?.subtitle ?? "Primary financial snapshot"}
-          className="xl:col-span-7 border-border/80 shadow-md"
-          actions={trend?.drilldownTarget?.route ? (
-            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground">
-              <Link href={trend.drilldownTarget.route}>{trend.drilldownTarget.label ?? "Open detail"}<ChevronRight className="size-3.5" /></Link>
-            </Button>
-          ) : null}
-        >
-          {trend?.status === "empty" ? (
-            <div className="rounded-lg border border-dashed border-border p-4 text-muted-foreground">{trend.emptyState?.title ?? "No trend data available."}</div>
-          ) : (
-            <div className="space-y-3 text-sm">
-              <TrendMiniChart periods={trendPeriods} />
-              <div className="grid grid-cols-1 gap-2 rounded-xl border border-border/70 bg-muted/[0.14] p-3 text-xs sm:grid-cols-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Revenue total</p>
-                  <MoneyDisplay value={String(trendRevenueTotal)} currencyCode={currency} className="text-sm font-semibold text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Expense total</p>
-                  <MoneyDisplay value={String(trendExpensesTotal)} currencyCode={currency} className="text-sm font-semibold text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Net total</p>
-                  <MoneyDisplay value={String(trendNetTotal)} currencyCode={currency} className={cn("text-sm font-semibold", trendNetTotal >= 0 ? "text-emerald-600" : "text-rose-600")} />
-                </div>
-              </div>
-            </div>
-          )}
-        </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
-        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
+        <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
           {aging?.status === "empty" ? (
-            <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
+            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
             <div className="space-y-3 text-sm">
-              <div className="space-y-2 rounded-xl border border-border/70 bg-muted/[0.12] p-3">
-                {risk.normalized.map((bucket) => {
-                  const total = bucket.receivables + bucket.payables;
-                  const arWidth = total > 0 ? (bucket.receivables / total) * 100 : 0;
-                  return (
-                    <div key={bucket.key} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-foreground">{bucket.label}</span>
-                        <span className="text-muted-foreground"><MoneyDisplay value={String(total)} currencyCode={currency} /></span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full bg-emerald-500/80" style={{ width: `${Math.max(arWidth, total > 0 ? 4 : 0)}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className={cn("rounded-xl border p-3 text-xs", risk.severity === "high" ? "border-amber-500/40 bg-amber-500/10" : "border-border/70 bg-muted/[0.14]") }>
+              <AgingDistributionChartJs buckets={risk.normalized} />
+              <div className={cn("rounded-xl border p-3 text-xs", risk.severity === "high" ? "border-amber-500/35 bg-amber-500/10" : "border-border/70 bg-muted/35 dark:bg-muted/25") }>
                 <p className="mb-1 font-medium text-foreground">Risk summary</p>
                 <p className="text-muted-foreground">{risk.summary}</p>
               </div>
@@ -506,10 +813,10 @@ export default function DashboardPage() {
           )}
         </SectionCard>
 
-        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3">
+        <SectionCard title={invoiceWorkflow?.title ?? "Invoice workflow"} description={invoiceWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-4 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
           <div className="space-y-2 text-sm">
             {workflowGroups(invoiceStatuses).map((group) => (
-              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/[0.14] p-3 text-xs">
+              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/35 p-3 text-xs dark:bg-muted/25">
                 <div>
                   <p className="font-medium text-foreground">{group.title}</p>
                   <p className="text-muted-foreground">{group.count} invoices</p>
@@ -517,14 +824,13 @@ export default function DashboardPage() {
                 <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-foreground" />
               </div>
             ))}
-            <p className="text-[11px] text-muted-foreground">Amounts reflect current open pipeline by status.</p>
           </div>
         </SectionCard>
 
-        <SectionCard title={billWorkflow?.title ?? "Bill workflow"} description={billWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-3">
+        <SectionCard title={billWorkflow?.title ?? "Bill workflow"} description={billWorkflow?.subtitle ?? "Workflow status mix"} className="xl:col-span-4 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
           <div className="space-y-2 text-sm">
             {workflowGroups(billStatuses).map((group) => (
-              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/[0.14] p-3 text-xs">
+              <div key={group.title} className="grid grid-cols-[1fr,auto] gap-2 rounded-xl border border-border/70 bg-muted/35 p-3 text-xs dark:bg-muted/25">
                 <div>
                   <p className="font-medium text-foreground">{group.title}</p>
                   <p className="text-muted-foreground">{group.count} bills</p>
@@ -532,34 +838,19 @@ export default function DashboardPage() {
                 <MoneyDisplay value={String(group.amount)} currencyCode={currency} className="text-right font-medium text-foreground" />
               </div>
             ))}
-            <p className="text-[11px] text-muted-foreground">Amounts reflect current payable exposure by status.</p>
-          </div>
-        </SectionCard>
-
-        <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-2">
-          <div className="space-y-2 text-sm">
-            {actionItems.slice(0, 5).map((item) => (
-              <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className="group flex items-start justify-between gap-2 rounded-xl border border-border/70 bg-muted/[0.12] p-3 transition hover:border-primary/30 hover:bg-muted/35">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-foreground">{String(item.title)}</p>
-                  <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
-                </div>
-                <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:text-foreground" />
-              </Link>
-            ))}
           </div>
         </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-7">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
+        <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-8 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
           <div className="space-y-2 text-sm">
             {curatedActivityItems.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">{activity?.emptyState?.title ?? "No recent activity."}</div>
             ) : (
               curatedActivityItems.map((item) => (
-                <div key={String(item.activityId)} className="grid grid-cols-[1fr,auto] items-center gap-2 rounded-xl border border-border/70 bg-muted/[0.12] px-3 py-2.5 text-xs">
-                  <span className="inline-flex items-center gap-2 text-foreground"><CircleCheck className="size-3.5 text-emerald-500" /> {String(item.eventSummary)}</span>
+                <div key={String(item.activityId)} className="grid grid-cols-[1fr,auto] items-center gap-2 rounded-xl border border-border/70 bg-muted/35 px-3 py-2.5 text-xs transition-colors hover:bg-accent/40 dark:bg-muted/25">
+                  <span className="inline-flex items-center gap-2 text-foreground"><CircleCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" /> {String(item.eventSummary)}</span>
                   <span className="inline-flex items-center gap-1 text-muted-foreground" title={formatDateTime(String(item.occurredAt ?? ""))}><Clock3 className="size-3" /> {formatRelativeTime(String(item.occurredAt ?? ""))}</span>
                 </div>
               ))
@@ -568,8 +859,8 @@ export default function DashboardPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="System & setup health" description="Billing, integrations, and readiness status." className="xl:col-span-5">
-          <div className="grid gap-2 text-sm md:grid-cols-1">
+        <SectionCard title="System & setup health" description="Billing, integrations, and readiness status." className="xl:col-span-4 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
+          <div className="grid gap-2 text-sm">
             {[billing, integrations, onboarding].filter((widget): widget is WidgetEnvelope => Boolean(widget)).map((widget) => {
               const widgetStatus = widget.status === "empty"
                 ? (widget.emptyState?.kind === "not_configured" ? "Action required" : "No active tasks")
@@ -579,7 +870,7 @@ export default function DashboardPage() {
                 : (widget.subtitle ?? "Operational summary available");
 
               return (
-                <div key={widget.widgetKey} className="rounded-xl border border-border/70 bg-muted/[0.12] p-3">
+                <div key={widget.widgetKey} className="rounded-xl border border-border/70 bg-muted/35 p-3 dark:bg-muted/25">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <p className="font-medium text-foreground">{widget.title}</p>
                     <Badge variant={widget.status === "warning" ? "secondary" : "outline"}>{widgetStatus}</Badge>
