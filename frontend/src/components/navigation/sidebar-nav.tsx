@@ -38,10 +38,10 @@ export function SidebarNav() {
                   isDashboard ? "overflow-hidden rounded-xl border py-2.5 transition-all duration-200" : "rounded-2xl py-2.5 transition-colors",
                   active
                     ? isDashboard
-                      ? "border-primary/35 bg-gradient-to-r from-primary/16 via-primary/10 to-background text-foreground shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_18%,transparent),0_10px_24px_rgba(15,23,42,0.14)] dark:shadow-[0_10px_24px_rgba(2,6,23,0.45)]"
+                      ? "border-primary/35 bg-gradient-to-r from-primary/16 via-primary/8 to-background text-foreground shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-primary)_18%,transparent),0_8px_18px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_24px_rgba(2,6,23,0.35)]"
                       : "bg-primary text-primary-foreground shadow-sm"
                     : isDashboard
-                      ? "border-border/60 bg-card/55 text-muted-foreground hover:border-primary/30 hover:bg-accent/60 hover:text-foreground"
+                      ? "border-border/60 bg-muted/35 text-muted-foreground hover:border-primary/30 hover:bg-accent/55 hover:text-foreground dark:bg-muted/20"
                       : "text-muted-foreground/85 hover:bg-accent/70 hover:text-accent-foreground",
                 )}
               >
