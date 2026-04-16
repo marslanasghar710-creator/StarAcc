@@ -117,6 +117,9 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
       const ctx = canvasRef.current.getContext("2d");
       if (!ctx) return;
 
+      const existingChart = (window.Chart as { getChart?: (canvas: HTMLCanvasElement) => { destroy: () => void } | undefined } | undefined)?.getChart?.(canvasRef.current);
+      existingChart?.destroy();
+
       const foreground = cssColor("--foreground", "#111827");
       const muted = cssColor("--muted-foreground", "#6b7280");
       const border = cssColor("--border", "#e5e7eb");
@@ -217,6 +220,9 @@ function AgingDistributionChartJs({ buckets }: { buckets: ReturnType<typeof summ
 
       const ctx = canvasRef.current.getContext("2d");
       if (!ctx) return;
+
+      const existingChart = (window.Chart as { getChart?: (canvas: HTMLCanvasElement) => { destroy: () => void } | undefined } | undefined)?.getChart?.(canvasRef.current);
+      existingChart?.destroy();
 
       const muted = cssColor("--muted-foreground", "#6b7280");
       const border = cssColor("--border", "#e5e7eb");
