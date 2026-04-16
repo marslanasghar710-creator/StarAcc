@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { ArrowRight, ChevronRight, CircleCheck, Clock3, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 
 import { ErrorState } from "@/components/feedback/error-state";
@@ -62,25 +62,129 @@ function parseTrendPeriods(periods: Array<Record<string, unknown>>): TrendPoint[
   }));
 }
 
+type ChartJsRuntime = {
+  new (ctx: CanvasRenderingContext2D, config: Record<string, unknown>): { destroy: () => void };
+};
+
+declare global {
+  interface Window {
+    Chart?: ChartJsRuntime;
+  }
+}
+
+async function ensureChartJs() {
+  if (typeof window === "undefined") return null;
+  if (window.Chart) return window.Chart;
+
+  await new Promise<void>((resolve, reject) => {
+    const existing = document.getElementById("chartjs-cdn");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Chart.js failed to load")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "chartjs-cdn";
+    script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Chart.js failed to load"));
+    document.head.appendChild(script);
+  });
+
+  return window.Chart ?? null;
+}
+
+function cssColor(token: string, fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  return value ? `oklch(${value})` : fallback;
+}
+
 function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
   if (periods.length < 2) return null;
 
-  const maxValue = Math.max(1, ...periods.flatMap((period) => [period.revenue, period.expenses]));
-  const width = 100;
-  const height = 64;
-  const stepX = width / (periods.length - 1);
-  const toY = (value: number) => (height - 8) - ((value / maxValue) * (height - 14));
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const revenuePath = periods
-    .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.revenue).toFixed(2)}`)
-    .join(" ");
-  const expensesPath = periods
-    .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.expenses).toFixed(2)}`)
-    .join(" ");
-  const revenueArea = `${revenuePath} L ${width} ${height - 6} L 0 ${height - 6} Z`;
-  const expenseArea = `${expensesPath} L ${width} ${height - 6} L 0 ${height - 6} Z`;
-  const gridY = [0.25, 0.5, 0.75].map((ratio) => Number((height - 8) - ((height - 14) * ratio)).toFixed(2));
-  const peakIndex = periods.reduce((maxIdx, period, idx, arr) => (period.revenue > arr[maxIdx].revenue ? idx : maxIdx), 0);
+  useEffect(() => {
+    let chartInstance: { destroy: () => void } | null = null;
+
+    const createChart = async () => {
+      const Chart = await ensureChartJs();
+      if (!Chart || !canvasRef.current) return;
+
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
+
+      const foreground = cssColor("--foreground", "#111827");
+      const muted = cssColor("--muted-foreground", "#6b7280");
+      const border = cssColor("--border", "#e5e7eb");
+      const revenueColor = "rgba(16, 185, 129, 0.9)";
+      const expenseColor = "rgba(245, 158, 11, 0.9)";
+
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: periods.map((period) => period.label),
+          datasets: [
+            {
+              label: "Revenue",
+              data: periods.map((period) => period.revenue),
+              borderColor: revenueColor,
+              backgroundColor: "rgba(16, 185, 129, 0.2)",
+              fill: true,
+              pointRadius: 2.5,
+              pointHoverRadius: 4,
+              borderWidth: 2.8,
+              tension: 0.35,
+            },
+            {
+              label: "Expenses",
+              data: periods.map((period) => period.expenses),
+              borderColor: expenseColor,
+              backgroundColor: "rgba(245, 158, 11, 0.14)",
+              fill: true,
+              pointRadius: 2.5,
+              pointHoverRadius: 4,
+              borderWidth: 2.4,
+              tension: 0.35,
+            },
+          ],
+        },
+        options: {
+          maintainAspectRatio: false,
+          responsive: true,
+          animation: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: muted,
+                boxWidth: 12,
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: muted, maxRotation: 0 },
+              grid: { color: `${border}55`, drawBorder: false },
+            },
+            y: {
+              ticks: { color: muted },
+              grid: { color: `${border}50`, drawBorder: false },
+            },
+          },
+        },
+      });
+      if (canvasRef.current) canvasRef.current.style.color = foreground;
+    };
+
+    void createChart();
+
+    return () => {
+      chartInstance?.destroy();
+    };
+  }, [periods]);
 
   return (
     <div className="rounded-2xl border border-border/70 bg-gradient-to-b from-card to-muted/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:from-muted/35 dark:to-background/20 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
@@ -92,26 +196,90 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
         </div>
         <span>{periods[periods.length - 1]?.label}</span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" preserveAspectRatio="none" role="img" aria-label="Revenue and expenses trend lines">
-        <defs>
-          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" className="text-emerald-600 dark:text-emerald-400" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0.03" className="text-emerald-600 dark:text-emerald-400" />
-          </linearGradient>
-          <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.26" className="text-amber-600 dark:text-amber-400" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" className="text-amber-600 dark:text-amber-400" />
-          </linearGradient>
-        </defs>
-        {gridY.map((y, idx) => (
-          <path key={`grid-${idx}`} d={`M 0 ${y} L ${width} ${y}`} stroke="currentColor" className="text-border/30" strokeWidth="0.6" strokeDasharray="2 3" />
-        ))}
-        <path d={expenseArea} fill="url(#expenseGradient)" />
-        <path d={revenueArea} fill="url(#revenueGradient)" />
-        <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-600 dark:text-emerald-400" strokeWidth="2.8" />
-        <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-600 dark:text-amber-400" strokeWidth="2.6" strokeDasharray="4 2" />
-        <circle cx={Math.round(stepX * peakIndex)} cy={toY(periods[peakIndex].revenue)} r="1.4" className="fill-emerald-600 dark:fill-emerald-400" />
-      </svg>
+      <div className="h-48 w-full">
+        <canvas ref={canvasRef} />
+      </div>
+    </div>
+  );
+}
+
+function AgingDistributionMiniChart({ buckets }: { buckets: ReturnType<typeof summarizeRisk>["normalized"] }) {
+  if (buckets.length === 0) return null;
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    let chartInstance: { destroy: () => void } | null = null;
+
+    const createChart = async () => {
+      const Chart = await ensureChartJs();
+      if (!Chart || !canvasRef.current) return;
+
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
+
+      const muted = cssColor("--muted-foreground", "#6b7280");
+      const border = cssColor("--border", "#e5e7eb");
+
+      chartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: buckets.map((bucket) => bucket.label),
+          datasets: [
+            {
+              label: "Receivables",
+              data: buckets.map((bucket) => bucket.receivables),
+              backgroundColor: "rgba(16, 185, 129, 0.75)",
+              borderRadius: 4,
+              borderSkipped: false,
+            },
+            {
+              label: "Payables",
+              data: buckets.map((bucket) => bucket.payables),
+              backgroundColor: "rgba(245, 158, 11, 0.75)",
+              borderRadius: 4,
+              borderSkipped: false,
+            },
+          ],
+        },
+        options: {
+          maintainAspectRatio: false,
+          responsive: true,
+          indexAxis: "y",
+          animation: false,
+          plugins: {
+            legend: {
+              labels: { color: muted, boxWidth: 12 },
+            },
+          },
+          scales: {
+            x: {
+              stacked: true,
+              ticks: { color: muted },
+              grid: { color: `${border}50`, drawBorder: false },
+            },
+            y: {
+              stacked: true,
+              ticks: { color: muted },
+              grid: { display: false, drawBorder: false },
+            },
+          },
+        },
+      });
+    };
+
+    void createChart();
+
+    return () => {
+      chartInstance?.destroy();
+    };
+  }, [buckets]);
+
+  return (
+    <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+      <div className="h-48 w-full">
+        <canvas ref={canvasRef} />
+      </div>
     </div>
   );
 }
