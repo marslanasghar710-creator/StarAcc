@@ -359,7 +359,18 @@ function buildActionList({
     );
   }
 
-  return base.slice(0, 5);
+  const deduped: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+
+  for (const item of base) {
+    const ctaRoute = String((item.cta as Record<string, unknown> | undefined)?.route ?? "");
+    const identity = `${String(item.id ?? "")}:${String(item.title ?? "")}:${ctaRoute}`;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    deduped.push(item);
+  }
+
+  return deduped.slice(0, 5);
 }
 
 export default function DashboardPage() {
