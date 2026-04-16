@@ -6,9 +6,9 @@ import { AppLogo } from "@/components/shared/app-logo";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-muted/30 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="grid min-h-screen lg:grid-cols-[296px_1fr]">
-        <aside className="hidden border-r border-border/60 bg-muted/20 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+        <aside className="hidden border-r border-border/60 bg-muted/15 dark:bg-muted/25 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
           <div className="border-b border-border/60 px-6 py-5">
             <AppLogo />
           </div>
