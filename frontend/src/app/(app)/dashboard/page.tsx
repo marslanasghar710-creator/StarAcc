@@ -78,19 +78,19 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
     .join(" ");
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-gradient-to-b from-card to-muted/35 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:from-muted/35 dark:to-background/20 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="rounded-2xl border border-border/70 bg-gradient-to-b from-card to-muted/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:from-muted/35 dark:to-background/20 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>{periods[0]?.label}</span>
-        <div className="inline-flex items-center gap-3">
-          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" /> Revenue</span>
-          <span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-amber-600 dark:bg-amber-400" /> Expenses</span>
+        <div className="inline-flex items-center gap-3 font-medium">
+          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-600 dark:bg-emerald-400" /> Revenue</span>
+          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-amber-600 dark:bg-amber-400" /> Expenses</span>
         </div>
         <span>{periods[periods.length - 1]?.label}</span>
       </div>
       <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" preserveAspectRatio="none" role="img" aria-label="Revenue and expenses trend lines">
-        <path d="M 0 46 L 100 46" stroke="currentColor" className="text-border" strokeWidth="0.75" strokeDasharray="3 3" />
-        <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-600 dark:text-emerald-400" strokeWidth="2.2" />
-        <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-600 dark:text-amber-400" strokeWidth="2" strokeDasharray="4 2" />
+        <path d="M 0 46 L 100 46" stroke="currentColor" className="text-border/40" strokeWidth="0.6" strokeDasharray="3 3" />
+        <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-600 dark:text-emerald-400" strokeWidth="2.8" />
+        <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-600 dark:text-amber-400" strokeWidth="2.6" strokeDasharray="4 2" />
       </svg>
     </div>
   );
@@ -168,15 +168,15 @@ function SummaryCard({
       ) : null}
       </div>
     >
-      <div className="space-y-2.5">
-        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-slate-50", emphasis === "strong" ? "text-3xl" : "text-2xl")} />
+      <div className="space-y-2">
+        <MoneyDisplay value={money} currencyCode={currency} className={cn("font-semibold tracking-tight text-foreground", emphasis === "strong" ? "text-4xl" : "text-[1.72rem]")} />
         {deltaAmount ? (
           <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             {deltaDirection === "down" ? <TrendingDown className="size-3 text-amber-600 dark:text-amber-400" /> : <TrendingUp className="size-3 text-emerald-600 dark:text-emerald-400" />}
             {deltaDirection === "down" ? "Down MTD" : "Up MTD"} <MoneyDisplay value={deltaAmount} currencyCode={currency} />
           </p>
         ) : null}
-        <p className="text-xs text-slate-400">{context}</p>
+        <p className="text-[11px] text-muted-foreground">{context}</p>
       </div>
     </SectionCard>
   );
@@ -376,8 +376,8 @@ export default function DashboardPage() {
   const billStatuses = ((billWorkflow?.payload?.statuses as Array<Record<string, unknown>> | undefined) ?? []);
 
   return (
-    <div className="space-y-5 rounded-3xl border border-border/70 bg-gradient-to-b from-background via-background to-muted/35 p-3 shadow-[0_16px_34px_rgba(15,23,42,0.08)] dark:border-border/50 dark:from-slate-950/75 dark:via-slate-950/50 dark:to-slate-900/35 dark:shadow-[0_26px_56px_rgba(2,6,23,0.48)] md:p-4">
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+    <div className="space-y-4 rounded-3xl border border-border/70 bg-gradient-to-b from-background via-background to-muted/35 p-3 shadow-[0_16px_34px_rgba(15,23,42,0.08)] dark:border-border/50 dark:shadow-[0_26px_56px_rgba(2,6,23,0.48)] md:p-4">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <div className="xl:col-span-9 rounded-2xl border border-border/70 bg-card/90 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-all duration-200 dark:bg-card/70 dark:shadow-[0_18px_32px_rgba(2,6,23,0.38)]">
           <PageHeader
             eyebrow="Dashboard"
@@ -392,7 +392,10 @@ export default function DashboardPage() {
               </div>
             )}
           />
-          <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
+          <p className="mt-2 text-xs text-muted-foreground">
+            System summary: {attentionItems.filter((item) => ["critical", "high"].includes(String(item.priority ?? ""))).length} high-priority issues • Activation {onboarding?.status === "ok" ? "on track" : onboarding?.status === "warning" ? "needs attention" : "pending"} • Reconciliation {trustSummaryQuery.data?.overall_status === "healthy" ? "healthy" : "requires follow-up"}.
+          </p>
+          <div className="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
             {[onboarding, integrations, billing].filter((widget): widget is WidgetEnvelope => Boolean(widget)).map((widget) => (
               <div key={widget.widgetKey} className="rounded-xl border border-border/70 bg-muted/35 px-3 py-2 dark:bg-muted/25">
                 <p className="font-medium text-foreground">{widget.title}</p>
@@ -405,9 +408,14 @@ export default function DashboardPage() {
         <SectionCard title={recommendations?.title ?? "Recommended next actions"} description={recommendations?.subtitle ?? "State-aware guidance"} className="xl:col-span-3 border-border/70 bg-card/90 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-card/70 dark:shadow-[0_18px_32px_rgba(2,6,23,0.38)]">
           <div className="space-y-2 text-sm">
             {actionItems.slice(0, 5).map((item, index) => (
-              <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className="group flex items-start justify-between gap-2 rounded-xl border border-border/70 bg-muted/35 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:bg-accent/50 dark:bg-muted/25">
+              <Link key={String(item.id)} href={String((item.cta as Record<string, unknown> | undefined)?.route ?? "/dashboard")} className={cn(
+                "group flex items-start justify-between gap-2 rounded-xl border p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent/50",
+                index === 0
+                  ? "border-primary/45 bg-primary/8 shadow-[0_8px_18px_rgba(15,23,42,0.1)] dark:bg-primary/12"
+                  : "border-border/70 bg-muted/35 hover:border-primary/45 dark:bg-muted/25",
+              )}>
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-foreground">{index + 1}. {String(item.title)}</p>
+                  <p className={cn("text-sm font-medium text-foreground", index === 0 ? "text-[0.95rem]" : "")}>{index + 1}. {String(item.title)}</p>
                   <p className="text-xs text-muted-foreground">{String(item.description ?? "")}</p>
                 </div>
                 <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:text-foreground" />
@@ -420,10 +428,13 @@ export default function DashboardPage() {
       {trustSummaryQuery.data ? (
         <SectionCard
           title="Trust status"
-          description={`Overall status: ${trustSummaryQuery.data.overall_status.replaceAll("_", " ")} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
+          description={`Trust: ${trustSummaryQuery.data.overall_status === "healthy" ? "Healthy" : "Attention needed"} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
           className="border-border/70 bg-card/90 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-card/70 dark:shadow-[0_18px_32px_rgba(2,6,23,0.38)]"
           actions={<Button asChild size="sm" variant="outline"><Link href="/settings/integrity">Open integrity center</Link></Button>}
         >
+          <div className="mb-2 inline-flex rounded-full border border-border/70 bg-muted/35 px-2.5 py-1 text-[11px] font-medium text-foreground dark:bg-muted/25">
+            Trust: {trustSummaryQuery.data.overall_status === "healthy" ? "Healthy" : "Attention needed"}
+          </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6 text-xs">
             {trustSummaryQuery.data.domains.map((domain: { domain: string; label: string; status: string }) => (
               <div key={domain.domain} className="rounded-xl border border-border/70 bg-muted/35 p-2.5 dark:bg-muted/25">
@@ -435,11 +446,11 @@ export default function DashboardPage() {
         </SectionCard>
       ) : null}
 
-      <section className="space-y-2">
+      <section className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Financial position & performance</p>
         </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-6">
           {positionWidgets.map((widget) => (
             <div key={widget.widgetKey} className={widget.widgetKey === "cash_position_summary" ? "lg:col-span-2" : "lg:col-span-1"}>
               <SummaryCard widget={widget} currency={currency} organizationId={currentOrganizationId ?? undefined} emphasis={widget.widgetKey === "cash_position_summary" ? "strong" : "normal"} />
@@ -453,7 +464,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <SectionCard
           title={trend?.title ?? "Revenue vs Expenses"}
           description={trend?.subtitle ?? "Primary financial snapshot"}
@@ -509,7 +520,7 @@ export default function DashboardPage() {
         </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <SectionCard title={aging?.title ?? "Aging distribution"} description={aging?.subtitle ?? "AR/AP bucketed exposure"} className="xl:col-span-4 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
           {aging?.status === "empty" ? (
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
@@ -569,7 +580,7 @@ export default function DashboardPage() {
         </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <SectionCard title={activity?.title ?? "Recent activity"} description={activity?.subtitle ?? "Meaningful events"} className="xl:col-span-8 border-border/70 bg-card/85 shadow-sm dark:bg-card/60">
           <div className="space-y-2 text-sm">
             {curatedActivityItems.length === 0 ? (
