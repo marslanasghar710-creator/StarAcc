@@ -104,16 +104,17 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     () => scopedOrganizations.find((organization) => organization.id === currentOrganizationId) ?? null,
     [currentOrganizationId, scopedOrganizations],
   );
+  const scopedCurrentOrganizationId = currentOrganization?.id ?? null;
 
   const value = React.useMemo<OrganizationContextValue>(
     () => ({
       organizations: scopedOrganizations,
-      currentOrganizationId,
+      currentOrganizationId: scopedCurrentOrganizationId,
       currentOrganization,
       setCurrentOrganizationId,
       isLoadingOrganizations: isLoading || isBootstrapping,
     }),
-    [currentOrganization, currentOrganizationId, isBootstrapping, isLoading, scopedOrganizations, setCurrentOrganizationId],
+    [currentOrganization, isBootstrapping, isLoading, scopedCurrentOrganizationId, scopedOrganizations, setCurrentOrganizationId],
   );
 
   return <OrganizationContext.Provider value={value}>{children}</OrganizationContext.Provider>;
