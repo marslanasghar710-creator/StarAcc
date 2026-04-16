@@ -96,10 +96,13 @@ async function ensureChartJs() {
   return window.Chart ?? null;
 }
 
-function cssColor(token: string, fallback: string) {
-  if (typeof window === "undefined") return fallback;
-  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
-  return value ? `oklch(${value})` : fallback;
+function chartPalette() {
+  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+  return {
+    foreground: isDark ? "rgba(241, 245, 249, 0.94)" : "rgba(15, 23, 42, 0.9)",
+    muted: isDark ? "rgba(203, 213, 225, 0.86)" : "rgba(71, 85, 105, 0.86)",
+    grid: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(100, 116, 139, 0.12)",
+  };
 }
 
 function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
@@ -120,9 +123,7 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
       const existingChart = (window.Chart as { getChart?: (canvas: HTMLCanvasElement) => { destroy: () => void } | undefined } | undefined)?.getChart?.(canvasRef.current);
       existingChart?.destroy();
 
-      const foreground = cssColor("--foreground", "#111827");
-      const muted = cssColor("--muted-foreground", "#6b7280");
-      const border = cssColor("--border", "#e5e7eb");
+      const palette = chartPalette();
       const revenueColor = "rgba(16, 185, 129, 0.9)";
       const expenseColor = "rgba(245, 158, 11, 0.9)";
 
@@ -162,24 +163,26 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
           plugins: {
             legend: {
               labels: {
-                color: muted,
+                color: palette.muted,
                 boxWidth: 12,
               },
             },
           },
           scales: {
             x: {
-              ticks: { color: muted, maxRotation: 0 },
-              grid: { color: `${border}55`, drawBorder: false },
+              ticks: { color: palette.muted, maxRotation: 0 },
+              grid: { color: palette.grid, drawTicks: false, drawOnChartArea: true },
+              border: { display: false },
             },
             y: {
-              ticks: { color: muted },
-              grid: { color: `${border}50`, drawBorder: false },
+              ticks: { color: palette.muted },
+              grid: { color: palette.grid, drawTicks: false, drawOnChartArea: true },
+              border: { display: false },
             },
           },
         },
       });
-      if (canvasRef.current) canvasRef.current.style.color = foreground;
+      if (canvasRef.current) canvasRef.current.style.color = palette.foreground;
     };
 
     void createChart();
@@ -224,8 +227,7 @@ function AgingDistributionChartJs({ buckets }: { buckets: ReturnType<typeof summ
       const existingChart = (window.Chart as { getChart?: (canvas: HTMLCanvasElement) => { destroy: () => void } | undefined } | undefined)?.getChart?.(canvasRef.current);
       existingChart?.destroy();
 
-      const muted = cssColor("--muted-foreground", "#6b7280");
-      const border = cssColor("--border", "#e5e7eb");
+      const palette = chartPalette();
 
       chartInstance = new Chart(ctx, {
         type: "bar",
@@ -255,19 +257,21 @@ function AgingDistributionChartJs({ buckets }: { buckets: ReturnType<typeof summ
           animation: false,
           plugins: {
             legend: {
-              labels: { color: muted, boxWidth: 12 },
+              labels: { color: palette.muted, boxWidth: 12 },
             },
           },
           scales: {
             x: {
               stacked: true,
-              ticks: { color: muted },
-              grid: { color: `${border}50`, drawBorder: false },
+              ticks: { color: palette.muted },
+              grid: { color: palette.grid, drawTicks: false, drawOnChartArea: true },
+              border: { display: false },
             },
             y: {
               stacked: true,
-              ticks: { color: muted },
-              grid: { display: false, drawBorder: false },
+              ticks: { color: palette.muted },
+              grid: { display: false, drawTicks: false },
+              border: { display: false },
             },
           },
         },
