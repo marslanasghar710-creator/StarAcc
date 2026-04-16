@@ -411,7 +411,7 @@ export default function DashboardPage() {
   const recommendationItems = ((recommendations?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
   const activityItems = ((activity?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
 
-  const attentionItems = useMemo(() => prioritizedAttentionItems(rawAttentionItems), [rawAttentionItems]);
+  const attentionItems = prioritizedAttentionItems(rawAttentionItems);
 
   const receivablesWidget = widgetByKey(data.widgets, "receivables_outstanding_summary");
   const payablesWidget = widgetByKey(data.widgets, "payables_outstanding_summary");
@@ -421,7 +421,7 @@ export default function DashboardPage() {
   const reconciliationDomain = trustSummaryQuery.data?.domains.find((domain) => domain.domain === "reconciliation");
   const reconciliationNeedsAttention = Boolean(reconciliationDomain && reconciliationDomain.status !== "healthy");
 
-  const actionItems = useMemo(() => buildActionList({
+  const actionItems = buildActionList({
     recommendations: recommendationItems,
     attentionItems,
     receivablesOverdueCount,
@@ -430,7 +430,7 @@ export default function DashboardPage() {
     onboarding,
     integrations,
     billing,
-  }), [recommendationItems, attentionItems, receivablesOverdueCount, payablesOverdueCount, reconciliationNeedsAttention, onboarding, integrations, billing]);
+  });
   const curatedActivityItems = curatedActivity(activityItems);
 
   const trendRevenueTotal = trendPeriods.reduce((sum, period) => sum + period.revenue, 0);
