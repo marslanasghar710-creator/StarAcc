@@ -203,7 +203,7 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
   );
 }
 
-function AgingDistributionMiniChart({ buckets }: { buckets: ReturnType<typeof summarizeRisk>["normalized"] }) {
+function AgingDistributionChartJs({ buckets }: { buckets: ReturnType<typeof summarizeRisk>["normalized"] }) {
   if (buckets.length === 0) return null;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -279,40 +279,6 @@ function AgingDistributionMiniChart({ buckets }: { buckets: ReturnType<typeof su
     <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
       <div className="h-48 w-full">
         <canvas ref={canvasRef} />
-      </div>
-    </div>
-  );
-}
-
-function AgingDistributionMiniChart({ buckets }: { buckets: ReturnType<typeof summarizeRisk>["normalized"] }) {
-  if (buckets.length === 0) return null;
-
-  const maxCombined = Math.max(1, ...buckets.map((bucket) => bucket.receivables + bucket.payables));
-
-  return (
-    <div className="space-y-2 rounded-xl border border-border/70 bg-muted/30 p-3">
-      {buckets.map((bucket) => {
-        const combined = bucket.receivables + bucket.payables;
-        const widthPercent = (combined / maxCombined) * 100;
-        const arShare = combined > 0 ? (bucket.receivables / combined) * 100 : 50;
-        return (
-          <div key={`aging-chart-${bucket.key}`} className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-medium text-foreground">{bucket.label}</span>
-              <span className="text-muted-foreground">{combined.toLocaleString()}</span>
-            </div>
-            <div className="h-2.5 rounded-full bg-muted/80">
-              <div className="flex h-full overflow-hidden rounded-full" style={{ width: `${Math.max(widthPercent, combined > 0 ? 12 : 0)}%` }}>
-                <div className="h-full bg-emerald-500/80" style={{ width: `${arShare}%` }} title="Receivables share" />
-                <div className="h-full bg-amber-500/80" style={{ width: `${100 - arShare}%` }} title="Payables share" />
-              </div>
-            </div>
-          </div>
-        );
-      })}
-      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-500/80" /> Receivables</span>
-        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-amber-500/80" /> Payables</span>
       </div>
     </div>
   );
@@ -828,7 +794,7 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
             <div className="space-y-3 text-sm">
-              <AgingDistributionMiniChart buckets={risk.normalized} />
+              <AgingDistributionChartJs buckets={risk.normalized} />
               <div className={cn("rounded-xl border p-3 text-xs", risk.severity === "high" ? "border-amber-500/35 bg-amber-500/10" : "border-border/70 bg-muted/35 dark:bg-muted/25") }>
                 <p className="mb-1 font-medium text-foreground">Risk summary</p>
                 <p className="text-muted-foreground">{risk.summary}</p>
