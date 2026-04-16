@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { ArrowRight, ChevronRight, CircleCheck, Clock3, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 
 import { ErrorState } from "@/components/feedback/error-state";
@@ -139,15 +140,25 @@ function SummaryCard({
   if (widget.widgetKey === "receivables_outstanding_summary") {
     const overdueAmount = amountToNumber(((payload.overdue as Record<string, unknown> | undefined)?.amount));
     const overdueCount = Number((payload.overdue as Record<string, unknown> | undefined)?.invoiceCount ?? 0);
-    context = overdueAmount > 0 ? `${overdueCount} overdue invoices` : "No overdue invoices";
+    context = overdueAmount > 0 ? `${overdueCount} invoices overdue` : "No overdue invoices";
   }
   if (widget.widgetKey === "payables_outstanding_summary") {
     const overdueAmount = amountToNumber(((payload.overdue as Record<string, unknown> | undefined)?.amount));
     const overdueCount = Number((payload.overdue as Record<string, unknown> | undefined)?.billCount ?? 0);
-    context = overdueAmount > 0 ? `${overdueCount} overdue bills` : "No overdue bills";
+    context = overdueAmount > 0 ? `${overdueCount} bills pending payment` : "No overdue bills";
+  }
+  if (widget.widgetKey === "cash_position_summary") {
+    const deltaPercent = Number((payload.delta as Record<string, unknown> | undefined)?.percent ?? 0);
+    if (Number.isFinite(deltaPercent) && deltaPercent !== 0) {
+      context = `${deltaPercent > 0 ? "Up" : "Down"} ${Math.abs(deltaPercent).toFixed(1)}% vs last period`;
+    } else if (deltaAmount) {
+      context = `${deltaDirection === "down" ? "Down" : "Up"} vs last period`;
+    }
   }
   if (performanceWidget && valueIsZero) {
-    context = "No posted activity yet this month";
+    context = widget.widgetKey === "revenue_this_month_summary"
+      ? "No activity yet this month • Create your first invoice to start tracking revenue."
+      : "No activity yet this month";
   }
 
   return (
@@ -198,9 +209,31 @@ function summarizeRisk(buckets: Array<Record<string, unknown>>) {
     arPeak,
     apPeak,
     severity,
-    summary: `Receivables risk is concentrated in ${arPeak.label}; payables pressure is highest in ${apPeak.label}.`,
+    summary: `Receivables risk concentrated in ${arPeak.label} bucket · monitor collections closely. Payables pressure is highest in ${apPeak.label}.`,
     normalized,
   };
+}
+
+function prioritizedAttentionItems(items: Array<Record<string, unknown>>) {
+  const severityScore = (priority: string) => {
+    if (priority === "critical") return 4;
+    if (priority === "high") return 3;
+    if (priority === "medium") return 2;
+    return 1;
+  };
+
+  return [...items].sort((a, b) => {
+    const severity = severityScore(String(b.priority ?? "low")) - severityScore(String(a.priority ?? "low"));
+    if (severity !== 0) return severity;
+
+    const amountA = amountToNumber((a.impact as Record<string, unknown> | undefined)?.amount ?? (a.amount as Record<string, unknown> | undefined)?.amount);
+    const amountB = amountToNumber((b.impact as Record<string, unknown> | undefined)?.amount ?? (b.amount as Record<string, unknown> | undefined)?.amount);
+    if (amountB !== amountA) return amountB - amountA;
+
+    const tsA = Date.parse(String(a.occurredAt ?? a.updatedAt ?? a.createdAt ?? ""));
+    const tsB = Date.parse(String(b.occurredAt ?? b.updatedAt ?? b.createdAt ?? ""));
+    return (Number.isFinite(tsB) ? tsB : 0) - (Number.isFinite(tsA) ? tsA : 0);
+  });
 }
 
 function workflowGroups(statuses: Array<Record<string, unknown>>) {
@@ -275,12 +308,18 @@ function curatedActivity(items: Array<Record<string, unknown>>) {
 function buildActionList({
   recommendations,
   attentionItems,
+  receivablesOverdueCount,
+  payablesOverdueCount,
+  reconciliationNeedsAttention,
   onboarding,
   integrations,
   billing,
 }: {
   recommendations: Array<Record<string, unknown>>;
   attentionItems: Array<Record<string, unknown>>;
+  receivablesOverdueCount: number;
+  payablesOverdueCount: number;
+  reconciliationNeedsAttention: boolean;
   onboarding?: WidgetEnvelope;
   integrations?: WidgetEnvelope;
   billing?: WidgetEnvelope;
@@ -288,16 +327,28 @@ function buildActionList({
   const attentionTitles = new Set(attentionItems.map((item) => String(item.title ?? "").toLowerCase()));
   const base = recommendations.filter((item) => !attentionTitles.has(String(item.title ?? "").toLowerCase()));
 
-  if (onboarding?.applicable && onboarding.status === "ok") {
+  if (receivablesOverdueCount > 0) {
+    base.unshift({ id: "review_overdue_invoices", title: "Review overdue invoices", description: `${receivablesOverdueCount} overdue invoices require follow-up.`, cta: { route: "/invoices", label: "Open invoices" } });
+  }
+
+  if (payablesOverdueCount > 0) {
+    base.push({ id: "clear_overdue_bills", title: "Review overdue bills", description: `${payablesOverdueCount} overdue bills need payment planning.`, cta: { route: "/bills", label: "Open bills" } });
+  }
+
+  if (onboarding?.applicable && onboarding.status !== "ok") {
     base.push({ id: "continue_setup", title: "Complete remaining setup", description: "Finish setup tasks to unlock stronger automation and controls.", cta: { route: "/setup", label: "Continue setup" } });
   }
 
   if (integrations?.status === "empty") {
-    base.push({ id: "connect_integration", title: "Connect your first integration", description: "Link banks or payroll to reduce manual posting overhead.", cta: { route: "/integrations", label: "Open integrations" } });
+    base.push({ id: "connect_integration", title: "Connect bank accounts", description: "Link bank feeds to improve reconciliation speed and cash visibility.", cta: { route: "/integrations", label: "Open integrations" } });
   }
 
   if (billing?.status === "empty") {
     base.push({ id: "configure_billing", title: "Set up billing profile", description: "Configure billing now to avoid subscription interruptions.", cta: { route: "/settings/billing", label: "Open billing" } });
+  }
+
+  if (reconciliationNeedsAttention) {
+    base.push({ id: "reconcile_gaps", title: "Resolve reconciliation gaps", description: "Address unmatched transactions to improve trust status.", cta: { route: "/banking/reconciliations", label: "Open reconciliation" } });
   }
 
   if (base.length < 3) {
@@ -354,13 +405,32 @@ export default function DashboardPage() {
   const billing = widgetByKey(data.widgets, "billing_subscription_status");
   const integrations = widgetByKey(data.widgets, "integration_health_summary");
 
-  const attentionItems = ((attention?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
+  const rawAttentionItems = ((attention?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
   const trendPeriods = parseTrendPeriods(((trend?.payload?.periods as Array<Record<string, unknown>> | undefined) ?? []));
   const agingBuckets = ((aging?.payload?.buckets as Array<Record<string, unknown>> | undefined) ?? []);
   const recommendationItems = ((recommendations?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
   const activityItems = ((activity?.payload?.items as Array<Record<string, unknown>> | undefined) ?? []);
 
-  const actionItems = buildActionList({ recommendations: recommendationItems, attentionItems, onboarding, integrations, billing });
+  const attentionItems = useMemo(() => prioritizedAttentionItems(rawAttentionItems), [rawAttentionItems]);
+
+  const receivablesWidget = widgetByKey(data.widgets, "receivables_outstanding_summary");
+  const payablesWidget = widgetByKey(data.widgets, "payables_outstanding_summary");
+  const receivablesOverdueCount = Number(((receivablesWidget?.payload?.overdue as Record<string, unknown> | undefined)?.invoiceCount ?? 0));
+  const payablesOverdueCount = Number(((payablesWidget?.payload?.overdue as Record<string, unknown> | undefined)?.billCount ?? 0));
+
+  const reconciliationDomain = trustSummaryQuery.data?.domains.find((domain) => domain.domain === "reconciliation");
+  const reconciliationNeedsAttention = Boolean(reconciliationDomain && reconciliationDomain.status !== "healthy");
+
+  const actionItems = useMemo(() => buildActionList({
+    recommendations: recommendationItems,
+    attentionItems,
+    receivablesOverdueCount,
+    payablesOverdueCount,
+    reconciliationNeedsAttention,
+    onboarding,
+    integrations,
+    billing,
+  }), [recommendationItems, attentionItems, receivablesOverdueCount, payablesOverdueCount, reconciliationNeedsAttention, onboarding, integrations, billing]);
   const curatedActivityItems = curatedActivity(activityItems);
 
   const trendRevenueTotal = trendPeriods.reduce((sum, period) => sum + period.revenue, 0);
@@ -393,7 +463,7 @@ export default function DashboardPage() {
             )}
           />
           <p className="mt-2 text-xs text-muted-foreground">
-            System summary: {attentionItems.filter((item) => ["critical", "high"].includes(String(item.priority ?? ""))).length} high-priority issues • Activation {onboarding?.status === "ok" ? "on track" : onboarding?.status === "warning" ? "needs attention" : "pending"} • Reconciliation {trustSummaryQuery.data?.overall_status === "healthy" ? "healthy" : "requires follow-up"}.
+            {attentionItems.filter((item) => ["critical", "high"].includes(String(item.priority ?? ""))).length} high-priority issues · Activation {onboarding?.status === "ok" ? "on track" : onboarding?.status === "warning" ? "needs attention" : "pending"} · Reconciliation {reconciliationNeedsAttention ? "requires attention" : "healthy"}.
           </p>
           <div className="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
             {[onboarding, integrations, billing].filter((widget): widget is WidgetEnvelope => Boolean(widget)).map((widget) => (
@@ -428,7 +498,7 @@ export default function DashboardPage() {
       {trustSummaryQuery.data ? (
         <SectionCard
           title="Trust status"
-          description={`Trust: ${trustSummaryQuery.data.overall_status === "healthy" ? "Healthy" : "Attention needed"} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
+          description={`Trust: ${trustSummaryQuery.data.overall_status === "healthy" ? "Healthy" : "Attention needed"}${reconciliationNeedsAttention ? " due to reconciliation gaps" : ""} • evaluated ${new Date(trustSummaryQuery.data.last_evaluated_at).toLocaleString()}`}
           className="border-border/70 bg-card/90 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-card/70 dark:shadow-[0_18px_32px_rgba(2,6,23,0.38)]"
           actions={<Button asChild size="sm" variant="outline"><Link href="/settings/integrity">Open integrity center</Link></Button>}
         >
