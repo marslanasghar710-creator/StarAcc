@@ -67,9 +67,9 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
 
   const maxValue = Math.max(1, ...periods.flatMap((period) => [period.revenue, period.expenses]));
   const width = 100;
-  const height = 52;
+  const height = 64;
   const stepX = width / (periods.length - 1);
-  const toY = (value: number) => (height - 6) - ((value / maxValue) * (height - 12));
+  const toY = (value: number) => (height - 8) - ((value / maxValue) * (height - 14));
 
   const revenuePath = periods
     .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.revenue).toFixed(2)}`)
@@ -77,6 +77,10 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
   const expensesPath = periods
     .map((period, idx) => `${idx === 0 ? "M" : "L"} ${Math.round(stepX * idx)} ${toY(period.expenses).toFixed(2)}`)
     .join(" ");
+  const revenueArea = `${revenuePath} L ${width} ${height - 6} L 0 ${height - 6} Z`;
+  const expenseArea = `${expensesPath} L ${width} ${height - 6} L 0 ${height - 6} Z`;
+  const gridY = [0.25, 0.5, 0.75].map((ratio) => Number((height - 8) - ((height - 14) * ratio)).toFixed(2));
+  const peakIndex = periods.reduce((maxIdx, period, idx, arr) => (period.revenue > arr[maxIdx].revenue ? idx : maxIdx), 0);
 
   return (
     <div className="rounded-2xl border border-border/70 bg-gradient-to-b from-card to-muted/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:from-muted/35 dark:to-background/20 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
@@ -88,11 +92,60 @@ function TrendMiniChart({ periods }: { periods: TrendPoint[] }) {
         </div>
         <span>{periods[periods.length - 1]?.label}</span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" preserveAspectRatio="none" role="img" aria-label="Revenue and expenses trend lines">
-        <path d="M 0 46 L 100 46" stroke="currentColor" className="text-border/40" strokeWidth="0.6" strokeDasharray="3 3" />
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" preserveAspectRatio="none" role="img" aria-label="Revenue and expenses trend lines">
+        <defs>
+          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" className="text-emerald-600 dark:text-emerald-400" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.03" className="text-emerald-600 dark:text-emerald-400" />
+          </linearGradient>
+          <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.26" className="text-amber-600 dark:text-amber-400" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" className="text-amber-600 dark:text-amber-400" />
+          </linearGradient>
+        </defs>
+        {gridY.map((y, idx) => (
+          <path key={`grid-${idx}`} d={`M 0 ${y} L ${width} ${y}`} stroke="currentColor" className="text-border/30" strokeWidth="0.6" strokeDasharray="2 3" />
+        ))}
+        <path d={expenseArea} fill="url(#expenseGradient)" />
+        <path d={revenueArea} fill="url(#revenueGradient)" />
         <path d={revenuePath} fill="none" stroke="currentColor" className="text-emerald-600 dark:text-emerald-400" strokeWidth="2.8" />
         <path d={expensesPath} fill="none" stroke="currentColor" className="text-amber-600 dark:text-amber-400" strokeWidth="2.6" strokeDasharray="4 2" />
+        <circle cx={Math.round(stepX * peakIndex)} cy={toY(periods[peakIndex].revenue)} r="1.4" className="fill-emerald-600 dark:fill-emerald-400" />
       </svg>
+    </div>
+  );
+}
+
+function AgingDistributionMiniChart({ buckets }: { buckets: ReturnType<typeof summarizeRisk>["normalized"] }) {
+  if (buckets.length === 0) return null;
+
+  const maxCombined = Math.max(1, ...buckets.map((bucket) => bucket.receivables + bucket.payables));
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border/70 bg-muted/30 p-3">
+      {buckets.map((bucket) => {
+        const combined = bucket.receivables + bucket.payables;
+        const widthPercent = (combined / maxCombined) * 100;
+        const arShare = combined > 0 ? (bucket.receivables / combined) * 100 : 50;
+        return (
+          <div key={`aging-chart-${bucket.key}`} className="space-y-1.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-medium text-foreground">{bucket.label}</span>
+              <span className="text-muted-foreground">{combined.toLocaleString()}</span>
+            </div>
+            <div className="h-2.5 rounded-full bg-muted/80">
+              <div className="flex h-full overflow-hidden rounded-full" style={{ width: `${Math.max(widthPercent, combined > 0 ? 12 : 0)}%` }}>
+                <div className="h-full bg-emerald-500/80" style={{ width: `${arShare}%` }} title="Receivables share" />
+                <div className="h-full bg-amber-500/80" style={{ width: `${100 - arShare}%` }} title="Payables share" />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-500/80" /> Receivables</span>
+        <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-amber-500/80" /> Payables</span>
+      </div>
     </div>
   );
 }
@@ -607,23 +660,7 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{aging.emptyState?.title ?? "No aging exposure."}</div>
           ) : (
             <div className="space-y-3 text-sm">
-              <div className="space-y-2 rounded-xl border border-border/70 bg-muted/35 p-3 dark:bg-muted/25">
-                {risk.normalized.map((bucket) => {
-                  const total = bucket.receivables + bucket.payables;
-                  const arWidth = total > 0 ? (bucket.receivables / total) * 100 : 0;
-                  return (
-                    <div key={bucket.key} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-slate-100">{bucket.label}</span>
-                        <span className="text-slate-400"><MoneyDisplay value={String(total)} currencyCode={currency} /></span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 dark:from-emerald-400 dark:to-cyan-400" style={{ width: `${Math.max(arWidth, total > 0 ? 4 : 0)}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <AgingDistributionMiniChart buckets={risk.normalized} />
               <div className={cn("rounded-xl border p-3 text-xs", risk.severity === "high" ? "border-amber-500/35 bg-amber-500/10" : "border-border/70 bg-muted/35 dark:bg-muted/25") }>
                 <p className="mb-1 font-medium text-foreground">Risk summary</p>
                 <p className="text-muted-foreground">{risk.summary}</p>
