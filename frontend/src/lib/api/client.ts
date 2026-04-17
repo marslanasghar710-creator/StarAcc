@@ -10,6 +10,34 @@ type RefreshResponse = {
 };
 
 let refreshPromise: Promise<string | null> | null = null;
+const ORGANIZATION_MEMBERSHIP_INVALID_EVENT = "staracc:organization-membership-invalid";
+
+function extractOrganizationIdFromPath(path: string) {
+  const match = path.match(/^\/organizations\/([^/]+)/);
+  return match?.[1] ?? null;
+}
+
+function reportInvalidOrganizationMembership(path: string, error: ApiError) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const message = (error.message ?? "").toLowerCase();
+  if (!message.includes("not a member of this organization")) {
+    return;
+  }
+
+  const organizationId = extractOrganizationIdFromPath(path);
+  if (!organizationId) {
+    return;
+  }
+
+  if (window.localStorage.getItem("staracc.active-organization-id") === organizationId) {
+    window.localStorage.removeItem("staracc.active-organization-id");
+  }
+
+  window.dispatchEvent(new CustomEvent(ORGANIZATION_MEMBERSHIP_INVALID_EVENT, { detail: { organizationId } }));
+}
 
 function isBodyInit(value: unknown): value is BodyInit {
   return value instanceof FormData || value instanceof URLSearchParams || value instanceof Blob || typeof value === "string" || value instanceof ArrayBuffer;
@@ -128,7 +156,11 @@ export async function apiClient<T>(path: string, options: ApiRequestOptions = {}
   }
 
   if (!response.ok) {
-    throw await normalizeApiError(response);
+    const error = await normalizeApiError(response);
+    if (error instanceof ApiError) {
+      reportInvalidOrganizationMembership(path, error);
+    }
+    throw error;
   }
 
   if (response.status === 204) {
